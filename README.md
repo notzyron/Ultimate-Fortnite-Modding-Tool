@@ -4,32 +4,31 @@ A modding tool for importing the latest Fortnite assets to older Fortnite builds
 
 ## Features
 
-- **Automatic texture assignment** — Connects exported textures with the correct materials (may have issues with reskins)
-- **Customize asset properties** — Configure metadata like name, description, rarity, and gender for each asset
-- **Preview rendering** — Render a preview in Blender to see how your asset will look in-game (note: Blender and Unreal Engine rendering differs)
-- **Convert PSK to FBX** — Converts exported .psk files from FModel to .fbx format in Blender
-- **Automated asset export** — Imports converted models into Unreal Engine, applies settings, cooks assets, generates required cosmetic identifiers (CID, HID, HS, CP), and finalizes everything using UAssetAPI for in-game compatibility
+- **Automated mesh conversion** — Converts exported .psk mesh files to .fbx format automatically using Blender
+- **Automatic texture assignment** — Connects exported textures with their corresponding materials, with manual override options if needed
+- **Real-time preview rendering** — Render a preview of your skin before export (Note: The preview won't be 100% accurate since Blender is a different rendering engine than Unreal Engine)
+- **Automatic asset generation** — Automatically generates all required Fortnite cosmetic assets (CID, HID, HS, CPs) and modifies them for game compatibility
+- **AssetRegistry generation** — Creates the AssetRegistry.bin file so Fortnite recognizes your custom skin
+- **Official engine support** — Compatible with standard Unreal Engine 4.26.2 (no modded version required)
+- **Fast workflow** — Backport a custom skin in under 1 minute
+
+## Requirements
 
 Before using this tool, you need to install and configure:
 
 - **Windows OS** (tested on Windows 10/11)
 - **.NET Framework** (version required by your system)
 - **Blender 4.5** — [Download here](https://www.blender.org/download/)
-  - **PSA/PSK Importer Plugin** — Available from a modding Discord community
-  - **Better FBX Exporter Plugin** — Available from a modding Discord community
-- **Unreal Engine 4.26** — [Download from Epic Games Launcher](https://www.epicgames.com/store/en-US/download)
-  - Enable `Python Script Editor` plugin (built-in)
-  - Enable `Scripting Utilities` plugin (built-in)
-- **Python** — Required for Blender and UE scripting (comes with Blender, optional for UE)
-
+  - **PSA/PSK Importer Plugin** — Required. [Download here](https://extensions.blender.org/download/sha256:9301a57466e3d41907b4b3175a7cc0e5df80aaefcc594676e5b898fdf13e7ad2/add-on-io-scene-psk-psa-v8.2.4.zip?repository=%2Fapi%2Fv1%2Fextensions%2F&blender_version_min=4.4.0&blender_version_max=5.0.0), then install: Edit → Preferences → Add-ons → Install from File, select the plugin, and enable it
+- **Unreal Engine 4.26.2** — [Download from Epic Games Launcher](https://www.epicgames.com/store/en-US/download) (Note: it may display as "Unreal Engine 4.26" in the launcher). Open Unreal Engine, create a new project, then go to Edit → Plugins and enable:
+  - `Python Editor Script Plugin` (built-in)
+  - `Editor Scripting Utilities` (built-in)
 ## Installation
 
-1. **Clone or download this repository**
-2. **Build the project** in Visual Studio:
-   - Open `UFMT.sln`
-   - Build the solution (Build → Build Solution)
-3. **Run the application**
-4. **Configure settings** (first launch):
+### Option 1: Use the Compiled .EXE (Recommended)
+1. Download the latest `.exe` from [Releases](https://github.com/notzyron/Ultimate-Fortnite-Modding-Tool/releases)
+2. Run the `.exe`
+3. **Configure settings** (first launch):
    - Go to Settings page
    - Set **Blender executable path** (e.g., `C:\Program Files\Blender Foundation\Blender 4.5\blender.exe`)
    - Set **UE executable path** (e.g., `C:\Program Files\Epic Games\UE_4.26\Engine\Binaries\Win64\UE4Editor.exe`)
@@ -37,25 +36,49 @@ Before using this tool, you need to install and configure:
    - Select **UE version** (Original UE 4.26 or modded version for Fortnite modding)
    - Save settings
 
+### Option 2: Build from Source
+1. Clone or download this repository
+2. Open `UFMT.sln` in Visual Studio
+3. Build the solution (Build → Build Solution)
+4. Run the application
+5. Follow the settings configuration steps above
+
 ## Usage
 
-1. **Open the application**
-2. **Go to Skins page**
-3. **Select the skin(s)** you want to import
-4. **Click Import**
-5. The tool will automatically:
-   - Extract assets using UAssetAPI
-   - Process materials and meshes in Blender
-   - Import into your Unreal Engine project
-   - Generate necessary files
+### Setup
 
-**Note:** The first import may take several minutes as Blender and UE scripts run in the background.
+1. Click **"Create Skin Folder"** and enter your skin's codename (e.g., `QuarterClaspZoom` from the Character ID)
+2. Place your exported meshes in `[skin codename]/Source/` (name them descriptively, e.g., `Body.psk`)
+3. Place textures and icons in `[skin codename]/Source/Textures/`
+
+### Configure & Preview
+
+1. Specify your skin folder path in **"Current Skin Path"**
+2. The program auto-detects materials and assigns textures (may have issues with reskins)
+3. Manually adjust texture assignments if needed using the dropdowns
+4. Enter skin details: **name**, **description**, **rarity**, **gender**
+5. Click **"Render"** to preview the skin
+6. If the skin looks too shiny, enable **"Swizzle Roughness to Green"** and render again
+
+### Export & Deploy
+
+1. Click **"Export"**
+2. The program will:
+   - Convert .psk files to .fbx in Blender
+   - Import meshes and textures into Unreal Engine
+   - Apply correct settings to the meshes and textures and cook assets
+   - Generate all required cosmetic files
+   - Create AssetRegistry.bin for game recognition
+3. Your finished skin will be in `[skin codename]/Output/FortniteGame/`
+4. Pak the output folder with u4pak, move to your Fortnite v14.30 build, and launch the game!
+
+**Note:** The export process may take several minutes as Blender and UE scripts run in the background.
 
 ## Compatibility
 
-- **Fortnite Versions:** v13.40 - v14.30
+- **Fortnite Versions:** v14.30
 - **Unreal Engine:** 4.26 (original or modded for Fortnite)
-- **Blender:** 4.5+
+- **Blender:** 4.5
 
 ## Credits
 
