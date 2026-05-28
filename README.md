@@ -19,8 +19,7 @@ Before using this tool, you need to install and configure:
 - **Windows OS** (tested on Windows 10/11)
 - **.NET Framework** (version required by your system)
 - **Blender 4.5** — [Download here](https://www.blender.org/download/)
-  - **PSA/PSK Importer Plugin** — Available from a modding Discord community
-  - **Better FBX Exporter Plugin** — Available from a modding Discord community
+  - **PSA/PSK Importer Plugin** — Required. [Download here](https://extensions.blender.org/download/sha256:9301a57466e3d41907b4b3175a7cc0e5df80aaefcc594676e5b898fdf13e7ad2/add-on-io-scene-psk-psa-v8.2.4.zip?repository=%2Fapi%2Fv1%2Fextensions%2F&blender_version_min=4.4.0&blender_version_max=5.0.0), then install: Edit → Preferences → Add-ons → Install from File, select the plugin, and enable it
 - **Unreal Engine 4.26** — [Download from Epic Games Launcher](https://www.epicgames.com/store/en-US/download)
   - Enable `Python Script Editor` plugin (built-in)
   - Enable `Scripting Utilities` plugin (built-in)
