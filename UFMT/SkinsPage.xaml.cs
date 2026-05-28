@@ -753,10 +753,10 @@ namespace UFMT
                 await Task.Run(() =>
                 {
                     Process blender = Process.Start(App.BlenderPath, $"-b --python \"{ConvertScript}\" -- \"{cp.PskPath}\" " +
-                $"\"{Path.Combine(exportFbxPath, exportName)}\"");
+                $"\"{Path.Combine(exportFbxPath, $"{exportName}.fbx")}\"");
                     blender.WaitForExit();
                 });
-
+                
                 ConsoleWriteLineSuccess($"Succesfully converted " +
                 $"{Path.Combine(SourcePath, Path.GetFileName(cp.PskPath))}" +
                 $" to {Path.Combine(SourcePath, "Fbx", exportName)}.fbx!");

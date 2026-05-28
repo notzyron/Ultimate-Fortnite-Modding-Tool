@@ -9,5 +9,7 @@ bpy.ops.psk.import_file(
     filepath=psk_path,
 )
 
-bpy.ops.better_export.fbx(filepath=export_path,
-my_scale= 0.01, use_optimize_for_game_engine=False, use_edge_crease=False)
+bpy.ops.export_scene.fbx(
+    filepath=export_path,
+    global_scale=0.01
+)
