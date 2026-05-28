@@ -72,7 +72,7 @@ Before using this tool, you need to install and configure:
 3. Your finished skin will be in `[skin codename]/Output/FortniteGame/`
 4. Pak the output folder with u4pak, move to your Fortnite v14.30 build, and launch the game!
 
-**Note:** The export process may take a few seconds as Blender and UE scripts run in the background. Just wait until the console displays "Your custom skin is ready! Check the output folder"
+**Note:** The export process may take a minute as Blender and UE scripts run in the background. Wait until the console displays "Your custom skin is ready! Check the output folder"
 
 ## Compatibility
 
