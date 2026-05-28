@@ -27,18 +27,23 @@ Before using this tool, you need to install and configure:
 
 ## Installation
 
-1. **Clone or download this repository**
-2. **Build the project** in Visual Studio:
-   - Open `UFMT.sln`
-   - Build the solution (Build → Build Solution)
-3. **Run the application**
-4. **Configure settings** (first launch):
+### Option 1: Use the Compiled .EXE (Recommended)
+1. Download the latest `.exe` from [Releases](https://github.com/notzyron/Ultimate-Fortnite-Modding-Tool/releases)
+2. Run the `.exe`
+3. **Configure settings** (first launch):
    - Go to Settings page
    - Set **Blender executable path** (e.g., `C:\Program Files\Blender Foundation\Blender 4.5\blender.exe`)
    - Set **UE executable path** (e.g., `C:\Program Files\Epic Games\UE_4.26\Engine\Binaries\Win64\UE4Editor.exe`)
    - Set **UE project path** (path to your Fortnite UE 4.26 project)
    - Select **UE version** (Original UE 4.26 or modded version for Fortnite modding)
    - Save settings
+
+### Option 2: Build from Source
+1. Clone or download this repository
+2. Open `UFMT.sln` in Visual Studio
+3. Build the solution (Build → Build Solution)
+4. Run the application
+5. Follow the settings configuration steps above
 
 ## Usage
 
