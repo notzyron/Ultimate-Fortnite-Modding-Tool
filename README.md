@@ -5,11 +5,11 @@ A modding tool for importing the latest Fortnite assets to older Fortnite builds
 ## Features
 
 - **Automated mesh conversion** — Converts exported .psk mesh files to .fbx format automatically using Blender
-- **Intelligent material setup** — Automatically pairs textures (diffuse, normal, mask, specular) with their corresponding materials, with manual override options
+- **Automatic texture assignment** — Connects exported textures with their corresponding materials, with manual override options if needed
 - **Real-time preview rendering** — Render a preview of your skin before export (Note: The preview won't be 100% accurate since Blender is a different rendering engine than Unreal Engine)
-- **One-click asset generation** — Automatically generates all required Fortnite cosmetic assets (CID, HID, HS, CPs) and modifies them for game compatibility
-- **AssetRegistry integration** — Creates the necessary AssetRegistry.bin file so Fortnite recognizes your custom skin
-- **Official engine support** — Works with vanilla Unreal Engine 4.26(.2) (no need to download or compile the modded version)
+- **Automatic asset generation** — Automatically generates all required Fortnite cosmetic assets (CID, HID, HS, CPs) and modifies them for game compatibility
+- **AssetRegistry generation** — Creates the AssetRegistry.bin file so Fortnite recognizes your custom skin
+- **Official engine support** — Compatible with standard Unreal Engine 4.26.2 (no modded version required)
 - **Fast workflow** — Backport a custom skin in under 1 minute
 
 ## Requirements
