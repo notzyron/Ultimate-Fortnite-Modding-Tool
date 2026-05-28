@@ -6,11 +6,11 @@ A modding tool for importing the latest Fortnite assets to older Fortnite builds
 
 - **Automated mesh conversion** — Converts exported .psk mesh files to .fbx format automatically using Blender
 - **Intelligent material setup** — Automatically pairs textures (diffuse, normal, mask, specular) with their corresponding materials, with manual override options
-- **Real-time preview rendering** — Render and preview your skin in Blender's viewport to verify appearance before export (with roughness adjustment option for proper material rendering)
-- **One-click asset generation** — Automatically generates all required Fortnite cosmetic assets (meshes, materials, textures, CID, HID, HS, CP) and modifies them for game compatibility
+- **Real-time preview rendering** — Render a preview of your skin before export (Note: The preview won't be 100% accurate since Blender is a different rendering engine than Unreal Engine)
+- **One-click asset generation** — Automatically generates all required Fortnite cosmetic assets (CID, HID, HS, CPs) and modifies them for game compatibility
 - **AssetRegistry integration** — Creates the necessary AssetRegistry.bin file so Fortnite recognizes your custom skin
-- **Official engine support** — Works with vanilla Unreal Engine 4.26 (no need to download or compile the massive modded version)
-- **Fast workflow** — Complete custom skin import in under 1 minute (vs 10-15 minutes manually)
+- **Official engine support** — Works with vanilla Unreal Engine 4.26(.2) (no need to download or compile the modded version)
+- **Fast workflow** — Backport a custom skin in under 1 minute
 
 ## Requirements
 
@@ -52,19 +52,19 @@ Before using this tool, you need to install and configure:
 ### Configure & Preview
 
 1. Specify your skin folder path in **"Current Skin Path"**
-2. The program auto-detects materials and assigns textures
+2. The program auto-detects materials and assigns textures (may have issues with reskins)
 3. Manually adjust texture assignments if needed using the dropdowns
 4. Enter skin details: **name**, **description**, **rarity**, **gender**
-5. Click **"Render"** to preview the skin in Blender
+5. Click **"Render"** to preview the skin
 6. If the skin looks too shiny, enable **"Swizzle Roughness to Green"** and render again
 
 ### Export & Deploy
 
-1. Click **"Export"** to start the automated pipeline
+1. Click **"Export"**
 2. The program will:
    - Convert .psk files to .fbx in Blender
    - Import meshes and textures into Unreal Engine
-   - Apply correct material settings and cook assets
+   - Apply correct settings to the meshes and textures and cook assets
    - Generate all required cosmetic files
    - Create AssetRegistry.bin for game recognition
 3. Your finished skin will be in `[skin codename]/Output/FortniteGame/`
@@ -74,9 +74,9 @@ Before using this tool, you need to install and configure:
 
 ## Compatibility
 
-- **Fortnite Versions:** v13.40 - v14.30
+- **Fortnite Versions:** v14.30
 - **Unreal Engine:** 4.26 (original or modded for Fortnite)
-- **Blender:** 4.5+
+- **Blender:** 4.5
 
 ## Credits
 
