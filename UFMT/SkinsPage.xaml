@@ -10,7 +10,7 @@
         <ScrollViewer>
             <StackPanel Margin="32" Spacing="32">
                 <StackPanel Spacing="8">
-                    <TextBlock Text="Skins Path" FontSize="20" FontWeight="SemiBold"/>
+                    <TextBlock Text="Skins Folder Path" FontSize="20" FontWeight="SemiBold"/>
                     <TextBlock Text="The directory where your skin folders are saved." 
                                        Margin="0,0,0,8" Foreground="LightGray" FontSize="15"/>
                     <StackPanel Orientation="Horizontal" Spacing="8">
@@ -23,13 +23,13 @@
                     </StackPanel>
                 </StackPanel>
                 <StackPanel Spacing="8">
-                    <TextBlock Text="Input Path" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Text="Current Skin Folder Path" FontSize="20" FontWeight="SemiBold" />
                     <TextBlock Text="The directory where your skin's assets are saved."
                                        Foreground="LightGray" FontSize="15" Margin="0,0,0,8" />
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBox x:Name="InputPathBox" Width="500" TextChanged="InputPathBox_TextChanged"
+                        <TextBox x:Name="CurrentSkinPathBox" Width="500" TextChanged="CurrentSkinPathBox_TextChanged"
                                 PlaceholderText="C:\Users\Example\Desktop\CustomSkins\Cyclone"/>
-                        <Button Content="Browse" x:Name="InputPathBrowse" Click="BrowseButton_Click"
+                        <Button Content="Browse" x:Name="CurrentSkinPathBrowse" Click="BrowseButton_Click"
                                 VerticalAlignment="Bottom"/>
                     </StackPanel>
                 </StackPanel>

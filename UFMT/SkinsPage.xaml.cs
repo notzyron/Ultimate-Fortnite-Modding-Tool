@@ -60,12 +60,12 @@ namespace UFMT
         private static string UeScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "UE_4_26.py").Replace("\\", "/");
         private static string CookedAssetsPath;
         private static string ValidCodenameCharacters = "abcdefghijklmnopqrstuvwxyz1234567890_";
-        private static string InputPath = string.Empty;
+        private static string CurrentSkinPath = string.Empty;
         private static string MaleLobbyAnimPath = Path.Combine
         (AppDomain.CurrentDomain.BaseDirectory, "Assets", "LobbyAnimations", "Male_Commando_Idle_01.psa");
         private static string FemaleLobbyAnimPath = Path.Combine
         (AppDomain.CurrentDomain.BaseDirectory, "Assets", "LobbyAnimations", "Female_Commando_Idle_01.psa");
-        private CancellationTokenSource _inputPathDebounce;
+        private CancellationTokenSource _currentSkinPathDebounce;
         private static string SourcePath = string.Empty;
         private static string TexturesPath = string.Empty;
         private static List<string> Materials = new();
@@ -174,7 +174,7 @@ namespace UFMT
         {
             InitializeComponent();
             SkinsPathBox.Text = AppSettings.GetValue("SkinsPath", "");
-            InputPathBox.Text = AppSettings.GetValue("InputPath", "");
+            CurrentSkinPathBox.Text = AppSettings.GetValue("CurrentSkinPath", "");
             if (App.UeVersion == "UE_4.26_FnGameProj")
             {
                 UeScript = @"C:/Users/aston/Desktop/testingue/modded_ue_4.26.py";
@@ -190,10 +190,10 @@ namespace UFMT
                 CurrentSkin.Name = characterNameTextBox.Text.ToUpper();
                 characterNameText.Text = CurrentSkin.Name;
                 rarityComboBox.SelectedIndex = 0;
-                InputPath = InputPathBox.Text;
-                SourcePath = Path.Combine(InputPath, "Source");
+                CurrentSkinPath = CurrentSkinPathBox.Text;
+                SourcePath = Path.Combine(CurrentSkinPath, "Source");
 
-                InputPathBox_TextChanged("NoDelay", null);
+                CurrentSkinPathBox_TextChanged("NoDelay", null);
             };
 
             if (!string.IsNullOrEmpty(App.UeProjectPath))
@@ -208,13 +208,13 @@ namespace UFMT
             AppSettings.SetValue("SkinsPath", SkinsPathBox.Text);
         }
 
-        private async void InputPathBox_TextChanged(object sender, TextChangedEventArgs e)
+        private async void CurrentSkinPathBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            AppSettings.SetValue("InputPath", InputPathBox.Text);
+            AppSettings.SetValue("CurrentSkinPath", CurrentSkinPathBox.Text);
 
-            _inputPathDebounce?.Cancel();
-            _inputPathDebounce = new CancellationTokenSource();
-            var token = _inputPathDebounce.Token;
+            _currentSkinPathDebounce?.Cancel();
+            _currentSkinPathDebounce = new CancellationTokenSource();
+            var token = _currentSkinPathDebounce.Token;
 
             if (sender as string != "NoDelay")
             {
@@ -228,23 +228,23 @@ namespace UFMT
                     return;
                 }
             }
-            InputPath = InputPathBox.Text;
+            CurrentSkinPath = CurrentSkinPathBox.Text;
             ResetCpData();
 
-            if (InputPath == string.Empty)
+            if (CurrentSkinPath == string.Empty)
             {
-                if (sender as string != "NoDelay") ConsoleWriteLineError("The input path is empty!");
+                if (sender as string != "NoDelay") ConsoleWriteLineError("The Current skin path is empty!");
                 return;
             }
-            if (!Directory.Exists(InputPath))
+            if (!Directory.Exists(CurrentSkinPath))
             {
-                ConsoleWriteLineError($"{InputPath} doesn't exist!");
+                ConsoleWriteLineError($"{CurrentSkinPath} doesn't exist!");
                 return;
             }
-            SourcePath = Path.Combine(InputPath, "Source");
+            SourcePath = Path.Combine(CurrentSkinPath, "Source");
             if (!Directory.Exists(SourcePath))
             {
-                ConsoleWriteLineError($"Cannot find the Source folder inside {InputPath}");
+                ConsoleWriteLineError($"Cannot find the Source folder inside {CurrentSkinPath}");
                 return;
             }
 
@@ -271,9 +271,9 @@ namespace UFMT
                     {
                         SkinsPathBox.Text = folder.Path;
                     }
-                    else if (button.Name == "InputPathBrowse")
+                    else if (button.Name == "CurrentSkinPathBrowse")
                     {
-                        InputPathBox.Text = folder.Path;
+                        CurrentSkinPathBox.Text = folder.Path;
                     }
                 }
             }
@@ -291,7 +291,7 @@ namespace UFMT
                 return;
             }
 
-            InputPath = InputPathBox.Text;
+            CurrentSkinPath = CurrentSkinPathBox.Text;
             if (string.IsNullOrEmpty(CurrentSkin.Gender))
             {
                 ConsoleWriteLineError($"The skin's gender is unspecified");
@@ -570,7 +570,7 @@ namespace UFMT
         {
             string[] pskPaths = Directory.GetFiles(SourcePath, "*.psk");
             List<string> alreadyUsedMaterials = new List<string>();
-            CurrentSkin.CodeName = new DirectoryInfo(InputPath).Name;
+            CurrentSkin.CodeName = new DirectoryInfo(CurrentSkinPath).Name;
             CurrentSkin.CID = $"CID_{CurrentSkin.CodeName}";
             characterCIDTextBox.Text = CurrentSkin.CID;
             TexturesPath = Path.Combine(SourcePath, "Textures");
@@ -740,7 +740,7 @@ namespace UFMT
             string exportFbxPath = Path.Combine(SourcePath, "Fbx");
             if (!Directory.Exists(Path.Combine(SourcePath, "Fbx")))
             {
-                Directory.CreateDirectory(Path.Combine(InputPath, "Source", "Fbx"));
+                Directory.CreateDirectory(Path.Combine(CurrentSkinPath, "Source", "Fbx"));
                 Console.WriteLine($"Created Fbx folder at Source folder: " +
                     $"{Path.Combine(CurrentSkin.CodeName, "Source", "Fbx")}");
             }
@@ -932,7 +932,7 @@ namespace UFMT
                     Textures = texturePaths,
                     Swizzle = swizzleMaterials,
                     Materials = materials,
-                    RenderPath = Path.Combine(InputPath, "Source", $"{CurrentSkin.CodeName}.png"),
+                    RenderPath = Path.Combine(CurrentSkinPath, "Source", $"{CurrentSkin.CodeName}.png"),
                     LobbyAnimPath = (CurrentSkin.Gender == "Male" ? MaleLobbyAnimPath : FemaleLobbyAnimPath).Replace('\\', '/'),
                     HeadPsk = Head.PskPath
                 };
@@ -1195,7 +1195,7 @@ namespace UFMT
                     ConsoleWriteLineWarning($"no uasset files found inside {customSkinFolder}");
                 }
             }
-            string fnGamePath = Path.Combine(InputPath, "Output", "FortniteGame");
+            string fnGamePath = Path.Combine(CurrentSkinPath, "Output", "FortniteGame");
             if (!Directory.Exists(fnGamePath))
             {
                 Directory.CreateDirectory(fnGamePath);
@@ -1208,7 +1208,7 @@ namespace UFMT
         private void CreateCharacterAssets()
         {
             DirectoryInfo cookedCharacterDirectory = new DirectoryInfo(Path.Combine(CookedAssetsPath, "CustomSkins", CurrentSkin.CodeName));
-            string contentFolderPath = Path.Combine(InputPath, "Output", "FortniteGame", "Content", "CustomSkins", CurrentSkin.CodeName);
+            string contentFolderPath = Path.Combine(CurrentSkinPath, "Output", "FortniteGame", "Content", "CustomSkins", CurrentSkin.CodeName);
             string characterPartsPath = Path.Combine(contentFolderPath, "CharacterParts");
             string materialsPath = Path.Combine(contentFolderPath, "Materials");
             if (!Path.Exists(contentFolderPath)) Directory.CreateDirectory(contentFolderPath);
@@ -1420,7 +1420,7 @@ namespace UFMT
 
             //CID creation
             Console.WriteLine($"Editing {CurrentSkin.CID}.uasset");
-            string cidPath = Path.Combine(InputPath, "Output", "FortniteGame", "Content", "Athena", "Items",
+            string cidPath = Path.Combine(CurrentSkinPath, "Output", "FortniteGame", "Content", "Athena", "Items",
             "Cosmetics", "Characters");
             if (!Path.Exists(cidPath)) Directory.CreateDirectory(cidPath);
             string cidUassetPath = Path.Combine(cidPath, $"{CurrentSkin.CID}.uasset");
