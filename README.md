@@ -4,11 +4,11 @@ A modding tool for importing the latest Fortnite assets to older Fortnite builds
 
 ## Features
 
-- **Backport Skins** — Import skins from newer Fortnite versions to UE 4.26 (compatible with Fortnite v13.40 - v14.30)
-- **Automated Pipeline** — Streamlined workflow using Blender and Unreal Engine scripting
-- **Future Support** — Planned support for pickaxes, emotes, and other cosmetics
-
-## Requirements
+- **Automatic texture assignment** — Extracts asset textures and applies them to the correct materials (may have issues with reskins)
+- **Customize asset properties** — Configure metadata like name, description, rarity, and gender for each asset
+- **Preview rendering** — Render a preview in Blender to see how your asset will look in-game (note: Blender and Unreal Engine rendering differs)
+- **Convert PSK to FBX** — Converts exported .psk files from FModel to .fbx format in Blender
+- **Automated asset export** — Imports converted models into Unreal Engine, applies settings, cooks assets, generates required cosmetic identifiers (CID, HID, HS, CP), and finalizes everything using UAssetAPI for in-game compatibility
 
 Before using this tool, you need to install and configure:
 
