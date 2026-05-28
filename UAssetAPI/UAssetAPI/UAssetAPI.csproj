@@ -1,0 +1,133 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{178417EC-1177-413E-BE85-C83AECD64279}</ProjectGuid>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyTitle>UAssetAPI</AssemblyTitle>
+    <Product>UAssetAPI</Product>
+    <Copyright>Copyright (c) 2020 - 2026 atenfyr</Copyright>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>Debug;Release;DebugVerbose;DebugTracing;ReleaseX</Configurations>
+    <Platforms>AnyCPU;x86</Platforms>
+    <FileVersion>1.1.1.0</FileVersion>
+    <AssemblyVersion>1.1.1.0</AssemblyVersion>
+    <Version>1.1.1</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Description>UAssetAPI is a low-level .NET library for reading and writing Unreal Engine game assets.</Description>
+    <Title>UAssetAPI</Title>
+    <Company>atenfyr</Company>
+    <PackageProjectUrl>https://github.com/atenfyr/UAssetAPI</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <RepositoryUrl>https://github.com/atenfyr/UAssetAPI</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageId>UAssetAPI</PackageId>
+    <Authors>atenfyr</Authors>
+    <PackageTags>UAssetAPI;UAsset;Asset;Serialization;UE4;UE5;Unreal;UnrealEngine;Modding</PackageTags>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugType>full</DebugType>
+    <DocumentationFile>bin\$(Configuration)\UAssetAPI.xml</DocumentationFile>
+    <NoWarn>1591</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <DebugType>full</DebugType>
+    <DocumentationFile>bin\$(Configuration)\UAssetAPI.xml</DocumentationFile>
+    <NoWarn>1591</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugVerbose|AnyCPU'">
+    <DebugType>full</DebugType>
+    <DocumentationFile>bin\$(Configuration)\UAssetAPI.xml</DocumentationFile>
+    <NoWarn>1591</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugVerbose|x86'">
+    <DebugType>full</DebugType>
+    <DocumentationFile>bin\$(Configuration)\UAssetAPI.xml</DocumentationFile>
+    <NoWarn>1591</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugTracing|AnyCPU'">
+    <DebugType>full</DebugType>
+    <DocumentationFile>bin\$(Configuration)\UAssetAPI.xml</DocumentationFile>
+    <NoWarn>1591</NoWarn>
+    <DefineConstants>ADDTRACING</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugTracing|x86'">
+    <DebugType>full</DebugType>
+    <DocumentationFile>bin\$(Configuration)\UAssetAPI.xml</DocumentationFile>
+    <NoWarn>1591</NoWarn>
+    <DefineConstants>ADDTRACING</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <NoWarn>1591;1701;1702</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <DebugType>pdbonly</DebugType>
+    <NoWarn>1591;1701;1702</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'ReleaseX|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <NoWarn>1591;1701;1702</NoWarn>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseX|x86'">
+    <DebugType>pdbonly</DebugType>
+    <NoWarn>1591;1701;1702</NoWarn>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <Choose>
+    <When Condition="$(DefineConstants.Contains('ADDTRACING'))">
+        <ItemGroup>
+          <PackageReference Include="PostSharp.Patterns.Diagnostics" Version="2026.0.7" />
+        </ItemGroup>
+    </When>
+  </Choose>
+  <Target Name="BeforeBuildMigrated" BeforeTargets="PreBuildEvent">
+    <Exec ContinueOnError="true" ConsoleToMsBuild="true" Command="git rev-parse --short HEAD">
+      <Output TaskParameter="ConsoleOutput" PropertyName="GitCommit" />
+    </Exec>
+    <WriteLinesToFile File="$(ProjectDir)git_commit.txt" Overwrite="true" Lines="$(GitCommit)" />
+  </Target>
+  <Target Name="AfterBuildMigrated" AfterTargets="Build">
+    <Delete Files="$(ProjectDir)git_commit.txt" />
+  </Target>
+  <ItemGroup>
+    <None Remove="repak_bind.dll.gz" />
+    <None Remove="repak_bind.so.gz" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="ZstdSharp.Port" Version="0.8.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="git_commit.txt">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="repak_bind.dll.gz" WithCulture="false">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="repak_bind.so.gz" WithCulture="false">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="Resources\AC7Key.bin" />
+  </ItemGroup>
+</Project>

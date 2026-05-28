@@ -1,0 +1,76 @@
+# FDelegate
+
+Namespace: UAssetAPI.PropertyTypes.Objects
+
+Describes a function bound to an Object.
+
+```csharp
+public class FDelegate
+```
+
+Inheritance [Object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [FDelegate](./uassetapi.propertytypes.objects.fdelegate.md)<br>
+Attributes JsonObjectAttribute
+
+## Fields
+
+### **Object**
+
+References the main actor export
+
+```csharp
+public FPackageIndex Object;
+```
+
+### **Delegate**
+
+The name of the delegate
+
+```csharp
+public FName Delegate;
+```
+
+## Constructors
+
+### **FDelegate(FPackageIndex, FName)**
+
+```csharp
+public FDelegate(FPackageIndex _object, FName delegate)
+```
+
+#### Parameters
+
+`_object` [FPackageIndex](./uassetapi.unrealtypes.fpackageindex.md)<br>
+
+`delegate` [FName](./uassetapi.unrealtypes.fname.md)<br>
+
+### **FDelegate()**
+
+```csharp
+public FDelegate()
+```
+
+### **FDelegate(AssetBinaryReader)**
+
+```csharp
+public FDelegate(AssetBinaryReader reader)
+```
+
+#### Parameters
+
+`reader` [AssetBinaryReader](./uassetapi.assetbinaryreader.md)<br>
+
+## Methods
+
+### **Write(AssetBinaryWriter)**
+
+```csharp
+public int Write(AssetBinaryWriter writer)
+```
+
+#### Parameters
+
+`writer` [AssetBinaryWriter](./uassetapi.assetbinarywriter.md)<br>
+
+#### Returns
+
+[Int32](https://docs.microsoft.com/en-us/dotnet/api/system.int32)<br>
