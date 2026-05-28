@@ -4,7 +4,7 @@ A modding tool for importing the latest Fortnite assets to older Fortnite builds
 
 ## Features
 
-- **Automatic texture assignment** — Extracts asset textures and applies them to the correct materials (may have issues with reskins)
+- **Automatic texture assignment** — Connects exported textures with the correct materials (may have issues with reskins)
 - **Customize asset properties** — Configure metadata like name, description, rarity, and gender for each asset
 - **Preview rendering** — Render a preview in Blender to see how your asset will look in-game (note: Blender and Unreal Engine rendering differs)
 - **Convert PSK to FBX** — Converts exported .psk files from FModel to .fbx format in Blender
