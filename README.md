@@ -82,10 +82,10 @@ Before using this tool, you need to install and configure:
 
 ## Credits
 
-- **UAssetAPI** — Asset handling and parsing library
+- **[UAssetAPI](https://github.com/atenfyr/UAssetAPI)** — Asset handling and parsing library
 - **Win3** — UI framework
-- **QueenIO** — Asset extraction techniques (adapted code with attribution)
-- **AssetRegistryInjector** — Registry injection utilities (adapted code with attribution)
+- **[QueenIO](https://github.com/Code-Vein-Tool-Hub/QueenIO)** — Asset extraction techniques (adapted code with attribution)
+- **[AssetRegistryInjector](https://github.com/Code-Vein-Tool-Hub/AssetRegistryTool)** — Registry injection utilities (adapted code with attribution)
 
 ## License
 
