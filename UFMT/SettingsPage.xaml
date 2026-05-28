@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="UFMT.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:UFMT"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid>
+        <StackPanel Margin="32" Spacing="25">
+            <TextBlock Text="Settings" FontSize="30" FontWeight="Bold"/>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="Unreal Engine Version" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                <ComboBox VerticalAlignment="Center" SelectionChanged="UeVersionChanged" SelectedItem="{x:Bind UeVersion}">
+                    <x:String>UE_4.26</x:String>
+                    <x:String>UE_4.26_FnGameProj</x:String>
+                </ComboBox>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="Blender 4.5 Path" FontSize="18" VerticalAlignment="Center" HorizontalAlignment="Left" Width="130"/>
+                <TextBox Tag="BlenderPath" PlaceholderText="C:\Program Files\Blender Foundation\Blender 4.5\blender-launcher.exe" MaxWidth="800"
+                 VerticalAlignment="Center" HorizontalAlignment="Left" TextChanged="BlenderTextBoxChanged" x:Name="BlenderPathBox"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="UE Executable" FontSize="18" VerticalAlignment="Center" HorizontalAlignment="Left" Width="130"/>
+                <TextBox Tag="BlenderPath" PlaceholderText="C:\Program Files\Epic Games\UE_4.26\Engine\Binaries\Win64\UE4Editor.exe" MaxWidth="800"
+                 VerticalAlignment="Center" HorizontalAlignment="Left" TextChanged="UeExecutableTextBoxChanged" x:Name="UeExecutablePathBox"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="UE Project Path" FontSize="18" VerticalAlignment="Center" HorizontalAlignment="Left" Width="130"/>
+                <TextBox Tag="BlenderPath" PlaceholderText="C:\Users\example\Unreal Projects\UFMT\UFMT.uproject" MaxWidth="800"
+                 VerticalAlignment="Center" HorizontalAlignment="Left" TextChanged="UeProjectTextBoxChanged" x:Name="UeProjectPathBox"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Page>

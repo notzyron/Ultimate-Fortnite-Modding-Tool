@@ -1,0 +1,215 @@
+<Page
+    x:Class="UFMT.SkinsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:UFMT"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <Grid>
+        <ScrollViewer>
+            <StackPanel Margin="32" Spacing="32">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Skins Path" FontSize="20" FontWeight="SemiBold"/>
+                    <TextBlock Text="The directory where your skin folders are saved." 
+                                       Margin="0,0,0,8" Foreground="LightGray" FontSize="15"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBox x:Name="SkinsPathBox" Width="500" TextChanged="SkinsPathBox_TextChanged"
+                                PlaceholderText="C:\Users\Example\Desktop\CustomSkins"/>
+                        <Button Content="Browse" x:Name="SkinsPathBrowse" Click="BrowseButton_Click"
+                                 VerticalAlignment="Bottom"/>
+                        <Button Content="Create a skin folder" Style="{StaticResource AccentButtonStyle}"
+                                 Click="CreateSkinFolder_Click" VerticalAlignment="Bottom"/>
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Input Path" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Text="The directory where your skin's assets are saved."
+                                       Foreground="LightGray" FontSize="15" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBox x:Name="InputPathBox" Width="500" TextChanged="InputPathBox_TextChanged"
+                                PlaceholderText="C:\Users\Example\Desktop\CustomSkins\Cyclone"/>
+                        <Button Content="Browse" x:Name="InputPathBrowse" Click="BrowseButton_Click"
+                                VerticalAlignment="Bottom"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Spacing="0">
+                    <TextBlock Text="Materials and Textures" FontSize="20" FontWeight="SemiBold"/>
+                    <Border Height="10"/>
+                    <ListView x:Name="DynamicExpanderList" SelectionMode="None">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="local:MaterialDropdown">
+                                <Expander Header="{x:Bind Name}" HorizontalAlignment="Stretch" Margin="0,0,0,12">
+                                    <StackPanel Spacing="12" Padding="16">
+                                        <Grid RowSpacing="8" ColumnSpacing="20">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="160"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Text="Diffuse Texture" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"
+                                                    FontSize="16"/>
+                                            <ComboBox ItemsSource="{Binding TextureOptions}" 
+                          SelectedItem="{Binding SelectedDiffuse, Mode=TwoWay}"
+                          Grid.Row="0" Grid.Column="1" HorizontalAlignment="Stretch"
+                          PlaceholderText="Select Texture..."
+                          Tag="{x:Bind DiffuseTag}" SelectionChanged="ComboBoxChanged"/>
+
+                                            <TextBlock Text="Mask Texture" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"
+                                                    FontSize="16"/>
+                                            <ComboBox ItemsSource="{Binding TextureOptions}"
+                          SelectedItem="{Binding SelectedMask, Mode=TwoWay}"
+                          Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch"
+                          PlaceholderText="Select Texture..."
+                          Tag="{x:Bind MaskTag}" SelectionChanged="ComboBoxChanged"/>
+
+                                            <TextBlock Text="Normal Texture" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"
+                                                    FontSize="16"/>
+                                            <ComboBox ItemsSource="{Binding TextureOptions}"
+                          SelectedItem="{Binding SelectedNormal, Mode=TwoWay}"
+                          Grid.Row="2" Grid.Column="1" HorizontalAlignment="Stretch"
+                          PlaceholderText="Select Texture..."
+                          Tag="{x:Bind NormalTag}" SelectionChanged="ComboBoxChanged"/>
+
+                                            <TextBlock Text="Specular Texture" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"
+                                                    FontSize="16"/>
+                                            <ComboBox ItemsSource="{Binding TextureOptions}"
+                          SelectedItem="{Binding SelectedSpecular, Mode=TwoWay}"
+                          Grid.Row="3" Grid.Column="1" HorizontalAlignment="Stretch"
+                          PlaceholderText="Select Texture..."
+                          Tag="{x:Bind SpecularTag}" SelectionChanged="ComboBoxChanged"/>
+
+                                            <TextBlock Text="SwizzleRougnessToGreen" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center"
+                                                    FontSize="14.5"/>
+                                            <CheckBox Grid.Row="4" Grid.Column="1" VerticalAlignment="Center" MinWidth="0"
+                          IsChecked="{x:Bind IsSwizzled, Mode=TwoWay}"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Expander>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <TextBlock Text="SwizzleRougnessToGreen for all materials" 
+                                FontSize="16" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        <CheckBox HorizontalAlignment="Left" x:Name="allSwizzleCheckBox"
+                                VerticalAlignment="Center" MinWidth="0" Checked="AllSwizzleChecked"
+                                Unchecked="AllSwizzleUnchecked" Tag="AllSwizzleTag" IsChecked="{x:Bind AllSwizzleCheckBoxValue, Mode=TwoWay}"/>
+
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Spacing="20">
+                    <TextBlock Text="Skin Settings" FontSize="20" FontWeight="SemiBold"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="6, 0, 0, 0">
+                        <TextBlock Text="Skin name" 
+                                FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBox Width="300" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                PlaceholderText="Name" MaxLength="35" x:Name="characterNameTextBox"
+                                TextChanged="CharacterTextBoxChanged" Tag="characterName"/>
+                        <Border Width="5"/>
+                        <TextBlock Text="Skin description" 
+                                FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBox Width="300" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                PlaceholderText="Description" MaxLength="100" x:Name="characterDescriptionTextBox"
+                                TextChanged="CharacterTextBoxChanged" Tag="characterDescription"/>
+                        <Border Width="5"/>
+                        <TextBlock Text="Skin CID" 
+                                FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBox Width="300" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                PlaceholderText="CID_Example" MaxLength="35" x:Name="characterCIDTextBox"
+                                TextChanged="CharacterTextBoxChanged" Tag="characterCID"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="6, 0, 0, 0">
+                        <TextBlock Text="Gender" 
+                                FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ComboBox
+                                PlaceholderText="Select The gender..."
+                                Tag="gender" SelectionChanged="ComboBoxChanged" x:Name="genderComboBox">
+                            <x:String>Male</x:String>
+                            <x:String>Female</x:String>
+                        </ComboBox>
+                        <Border Width="25"/>
+                        <TextBlock Text="Rarity" 
+                                FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ComboBox
+                                PlaceholderText="Select The rarity..."
+                                Tag="rarity" SelectionChanged="ComboBoxChanged" x:Name="rarityComboBox">
+                            <x:String>Common</x:String>
+                            <x:String>Uncommon</x:String>
+                            <x:String>Rare</x:String>
+                            <x:String>Epic</x:String>
+                            <x:String>Legendary</x:String>
+                            <x:String>Mythic</x:String>
+                        </ComboBox>
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Preview" FontSize="20" FontWeight="SemiBold"/>
+                    <Button Content="Render" Foreground="SkyBlue"  Click="RenderButton_Click"
+                             FontSize="15"/>
+                    <Viewbox Stretch="Uniform">
+                        <Grid Width="2560" Height="1440">
+                            <Image x:Name="previewImageBackground" Stretch="Uniform"
+                                Source="ms-appx:///Assets/Locker_empty.png"/>
+
+                            <Image x:Name="characterPreview" Stretch="Uniform" />
+
+                            <Canvas>
+                                <Image x:Name="iconPreview" Stretch="Uniform" Width="210"
+                                    Canvas.Left="72" Canvas.Top="322"/>
+                                <TextBlock x:Name="characterNameText" Canvas.Left="1048" Canvas.Top="1200" Width="1000"
+                                    TextAlignment="Right" Text="ABCDEFGHIJKLMNOPQRSTUVXYWZ" Foreground="White" FontSize="57"
+                                    FontFamily="ms-appx:///Assets/Fonts/BurbankBigRegular-Black.otf#BurbankBigRegular-Black">
+                                    <TextBlock.RenderTransform>
+                                        <SkewTransform AngleX="-10"/>
+                                        <!--Makes it italic-->
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                            </Canvas>
+
+                            <Image Stretch="Uniform"
+                                Source="ms-appx:///Assets/IconCover.png"/>
+
+                            <Image Stretch="Uniform"
+                                Source="ms-appx:///Assets/Locker_overlay.png"/>
+
+                            <Image Stretch="Uniform" x:Name="iconRarityOverlay" Opacity="0.85"
+                                Source="ms-appx:///Assets/Common_Icon.png"/>
+
+                            <Image Stretch="Uniform" x:Name="textRarityOverlay"
+                                Source="ms-appx:///Assets/Common_Text.png"/>
+
+                        </Grid>
+                    </Viewbox>
+                </StackPanel>
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Export settings" FontSize="20" FontWeight="SemiBold" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Export" Foreground="Gold" Click="ExportButton_Click"
+                                VerticalAlignment="Bottom" FontSize="15"/>
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+        <ContentDialog x:Name="CreateFolderDialog"
+                       Title="New Skin Folder"
+                       SecondaryButtonClick="CreateFolderDialog_SecondaryButtonClick"
+                       SecondaryButtonText="Create" PrimaryButtonText="Cancel" DefaultButton="Secondary">
+            <StackPanel Spacing="10" Margin="0,10,0,0">
+                <TextBlock Text="Enter the codename of your skin (this will be the name of the created folder)"
+                TextWrapping="Wrap"/>
+                <TextBox x:Name="CodenameFolderCreateTextBox" 
+                         PlaceholderText="Cyclone"
+                         HorizontalAlignment="Stretch" MaxLength="30"/>
+            </StackPanel>
+        </ContentDialog>
+    </Grid>
+</Page>

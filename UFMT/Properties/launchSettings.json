@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "UFMT (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "UFMT (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
