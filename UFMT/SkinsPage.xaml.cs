@@ -330,7 +330,6 @@ namespace UFMT
             try
             {
                 ConvertPskToFbx();
-                ConsoleWriteLineSuccess($"DONE! Successfully The skin!");
             }
             catch (Exception ex)
             {
@@ -1633,13 +1632,8 @@ namespace UFMT
                 if (_isSwizzled != value)
                 {
                     _isSwizzled = value;
-                    Console.WriteLine($"The swizzle tag is {SwizzleTag.Replace("_Swizzle", "")}");
-                    Console.WriteLine($"The length of materialsSwizzle is {MaterialsSwizzle.Count}");
                     MaterialsSwizzle.Keys.ToList().ForEach(mat => Console.WriteLine($"Swizzle material: {mat}"));
                     MaterialsSwizzle[SwizzleTag.Replace("_Swizzle", "")] = value;
-                    Console.WriteLine($"Swizzled changed to {value} for: {SwizzleTag}");
-                    Console.WriteLine($"The value in AllSwizzleMaterials is " +
-                    $"{value}");
 
                     OnPropertyChanged();
                     ParentPage?.UpdateAllSwizzleCheckBoxState();
