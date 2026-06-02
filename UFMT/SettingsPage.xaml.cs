@@ -20,6 +20,7 @@ namespace UFMT;
 public sealed partial class SettingsPage : Page
 {
     public string UeVersion = App.UeVersion;
+    public string FnVersion = "v" + App.FnVersion;
     public SettingsPage()
     {
         InitializeComponent();
@@ -79,5 +80,14 @@ public sealed partial class SettingsPage : Page
         AppSettings.SetValue("UeVersion", c.SelectedItem.ToString());
         UeVersion = c.SelectedItem.ToString();
         App.UeVersion = c.SelectedItem.ToString();
+    }
+
+    private void FnVersionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var c = sender as ComboBox;
+        string onlyVersion = c.SelectedItem.ToString().Replace("v", "");
+        AppSettings.SetValue("FnVersion", onlyVersion);
+        FnVersion = onlyVersion;
+        App.FnVersion = onlyVersion;
     }
 }

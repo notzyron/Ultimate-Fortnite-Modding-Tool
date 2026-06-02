@@ -10,34 +10,38 @@ if not json_path or not os.path.exists(json_path):
     unreal.log_error("Critical Error: JSON data path was not found in environment variables.")
     sys.exit(1)
 
-# Because we used memory, Python doesn't care about slashes or spaces!
 with open(json_path, 'r', encoding='utf-8') as f:
     data = json.load(f)
 
-fbx_paths     = data.get("FbxPaths")
-material_names = data.get("Materials")
-diffuse_textures  = data.get("DiffuseTextures")
-mask_textures  = data.get("MaskTextures")
-normal_textures  = data.get("NormalTextures")
-specular_textures  = data.get("SpecularTextures")
-code_name = data.get("CodeName")
-asset_names    = data.get("MeshNames")
-icon_textures = data.get("IconTextures")
-cid = data.get("CID")
+fbx_paths             = data.get("FbxPaths")
+material_names        = data.get("Materials")
+diffuse_textures      = data.get("DiffuseTextures")
+mask_textures         = data.get("MaskTextures")
+normal_textures       = data.get("NormalTextures")
+specular_textures     = data.get("SpecularTextures")
+code_name             = data.get("CodeName")
+asset_names           = data.get("MeshNames")
+icon_textures         = data.get("IconTextures")
+cid                   = data.get("CID")
+lobby_animation_fbx_path = data.get("LobbyAnimationFbxPath")
+retarget_source = data.get("RetargetSource")
 
 fbx_destination_path = f"/Game/CustomSkins/{code_name}/Meshes"
 tex_destination_path = f"/Game/CustomSkins/{code_name}/Textures"
-mi_destination_path = f"/Game/CustomSkins/{code_name}/Materials"
+mi_destination_path  = f"/Game/CustomSkins/{code_name}/Materials"
 EXISTING_SKELETON_PATH = None
+
 
 def delete_directory_if_exists(path):
     if unreal.EditorAssetLibrary.does_directory_exist(path):
         unreal.EditorAssetLibrary.delete_directory(path)
         unreal.log(f"Deleted existing directory: {path}")
 
+
 delete_directory_if_exists(fbx_destination_path)
 delete_directory_if_exists(tex_destination_path)
 delete_directory_if_exists(mi_destination_path)
+
 
 def import_psk(fbx_path, asset_name):
     skel_data = unreal.FbxSkeletalMeshImportData()
@@ -50,13 +54,13 @@ def import_psk(fbx_path, asset_name):
     skel_data.set_editor_property("convert_scene_unit",  False)
 
     ui = unreal.FbxImportUI()
-    ui.import_as_skeletal  = True
-    ui.import_mesh         = True
-    ui.import_animations   = False
-    ui.import_materials    = False
-    ui.import_textures     = True
+    ui.import_as_skeletal   = True
+    ui.import_mesh          = True
+    ui.import_animations    = False
+    ui.import_materials     = False
+    ui.import_textures      = True
     ui.create_physics_asset = False
-    ui.mesh_type_to_import = unreal.FBXImportType.FBXIT_SKELETAL_MESH
+    ui.mesh_type_to_import  = unreal.FBXImportType.FBXIT_SKELETAL_MESH
     ui.skeletal_mesh_import_data = skel_data
 
     if None:
@@ -81,6 +85,7 @@ def import_psk(fbx_path, asset_name):
     else:
         unreal.log_error("FAILED — no assets imported.")
 
+
 def create_material_instance(mi_name):
     factory = unreal.MaterialInstanceConstantFactoryNew()
 
@@ -100,6 +105,7 @@ def create_material_instance(mi_name):
 
     return material_instance
 
+
 def apply_materials_to_mesh(asset_name):
     mesh_path = f"{fbx_destination_path}/{asset_name}"
     mesh = unreal.load_asset(mesh_path)
@@ -111,8 +117,8 @@ def apply_materials_to_mesh(asset_name):
     materials = mesh.materials
     for i, skeletal_material in enumerate(materials):
         slot_name = str(skeletal_material.material_slot_name)
-        mi_path = f"{mi_destination_path}/{slot_name}"
-        mi = unreal.load_asset(mi_path)
+        mi_path   = f"{mi_destination_path}/{slot_name}"
+        mi        = unreal.load_asset(mi_path)
         if mi:
             skeletal_material.material_interface = mi
             materials[i] = skeletal_material
@@ -123,9 +129,10 @@ def apply_materials_to_mesh(asset_name):
     mesh.materials = materials
     unreal.EditorAssetLibrary.save_loaded_asset(mesh)
 
+
 def create_anim_blueprint(anim_bp_name, skeleton_asset_name):
     template_path = "/Game/AnimBP_Template"
-    new_path = f"{fbx_destination_path}/{anim_bp_name}"
+    new_path      = f"{fbx_destination_path}/{anim_bp_name}"
 
     if unreal.EditorAssetLibrary.does_asset_exist(new_path):
         unreal.EditorAssetLibrary.delete_asset(new_path)
@@ -143,7 +150,7 @@ def create_anim_blueprint(anim_bp_name, skeleton_asset_name):
         return
 
     skeleton_path = f"{fbx_destination_path}/{skeleton_asset_name}"
-    skeleton = unreal.load_asset(skeleton_path)
+    skeleton      = unreal.load_asset(skeleton_path)
 
     if not skeleton:
         unreal.log_error(f"FAILED — could not load skeleton: {skeleton_path}")
@@ -153,6 +160,7 @@ def create_anim_blueprint(anim_bp_name, skeleton_asset_name):
     unreal.EditorAssetLibrary.save_loaded_asset(anim_bp)
     unreal.log(f"SUCCESS => {new_path}")
 
+
 def import_texture(texture_path, texture_type):
     task                  = unreal.AssetImportTask()
     task.filename         = texture_path
@@ -160,20 +168,19 @@ def import_texture(texture_path, texture_type):
     task.destination_name = Path(texture_path).stem
     task.replace_existing = True
     task.automated        = True
-    task.save             = False  # don't save yet
-    task.save             = False  # don't save yet
+    task.save             = False
 
     unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
 
     if task.imported_object_paths:
         asset_path = task.imported_object_paths[0]
-        texture = unreal.load_asset(asset_path)
+        texture    = unreal.load_asset(asset_path)
         if texture_type == "diffuse":
             texture.lod_group = unreal.TextureGroup.TEXTUREGROUP_CHARACTER
         elif texture_type == "specular":
             texture.compression_settings = unreal.TextureCompressionSettings.TC_MASKS
-            texture.lod_group = unreal.TextureGroup.TEXTUREGROUP_CHARACTER_SPECULAR
-            texture.srgb = False
+            texture.lod_group            = unreal.TextureGroup.TEXTUREGROUP_CHARACTER_SPECULAR
+            texture.srgb                 = False
         elif texture_type == "normal":
             texture.lod_group = unreal.TextureGroup.TEXTUREGROUP_CHARACTER_NORMAL_MAP
         elif texture_type == "icon":
@@ -183,11 +190,14 @@ def import_texture(texture_path, texture_type):
     else:
         unreal.log_error(f"FAILED => {texture_path}")
 
+
 def create_fake_cid():
     template_path = "/Game/CID_Template"
-    new_path = f"/Game/CustomSkins/{code_name}/{cid}"
+    new_path      = f"/Game/CustomSkins/{code_name}/{cid}"
 
-    existing_assets = unreal.EditorAssetLibrary.list_assets(f"/Game/CustomSkins/{code_name}", recursive=False)
+    existing_assets = unreal.EditorAssetLibrary.list_assets(
+        f"/Game/CustomSkins/{code_name}", recursive=False
+    )
     for asset_path in existing_assets:
         asset = unreal.load_asset(asset_path)
         if isinstance(asset, unreal.Blueprint):
@@ -202,6 +212,65 @@ def create_fake_cid():
         unreal.log(f"SUCCESS => {new_path}")
     else:
         unreal.log_error(f"FAILED — could not create fake cid: {cid}")
+
+
+def import_animation(fbx_path):
+    skeleton_asset_path = "/Game/Characters/Player/Male/Male_Avg_Base/Fortnite_M_Avg_Player_Skeleton"
+    skeleton = unreal.load_asset(skeleton_asset_path)
+    if not skeleton:
+        unreal.log_error(f"FAILED — could not load skeleton: {skeleton_asset_path}")
+        return
+
+    anim_data = unreal.FbxAnimSequenceImportData()
+    anim_data.set_editor_property("import_translation", unreal.Vector(0.0, 0.0, 0.0))
+    anim_data.set_editor_property("import_rotation", unreal.Rotator(0.0, 0.0, 0.0))
+    anim_data.set_editor_property("import_uniform_scale", 1.0)
+    anim_data.set_editor_property("convert_scene", True)
+    anim_data.set_editor_property("force_front_x_axis", False)
+    anim_data.set_editor_property("convert_scene_unit", False)
+
+    ui = unreal.FbxImportUI()
+
+
+    ui.mesh_type_to_import = unreal.FBXImportType.FBXIT_ANIMATION
+
+    ui.automated_import_should_detect_type = False
+
+    ui.import_mesh = False  # no mesh
+    ui.import_animations = True  # animation track only
+    ui.import_as_skeletal = False  # not a skeletal-mesh import path
+    ui.import_materials = False
+    ui.import_textures = False
+    ui.create_physics_asset = False
+    ui.skeleton = skeleton  # required, UE won't import without it
+    ui.anim_sequence_import_data = anim_data  # animation transform/scale settings
+
+    task = unreal.AssetImportTask()
+    task.filename = fbx_path
+    task.destination_path = f"/Game/CustomSkins/{code_name}/Animations"
+    task.destination_name = f"{code_name}_Lobby_Animation"
+    task.replace_existing = True
+    task.automated = True
+    task.save = True
+    task.options = ui
+
+    unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
+
+    if task.imported_object_paths:
+        for path in task.imported_object_paths:
+            unreal.log(f"SUCCESS => {path}")
+
+            anim_sequence = unreal.load_asset(path)
+            if anim_sequence and isinstance(anim_sequence, unreal.AnimSequence):
+                anim_sequence.set_editor_property("retarget_source", unreal.Name(retarget_source))
+
+                unreal.EditorAssetLibrary.save_loaded_asset(anim_sequence)
+                unreal.log(f"RETARGET SOURCE SET => '{retarget_source}' on {path}")
+            else:
+                unreal.log_error(f"FAILED to cast or load asset as AnimSequence: {path}")
+    else:
+        unreal.log_error(f"FAILED — no animation imported from {fbx_path}")
+
 
 for i in range(len(material_names)):
     create_material_instance(material_names[i])
@@ -228,6 +297,9 @@ for i in range(len(icon_textures)):
         import_texture(icon_textures[i], "icon")
 
 create_fake_cid()
+
+if lobby_animation_fbx_path != "":
+    import_animation(lobby_animation_fbx_path)
 
 unreal.EditorLoadingAndSavingUtils.save_dirty_packages(
     save_map_packages=False,

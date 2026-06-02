@@ -23,7 +23,7 @@ psa_path = data.get("LobbyAnimPath")
 head_psk = data.get("HeadPsk")
 
 
-bpy.context.scene.frame_set(60)
+bpy.context.scene.frame_set(25)
 character_collection = bpy.data.collections.new("CharacterCollection")
 bpy.context.scene.collection.children.link(character_collection)
 default_collection = bpy.data.collections.get("Collection")
