@@ -48,8 +48,9 @@ Before using this tool, you need to install and configure:
 ### Setup
 
 1. Click **"Create Skin Folder"** and enter your skin's codename (e.g., `QuarterClaspZoom` from the Character ID)
-2. Place your exported meshes in `[skin codename]/Source/` (name them descriptively, e.g., `Body.psk`)
+2. Place your exported .psk meshes in `[skin codename]/Source/` (name them descriptively, e.g., `Body.psk`)
 3. Place textures and icons in `[skin codename]/Source/Textures/`
+4. If your skin has a custom lobby pose, place the exported .psa lobby animation of your skin in [skin codename]/Source/Lobby_Animation
 
 ### Configure & Preview
 
