@@ -17,8 +17,10 @@
 		<AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
 		
 		<!--Comment out these 2 lines if you're debugging-->
+		<!--
 		<DebugSymbols>false</DebugSymbols>
 		<DebugType>none</DebugType>
+		-->
 
 		<EnableMsixTooling>true</EnableMsixTooling>
 	</PropertyGroup>

@@ -29,11 +29,13 @@ if armature:
         with open(meta_path, "w") as f:
             f.write(str(end_frame))
 
-    bpy.ops.export_scene.fbx(
+    bpy.ops.better_export.fbx(
         filepath=export_path,
-        global_scale=0.01,
-        use_selection=False
+        my_scale=0.01,
+        use_optimize_for_game_engine = False,
+        use_edge_crease = False,
     )
+    
 else:
     desktop = os.path.join(os.path.expanduser("~"), "Desktop")
     with open(os.path.join(desktop, "error.txt"), "w") as f:

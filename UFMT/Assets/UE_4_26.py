@@ -177,6 +177,8 @@ def import_texture(texture_path, texture_type):
         texture    = unreal.load_asset(asset_path)
         if texture_type == "diffuse":
             texture.lod_group = unreal.TextureGroup.TEXTUREGROUP_CHARACTER
+            texture.compression_settings = unreal.TextureCompressionSettings.TC_DEFAULT #Change the texture to default
+            #since it changed some textures to normalmap for some reason
         elif texture_type == "specular":
             texture.compression_settings = unreal.TextureCompressionSettings.TC_MASKS
             texture.lod_group            = unreal.TextureGroup.TEXTUREGROUP_CHARACTER_SPECULAR
