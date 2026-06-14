@@ -21,6 +21,8 @@ normal_textures       = data.get("NormalTextures")
 specular_textures     = data.get("SpecularTextures")
 code_name             = data.get("CodeName")
 asset_names           = data.get("MeshNames")
+physics_mesh_names   = data.get("PhysicsMeshNames")
+physics_asset_paths   = data.get("PhysicsAssetsPaths")
 icon_textures         = data.get("IconTextures")
 cid                   = data.get("CID")
 lobby_animation_fbx_path = data.get("LobbyAnimationFbxPath")
@@ -130,8 +132,7 @@ def apply_materials_to_mesh(asset_name):
     unreal.EditorAssetLibrary.save_loaded_asset(mesh)
 
 
-def create_anim_blueprint(anim_bp_name, skeleton_asset_name):
-    template_path = "/Game/AnimBP_Template"
+def create_anim_blueprint(anim_bp_name, skeleton_asset_name, template_path="/Game/AnimBP_Template"):
     new_path      = f"{fbx_destination_path}/{anim_bp_name}"
 
     if unreal.EditorAssetLibrary.does_asset_exist(new_path):
@@ -274,13 +275,59 @@ def import_animation(fbx_path):
         unreal.log_error(f"FAILED — no animation imported from {fbx_path}")
 
 
+def run_physics_importer(mesh_asset_name, json_path):
+    physics_dest_path = f"/Game/CustomSkins/{code_name}/Meshes"
+    physics_asset_name = f"{Path(json_path).stem}"
+    skeletal_mesh_path = f"{physics_dest_path}/{mesh_asset_name}"
+
+    physics_json_path = json_path
+
+    with open(physics_json_path, 'r', encoding='utf-8') as f:
+        json_content_string = f.read()
+
+    physics_asset = None
+    try:
+        physics_asset = unreal.PhysicsImporter.import_physics_asset(
+            json_content_string,
+            physics_dest_path,
+            physics_asset_name,
+            skeletal_mesh_path
+        )
+
+        if physics_asset:
+            unreal.log(f"SUCCESS => Created Physics Asset: {physics_dest_path}/{physics_asset_name}")
+            unreal.log(f"SUCCESS => Linked to Skeletal Mesh: {skeletal_mesh_path}")
+        else:
+            unreal.log_error("FAILED — Importer returned null. Check if JSON data matches internal structural exports.")
+
+
+    except Exception as e:
+        unreal.log_error(f"FAILED — Execution error trying to call PhysicsImporter: {str(e)}")
+
+    return physics_asset
+
 for i in range(len(material_names)):
     create_material_instance(material_names[i])
 
 for i in range(len(fbx_paths)):
     import_psk(fbx_paths[i], asset_names[i])
-    create_anim_blueprint(f"{asset_names[i]}_AnimBP", f"{asset_names[i]}_Skeleton")
     apply_materials_to_mesh(asset_names[i])
+    if asset_names[i] in physics_mesh_names:
+        create_anim_blueprint(f"{asset_names[i]}_AnimBP", f"{asset_names[i]}_Skeleton")
+        mesh = unreal.EditorAssetLibrary.load_asset(f"{fbx_destination_path}/{asset_names[i]}")
+        anim_bp = unreal.EditorAssetLibrary.load_asset(f"{fbx_destination_path}/{asset_names[i]}_AnimBP")
+        physics_assets = []
+        for physics_asset_path in physics_asset_paths[i]:
+            physics_asset = run_physics_importer(asset_names[i], physics_asset_path)
+            physics_assets.append(physics_asset)
+
+        mesh.set_editor_property("post_process_anim_blueprint", unreal.load_class(None, f"{fbx_destination_path}/{asset_names[i]}_AnimBP.{asset_names[i]}_AnimBP_C"))
+        unreal.EditorAssetLibrary.save_asset(f"{fbx_destination_path}/{asset_names[i]}")
+        unreal.PhysicsImporter.build_rigid_body_anim_graph(anim_bp, physics_assets)
+        unreal.EditorAssetLibrary.save_loaded_asset(anim_bp)
+
+    else:
+        create_anim_blueprint(f"{asset_names[i]}_AnimBP", f"{asset_names[i]}_Skeleton")
 
 for i in range(len(diffuse_textures)):
     import_texture(diffuse_textures[i], "diffuse")

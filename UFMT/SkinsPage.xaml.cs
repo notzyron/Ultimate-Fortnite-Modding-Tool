@@ -20,6 +20,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -61,6 +62,7 @@ namespace UFMT
         private static string PsaConvertScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "Blender_ConvertPsa.py");
         private static string RenderScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "Blender_RenderPreview.py");
         private static string UeScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "UE_4_26.py").Replace("\\", "/");
+        private static string PhysicsImporterPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PhysicsImporter.zip");
         private static string CookedAssetsPath;
         private static string ValidCodenameCharacters = "abcdefghijklmnopqrstuvwxyz1234567890_";
         private static string CurrentSkinPath = string.Empty;
@@ -72,6 +74,7 @@ namespace UFMT
         private static string SourcePath = string.Empty;
         private static string MeshesPath = string.Empty;
         private static string TexturesPath = string.Empty;
+        private static string PhysicsPath = string.Empty;
         private static string LobbyAnimationPath = string.Empty;
         private static float LobbyAnimationLength = 0;
         private static List<string> Materials = new();
@@ -222,6 +225,9 @@ namespace UFMT
             {
                 CookedAssetsPath = Path.Combine(Path.GetDirectoryName(App.UeProjectPath),
                 "Saved", "Cooked", "WindowsNoEditor", new DirectoryInfo(Path.GetDirectoryName(App.UeProjectPath)).Name, "Content");
+
+                string pluginsPath = Path.Combine(Path.GetDirectoryName(App.UeProjectPath), "Plugins", "PhysicsImporter");
+                if (!Path.Exists(pluginsPath)) ZipFile.ExtractToDirectory(PhysicsImporterPath, pluginsPath);
             }
         }
 
@@ -428,26 +434,19 @@ namespace UFMT
             Directory.CreateDirectory(Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text));
             ConsoleWriteLineSuccess($"Successfully created {CodenameFolderCreateTextBox.Text} folder at " +
             $"{SkinsPathBox.Text}");
-
-            Directory.CreateDirectory(Path.Combine
-            (SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Meshes", "Body"));
-            ConsoleWriteLineSuccess($"Successfully created Body folder at " +
-            $"{Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Meshes")}");
-
-            Directory.CreateDirectory(Path.Combine
-            (SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Meshes", "Head"));
-            ConsoleWriteLineSuccess($"Successfully created Head folder at " +
-            $"{Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Meshes")}");
-
-            Directory.CreateDirectory(Path.Combine
-            (SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Meshes", "Faceacc"));
-            ConsoleWriteLineSuccess($"Successfully created Faceacc folder at " +
-            $"{Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Meshes")}");
-
-            Directory.CreateDirectory(Path.Combine
-            (SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Meshes", "Hat"));
-            ConsoleWriteLineSuccess($"Successfully created Hat folder at " +
-            $"{Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Meshes")}");
+            
+            string[] cpTypes = {"Body", "Head", "Faceacc", "Hat" };
+            string[] cpTypeFolders = {"Meshes", "Physics" };
+            foreach (string cpType in cpTypes)
+            {
+                foreach (string cpTypeFolder in cpTypeFolders)
+                {
+                    Directory.CreateDirectory(Path.Combine
+                    (SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", cpTypeFolder, cpType));
+                    ConsoleWriteLineSuccess($"Successfully created {cpType} folder at " +
+                    $"{Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", cpTypeFolder)}");
+                }
+            }
 
             Directory.CreateDirectory(Path.Combine
             (SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Textures"));
@@ -628,6 +627,7 @@ namespace UFMT
             characterCIDTextBox.Text = CurrentSkin.CID;
             TexturesPath = Path.Combine(SourcePath, "Textures");
             LobbyAnimationPath = Path.Combine(SourcePath, "Lobby_Animation");
+            PhysicsPath = Path.Combine(SourcePath, "Physics");
 
             foreach (string meshFolder in Directory.GetDirectories(MeshesPath))
             {
@@ -690,6 +690,10 @@ namespace UFMT
                     }
                 }
                 currentCp.PskPath = pskPath;
+
+                List<string> jsonFiles = Directory.GetFiles(Path.Combine(PhysicsPath, currentCp.Type[0].ToString().ToUpper() + currentCp.Type.Substring(1)), "*.json").ToList();
+                jsonFiles.ForEach(json => { currentCp.PhysicsAssetJsonPaths.Add(json); Console.WriteLine
+                ($"Added {Path.GetFileNameWithoutExtension(json)} to {Path.GetFileNameWithoutExtension(pskPath)}"); });
                 CharacterParts.Add(currentCp);
                 ConsoleWriteLineSuccess($"{Path.GetFileName(pskPath)} is a {currentCp.Type} character part type!");
             }
@@ -728,6 +732,7 @@ namespace UFMT
             {
                 CharacterParts[i].PskPath = string.Empty;
                 CharacterParts[i].FbxPath = string.Empty;
+                CharacterParts[i].PhysicsAssetJsonPaths.Clear();
             }
             Materials.Clear();
             Textures.Clear();
@@ -742,6 +747,7 @@ namespace UFMT
             CurrentSkin.LobbyAnimationFbx = string.Empty;
             characterCIDTextBox.Text = CurrentSkin.CID;
             TexturesPath = string.Empty;
+            PhysicsPath = string.Empty;
             CharacterParts.Clear();
             MaterialDropdowns.Clear();
             LobbyAnimationLength = 0;
@@ -1159,6 +1165,11 @@ namespace UFMT
                     File.WriteAllBytes(animBpTemplatePath, Convert.FromBase64String(AnimBPBase64));
                     ConsoleWriteLineSuccess($"Created an Animation Blueprint template!");
                 }
+                if (!File.Exists(animBpTemplatePath))
+                {
+                    File.WriteAllBytes(animBpTemplatePath, Convert.FromBase64String(AnimBPBase64));
+                    ConsoleWriteLineSuccess($"Created an Animation Blueprint template!");
+                }
                 if (!File.Exists(fakeCIDTemplatePath))
                 {
                     File.WriteAllBytes(fakeCIDTemplatePath, Convert.FromBase64String(FakeCIDBase64));
@@ -1200,6 +1211,8 @@ namespace UFMT
                 var unrealData = new UnrealExportData()
                 {
                     FbxPaths = CharacterParts.Select(cp => $"{cp.FbxPath}.fbx").ToList(),
+                    PhysicsMeshNames = CharacterParts.Where(cp => cp.PhysicsAssetJsonPaths.Count > 0).ToList().Select(cp => Path.GetFileNameWithoutExtension(cp.FbxPath)).ToList(),
+                    PhysicsAssetsPaths = CharacterParts.Select(cp => cp.PhysicsAssetJsonPaths).ToList(),
                     DiffuseTextures = diffuseTexturePaths,
                     MaskTextures = maskTexturePaths,
                     NormalTextures = normalTexturePaths,
@@ -1398,6 +1411,7 @@ namespace UFMT
                 FaceAcc.uexpFileBase64 = FaceAccCpMaleUexpBase64;
             }
 
+            //Character part creation
             foreach (CharacterPart cp in CharacterParts)
             {
                 Console.WriteLine($"Currently editing the {cp.Type} of the skin");
@@ -1435,6 +1449,7 @@ namespace UFMT
                 $"CP_{cp.Type}_{CurrentSkin.CodeName}.uexp");
             }
 
+            //Material creation
             foreach (string material in Materials)
             {
                 string uassetMaterialPath = Path.Combine(materialsPath, $"{material}.uasset");
@@ -1628,7 +1643,7 @@ namespace UFMT
             Console.WriteLine($"Changed the DisplayName in {CurrentSkin.CID} to {CurrentSkin.Name}");
             ((TextPropertyData)cidExport0["Description"]).CultureInvariantString.Value = CurrentSkin.Description;
             Console.WriteLine($"Changed the Description in {CurrentSkin.CID} to {CurrentSkin.Description}");
-            string displayNameKey = Guid.NewGuid().ToString("N").ToUpper(); //Generates a new key for the display name since multiple display names can't use the same key.
+            string displayNameKey = Guid.NewGuid().ToString("N").ToUpper(); //Generates a new key for the display name since multiple display names can't use the same key
             string descriptionKey = Guid.NewGuid().ToString("N").ToUpper();
             ((TextPropertyData)cidExport0["DisplayName"]).Value.Value = displayNameKey;
             ((TextPropertyData)cidExport0["Description"]).Value.Value = descriptionKey;
@@ -1653,8 +1668,10 @@ namespace UFMT
             idleAnimationExport0.ObjectName.Value.Value = $"{CurrentSkin.CodeName}_Idle_Montage";
             idleAnimationImport[1].ObjectName.Value.Value = $"{CurrentSkin.CodeName}_Lobby_Animation";
             idleAnimationImport[1].ObjectName.Number = 0;
+            Console.WriteLine($"Changed the animation name in {CurrentSkin.CodeName}_Idle_Montage to {CurrentSkin.CodeName}_Lobby_Animation");
             idleAnimationImport[3].ObjectName.Value.Value = $"/Game/CustomSkins/{CurrentSkin.CodeName}/Animations/{CurrentSkin.CodeName}_Lobby_Animation";
             idleAnimationImport[3].ObjectName.Number = 0;
+            Console.WriteLine($"Changed the animation path in {CurrentSkin.CodeName}_Idle_Montage to /Game/CustomSkins/{CurrentSkin.CodeName}/Animations/{CurrentSkin.CodeName}_Lobby_Animation");
 
             var slotAnimTracks = (ArrayPropertyData)idleAnimationExport0["SlotAnimTracks"];
             var slotAnimTracks2 = (StructPropertyData)slotAnimTracks.Value[0];
@@ -1663,7 +1680,9 @@ namespace UFMT
             var AnimSegments2 = (StructPropertyData)AnimSegments.Value[0];
             var AnimEndTime = (FloatPropertyData)AnimSegments2.Value[3];
             AnimEndTime.Value = (float)Math.Round(LobbyAnimationLength, 5);
+            Console.WriteLine($"Changed the animation length in {CurrentSkin.CodeName}_Idle_Montage to {Math.Round(LobbyAnimationLength, 5)}");
             currentIdleAnimation.Write(idleAnimationUassetPath);
+            ConsoleWriteLineSuccess($"Successfuly edited {CurrentSkin.CodeName}_Idle_Montage.uasset");
         }
 
         private void FixMeshes()
@@ -1812,6 +1831,7 @@ namespace UFMT
         public string Type { get; set; }
         public string PskPath { get; set; } = string.Empty;
         public string FbxPath { get; set; } = string.Empty;
+        public List<string> PhysicsAssetJsonPaths { get; set; } = new();
         public string uassetFileBase64 { get; set; } = string.Empty;
         public string uexpFileBase64 { get; set; } = string.Empty;
     }
@@ -2091,6 +2111,8 @@ namespace UFMT
     public class UnrealExportData
     {
         public List<string> FbxPaths { get; set; }
+        public List<string> PhysicsMeshNames { get; set; }
+        public List<List<string>> PhysicsAssetsPaths { get; set; }
         public List<string> DiffuseTextures { get; set; }
         public List<string> MaskTextures { get; set; }
         public List<string> NormalTextures { get; set; }

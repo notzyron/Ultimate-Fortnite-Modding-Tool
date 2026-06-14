@@ -157,6 +157,9 @@
       <CustomToolNamespace>Copy if ne</CustomToolNamespace>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Update="Assets\PhysicsImporter.zip">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Update="Assets\proper_fn_skeleton.blend">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
