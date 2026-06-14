@@ -186,6 +186,8 @@
                             <x:String>Epic</x:String>
                             <x:String>Legendary</x:String>
                             <x:String>Mythic</x:String>
+                            <x:String>Transcendent</x:String>
+                            <x:String>Unattainable (Impossible T7)</x:String>
                         </ComboBox>
                     </StackPanel>
                 </StackPanel>

@@ -1638,6 +1638,7 @@ namespace UFMT
             var rarity = (EnumPropertyData)cidExport0["Rarity"];
             rarity.Value.Value.Value = $"EFortRarity::{CurrentSkin.Rarity}";
             if (CurrentSkin.Rarity == "Uncommon") cidExport0.Data.RemoveAt(1); //Removes the rarity property since no rarity is equal to uncommon in fn
+            if (CurrentSkin.Rarity == "Unattainable (Impossible T7)") rarity.Value.Value.Value = $"EFortRarity::Unattainable"; ;
             Console.WriteLine($"Changed the Rarity in {CurrentSkin.CID} to {CurrentSkin.Rarity}");
             ((TextPropertyData)cidExport0["DisplayName"]).CultureInvariantString.Value = CurrentSkin.Name;
             Console.WriteLine($"Changed the DisplayName in {CurrentSkin.CID} to {CurrentSkin.Name}");
