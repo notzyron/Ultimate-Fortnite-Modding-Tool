@@ -5,6 +5,8 @@ A modding tool for importing the latest Fortnite assets to older Fortnite builds
 ## Features
 
 - **Automated mesh conversion** — Converts exported .psk mesh files to .fbx format automatically using Blender
+- **Automated animation conversion** — Converts exported .psa (lobby) animation file to .fbx format using Blender and applies the correct animation length automatically
+- **Automatic Physics Asset generation** — Converts exported .json physics asset(s) file(s) to physics assets using Physics Importer (All credits go to JsonAsAsset - More listed below)
 - **Automatic texture assignment** — Connects exported textures with their corresponding materials, with manual override options if needed
 - **Real-time preview rendering** — Render a preview of your skin before export (Note: The preview won't be 100% accurate since Blender is a different rendering engine than Unreal Engine)
 - **Automatic asset generation** — Automatically generates all required Fortnite cosmetic assets (CID, HID, HS, CPs) and modifies them for game compatibility
@@ -52,9 +54,10 @@ Before using this tool, you need to install and configure:
 
 1. Create a folder anywhere on your pc, that will contain your skin folders
 2. Click **"Create Skin Folder"** and enter your skin's codename (e.g., `QuarterClaspZoom` from the Character ID)
-3. Place your exported .psk meshes in `[skin codename]/Source/Meshes/[mesh character part type]` (eg. if your mesh is a body, place it in [skin codename]/Source/Meshes/[Body])
-4. Place your exported .psa lobby pose in `[skin codename]/Source/Lobby_Animation`
+3. Place your exported .psk meshes in `[skin codename]/Source/Meshes/[mesh character part type]` (eg. if your mesh is a body, place it in [skin codename]/Source/Meshes/Body)
+4. Place your exported .psa lobby pose in `[skin codename]/Source/Lobby_Animation` (if your skin has one)
 5. Place textures and icons in `[skin codename]/Source/Textures/`
+6. Place .json Physics Assets in `[skin codename]/Source/Physics/[mesh character part type]`
 
 ### Configure & Preview
 
@@ -74,7 +77,7 @@ Before using this tool, you need to install and configure:
    - Import meshes, textures and animations into Unreal Engine and apply correct settings to them
    - Generate all required cosmetic files
    - Create AssetRegistry.bin for game recognition
-3. Your finished skin will be in `[skin codename]/[Fortnite Version]/Output/FortniteGame/` (eg. If you're doing the skin for Fortnite 13.40, the FortniteGame folder will be in `[skin codename]/13.40/Output/FortniteGame/`
+3. Your finished skin will be in `[skin codename]/[Fortnite Version]/Output/FortniteGame/` (eg. If you're doing the skin for Fortnite 13.40, the FortniteGame folder will be in `[skin codename]/13.40/Output/FortniteGame`)
 4. Pak the output folder with u4pak, move the pak to your Fortnite build Paks folder, copy any .sig files from that folder and rename it the same as your custom .pak, then launch the game!
 
 **Note:** The export process may take a minute as Blender and UE scripts run in the background (export time varies depending on PC specs; typical systems take 15-30 seconds). Wait until the console displays "Your custom skin is ready! Check the output folder"
@@ -87,10 +90,11 @@ Before using this tool, you need to install and configure:
 
 ## Credits
 - **[UAssetAPI](https://github.com/atenfyr/UAssetAPI)** — Asset handling and parsing library
-- **Win3** — UI framework
+- **WinUI 3** — UI framework
 - **[QueenIO](https://github.com/Code-Vein-Tool-Hub/QueenIO)** — Asset extraction techniques (adapted code with attribution)
 - **[AssetRegistryInjector](https://github.com/Code-Vein-Tool-Hub/AssetRegistryTool)** — Registry injection utilities (adapted code with attribution)
 - **[Zylox](https://github.com/zyloxmods)** — BetterFBX exporter plugin
+- **[JsonAsAsset]([https://github.com/zyloxmods](https://github.com/JsonAsAsset/JsonAsAsset)** — Converting .json Physics Assets into Physics Assets
 
 ## License
 
