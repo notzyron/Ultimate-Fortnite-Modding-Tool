@@ -94,7 +94,7 @@ Before using this tool, you need to install and configure:
 - **[QueenIO](https://github.com/Code-Vein-Tool-Hub/QueenIO)** — Asset extraction techniques (adapted code with attribution)
 - **[AssetRegistryInjector](https://github.com/Code-Vein-Tool-Hub/AssetRegistryTool)** — Registry injection utilities (adapted code with attribution)
 - **[Zylox](https://github.com/zyloxmods)** — BetterFBX exporter plugin
-- **[JsonAsAsset]([https://github.com/zyloxmods](https://github.com/JsonAsAsset/JsonAsAsset)** — Converting .json Physics Assets into Physics Assets
+- **[JsonAsAsset](https://github.com/JsonAsAsset/JsonAsAsset)** — Converting .json Physics Assets into Physics Assets
 
 ## License
 
