@@ -189,6 +189,25 @@
                             <x:String>Transcendent</x:String>
                             <x:String>Unattainable (Impossible T7)</x:String>
                         </ComboBox>
+                        <Border Width="25"/>
+                        <TextBlock Text="Series" 
+                                FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ComboBox
+                                PlaceholderText="Select The series..."
+                                Tag="series" SelectionChanged="ComboBoxChanged" x:Name="seriesComboBox">
+                            <x:String>None</x:String>
+                            <x:String>Dark Series</x:String>
+                            <x:String>Star Wars Series</x:String>
+                            <x:String>Icon Series</x:String>
+                            <x:String>DC Series</x:String>
+                            <x:String>Frozen Series</x:String>
+                            <x:String>Lava Series</x:String>
+                            <x:String>Marvel Series</x:String>
+                            <x:String>Shadow Series</x:String>
+                            <x:String>Slurp Series</x:String>
+                            <x:String>Test Series</x:String>
+                            <x:String>Anual Pass Series</x:String>
+                        </ComboBox>
                     </StackPanel>
                 </StackPanel>
                 <StackPanel Spacing="10">
@@ -215,16 +234,18 @@
                                 </TextBlock>
                             </Canvas>
 
+                            <Image Stretch="Uniform" x:Name="iconBackgroundOverlay"/>
+
                             <Image Stretch="Uniform"
                                 Source="ms-appx:///Assets/IconCover.png"/>
 
                             <Image Stretch="Uniform"
                                 Source="ms-appx:///Assets/Locker_overlay.png"/>
 
-                            <Image Stretch="Uniform" x:Name="iconRarityOverlay" Opacity="0.85"
+                            <Image Stretch="Uniform" x:Name="iconOverlay" Opacity="0.85"
                                 Source="ms-appx:///Assets/Common_Icon.png"/>
 
-                            <Image Stretch="Uniform" x:Name="textRarityOverlay"
+                            <Image Stretch="Uniform" x:Name="textOverlay"
                                 Source="ms-appx:///Assets/Common_Text.png"/>
 
                         </Grid>
