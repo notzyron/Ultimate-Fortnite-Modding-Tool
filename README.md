@@ -65,7 +65,7 @@ Before using this tool, you need to install and configure:
 2. The program auto-detects materials and assigns textures (may have issues with reskins)
 3. Manually adjust texture assignments if needed using the dropdowns
 4. If the skin has a skin boost color and exponent, enable the option in the material dropdowns and enter the option's red, green, blue and alpha values
-5. Enter skin details: **name**, **description**, **rarity**, **gender**
+5. Enter skin details: **name**, **description**, **rarity**, **series**, **gender**
 6. Click **"Render"** to preview the skin
 7. If the skin looks too shiny, enable **"Swizzle Roughness to Green"** (This usually happens on skins that were made after chapter 4, due to Engine version switch)
 
