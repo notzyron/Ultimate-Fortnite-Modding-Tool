@@ -221,6 +221,8 @@
 
                             <Image x:Name="characterPreview" Stretch="Uniform" />
 
+                            <Image Stretch="Uniform" x:Name="iconBackgroundOverlay"/>
+                            
                             <Canvas>
                                 <Image x:Name="iconPreview" Stretch="Uniform" Width="210"
                                     Canvas.Left="72" Canvas.Top="322"/>
@@ -233,8 +235,6 @@
                                     </TextBlock.RenderTransform>
                                 </TextBlock>
                             </Canvas>
-
-                            <Image Stretch="Uniform" x:Name="iconBackgroundOverlay"/>
 
                             <Image Stretch="Uniform"
                                 Source="ms-appx:///Assets/IconCover.png"/>

@@ -538,7 +538,7 @@ namespace UFMT
                     }
 
                 }
-                else if (c.Tag.ToString() == "rarity")
+                else if (c?.Tag.ToString() == "rarity" && c?.SelectedItem != null && seriesComboBox?.SelectedItem != null)
                 {
                     CurrentSkin.Rarity = c.SelectedItem.ToString();
                     if (seriesComboBox.SelectedItem.ToString() != "None") return;
