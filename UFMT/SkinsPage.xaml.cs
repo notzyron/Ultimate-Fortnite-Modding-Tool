@@ -71,22 +71,6 @@ namespace UFMT
         private static string FemaleLobbyAnimPath = Path.Combine
         (AppDomain.CurrentDomain.BaseDirectory, "Assets", "LobbyAnimations", "Female_Commando_Idle_01.psa");
         private CancellationTokenSource _currentSkinPathDebounce;
-        private static string SourcePath = string.Empty;
-        private static string MeshesPath = string.Empty;
-        private static string TexturesPath = string.Empty;
-        private static string PhysicsPath = string.Empty;
-        private static string LobbyAnimationPath = string.Empty;
-        private static float LobbyAnimationLength = 0;
-        private static List<string> Materials = new();
-        private static List<string> Textures = new();
-        public Dictionary<string, List<string>> MaterialsTextures = new();
-        public static Dictionary<string, bool> MaterialsSwizzle = new();
-        private static Dictionary<string, CharacterPart> MaterialsCpPart = new();
-        public Dictionary<string, bool> MaterialsUseSkinBoost = new();
-        public Dictionary<string, float> MaterialsSbcRed = new();
-        public Dictionary<string, float> MaterialsSbcGreen = new();
-        public Dictionary<string, float> MaterialsSbcBlue = new();//Sbc shorter for Skin boost color (and exponent)
-        public Dictionary<string, float> MaterialsSbcAlpha = new();
         public Dictionary<string, string> SeriesCodenames = new(){ {"Dark Series", "CUBESeries"}, { "Star Wars Series", "ColumbusSeries" },
         {"Icon Series", "CreatorCollabSeries"}, {"DC Series", "DCUSeries"}, {"Frozen Series", "FrozenSeries" }, {"Lava Series", "LavaSeries"},
         {"Marvel Series", "MarvelSeries"}, {"Shadow Series", "ShadowSeries"},  {"Slurp Series", "SlurpSeries"},  
@@ -169,11 +153,21 @@ namespace UFMT
             uassetFileBase64 = HatCpUassetBase64,
             uexpFileBase64 = HatCpUexpBase64
         };
-        List<CharacterPart> CharacterParts = new();
-        SkinData CurrentSkin = new() { };
-        public ObservableCollection<MaterialDropdown> MaterialDropdowns = new();
+        public event PropertyChangedEventHandler PropertyChanged;
 
-        public event PropertyChangedEventHandler? PropertyChanged;
+        private SkinData _currentSkin;
+        public SkinData CurrentSkin
+        {
+            get => _currentSkin;
+            set
+            {
+                if (_currentSkin != value)
+                {
+                    _currentSkin = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CurrentSkin)));
+                }
+            }
+        }
 
         private bool _allSwizzleCheckBoxValue;
         public bool AllSwizzleCheckBoxValue
@@ -211,14 +205,6 @@ namespace UFMT
 
             ((FrameworkElement)this.Content).Loaded += (s, e) =>
             {
-                CurrentSkin.Name = characterNameTextBox.Text.ToUpper();
-                characterNameText.Text = CurrentSkin.Name;
-                rarityComboBox.SelectedIndex = 0;
-                seriesComboBox.SelectedIndex = 0;
-                CurrentSkinPath = CurrentSkinPathBox.Text;
-                OutputFnGamePath = Path.Combine(CurrentSkinPath, "Output", App.FnVersion, "FortniteGame");
-                SourcePath = Path.Combine(CurrentSkinPath, "Source");
-                MeshesPath = Path.Combine(SourcePath, "Meshes");
                 
 
                 CurrentSkinPathBox_TextChanged("NoDelay", null);
@@ -265,7 +251,7 @@ namespace UFMT
             ResetCpData();
 
             if (CurrentSkinPath == string.Empty)
-            {
+            {   
                 if (sender as string != "NoDelay") ConsoleWriteLineError("The Current skin path is empty!");
                 return;
             }
@@ -274,24 +260,44 @@ namespace UFMT
                 ConsoleWriteLineError($"{CurrentSkinPath} doesn't exist!");
                 return;
             }
-            SourcePath = Path.Combine(CurrentSkinPath, "Source");
-            if (!Directory.Exists(SourcePath))
+            CurrentSkin.SourcePath = Path.Combine(CurrentSkinPath, "Source");
+            if (!Directory.Exists(CurrentSkin.SourcePath))
             {
                 ConsoleWriteLineError($"Cannot find the Source folder inside {CurrentSkinPath}");
                 return;
             }
-            MeshesPath = Path.Combine(SourcePath, "Meshes");
-            if (!Directory.Exists(MeshesPath))
+            CurrentSkin.MeshesPath = Path.Combine(CurrentSkin.SourcePath, "Meshes");
+            if (!Directory.Exists(CurrentSkin.MeshesPath))
             {
-                ConsoleWriteLineError($"Cannot find the MEshes folder inside {SourcePath}");
+                ConsoleWriteLineError($"Cannot find the Meshes folder inside {CurrentSkin.SourcePath}");
                 return;
             }
 
-            var result = GetPskData();
-            if (!result.Success) { ConsoleWriteLineError(result.ErrorMsg); UpdateDropdowns(); return; }
-            result = GetValidTextures();
-            if (!result.Success) { ConsoleWriteLineError(result.ErrorMsg); UpdateDropdowns(); return; }
-            UpdateDropdowns();
+            try
+            {
+                string codeName = new DirectoryInfo(CurrentSkinPath).Name;
+                SkinData loadedJson = LoadSkinConfig(Path.Combine(CurrentSkinPath, $"{codeName}_Settings.json"));
+
+                if (loadedJson != null)
+                {
+                    CurrentSkin = loadedJson;
+                    characterCIDTextBox.Text = CurrentSkin.CID;
+                }
+                else
+                {
+                    var result = GetPskData();
+                    if (!result.Success) { ConsoleWriteLineError(result.ErrorMsg); UpdateDropdowns(); return; }
+
+                    result = GetValidTextures();
+                    if (!result.Success) { ConsoleWriteLineError(result.ErrorMsg); UpdateDropdowns(); return; }
+                }
+                CurrentSkin.PropertyChanged += (s, e) => SaveSkinConfig();
+                UpdateDropdowns();
+            }
+            catch (Exception ex)
+            {
+                ConsoleWriteLineError(ex.ToString());
+            }
         }
 
         private async void BrowseButton_Click(object sender, RoutedEventArgs e)
@@ -470,9 +476,9 @@ namespace UFMT
             if (IsUpdatingFromCode) return;
 
             IsUpdatingFromCode = true;
-            foreach (var materialDropdown in MaterialDropdowns)
+            foreach (Material mat in CurrentSkin.Materials)
             {
-                materialDropdown.IsSwizzled = true;
+                mat.Swizzle = true;
             }
             IsUpdatingFromCode = false;
         }
@@ -482,21 +488,21 @@ namespace UFMT
             if (IsUpdatingFromCode) return;
 
             IsUpdatingFromCode = true;
-            foreach (var materialDropdown in MaterialDropdowns)
+            foreach (Material mat in CurrentSkin.Materials)
             {
-                materialDropdown.IsSwizzled = false;
+                mat.Swizzle = false;
             }
             IsUpdatingFromCode = false;
         }
 
         public void UpdateAllSwizzleCheckBoxState()
         {
-            if (MaterialDropdowns == null || MaterialDropdowns.Count == 0) return;
+            if (CurrentSkin.Materials == null || CurrentSkin.Materials.Count == 0) return;
             if (IsUpdatingFromCode) return;
 
             IsUpdatingFromCode = true;
 
-            bool allChecked = MaterialDropdowns.All(m => m.IsSwizzled);
+            bool allChecked = CurrentSkin.Materials.All(m => m.Swizzle);
             AllSwizzleCheckBoxValue = allChecked;
 
             IsUpdatingFromCode = false;
@@ -510,12 +516,11 @@ namespace UFMT
             {
                 if (c.Tag.ToString() == "gender")
                 {
+                    if (CurrentSkin.Gender != null || c?.SelectedItem == null) return;
                     CurrentSkin.Gender = c.SelectedItem.ToString();
                 }
                 else if (c.Tag.ToString() == "series")
                 {
-                    CurrentSkin.Series = c.SelectedItem.ToString();
-
                     string fullPath = $"ms-appx:///Assets/{CurrentSkin.Series}_Icon_Background.png";
                     iconBackgroundOverlay.Source = new BitmapImage(new Uri(fullPath));
 
@@ -540,8 +545,7 @@ namespace UFMT
                 }
                 else if (c?.Tag.ToString() == "rarity" && c?.SelectedItem != null && seriesComboBox?.SelectedItem != null)
                 {
-                    CurrentSkin.Rarity = c.SelectedItem.ToString();
-                    if (seriesComboBox.SelectedItem.ToString() != "None") return;
+                    if (CurrentSkin.Series != "None") return;
                     string fullPath = $"ms-appx:///Assets/{CurrentSkin.Rarity}_Icon.png";
                     iconOverlay.Source = new BitmapImage(new Uri(fullPath));
 
@@ -574,43 +578,39 @@ namespace UFMT
             try
             {
                 IsLoadingDropdowns = true;
-                foreach (string mat in Materials)
+
+                foreach (Material mat in CurrentSkin.Materials)
                 {
-                    MaterialDropdowns.Add(new MaterialDropdown
-                    {
-                        ParentPage = this,
-                        Name = mat,
-                        TextureOptions = Textures,
-                        SelectedDiffuse = MaterialsTextures.GetValueOrDefault(mat)[0],
-                        SelectedMask = MaterialsTextures.GetValueOrDefault(mat)[1],
-                        SelectedNormal = MaterialsTextures.GetValueOrDefault(mat)[2],
-                        SelectedSpecular = MaterialsTextures.GetValueOrDefault(mat)[3],
-                        DiffuseTag = $"{mat}0",
-                        MaskTag = $"{mat}1",
-                        NormalTag = $"{mat}2",
-                        SpecularTag = $"{mat}3",
-                        SwizzleTag = $"{mat}_Swizzle",
-                        SkinBoostTag = $"{mat}_SkinBoost",
-                        MaterialsSwizzle = MaterialsSwizzle,
-                        IsSwizzled = MaterialsSwizzle.GetValueOrDefault(mat),
-                        MaterialsSbcRed = this.MaterialsSbcRed,
-                        MaterialsSbcGreen = this.MaterialsSbcGreen,
-                        MaterialsSbcBlue = this.MaterialsSbcBlue,
-                        MaterialsSbcAlpha = this.MaterialsSbcAlpha,
-                        UseSkinBoost = MaterialsUseSkinBoost.GetValueOrDefault(mat),
-                        SbcRed = MaterialsSbcRed.GetValueOrDefault(mat),
-                        SbcGreen = MaterialsSbcGreen.GetValueOrDefault(mat),
-                        SbcBlue = MaterialsSbcBlue.GetValueOrDefault(mat),
-                        SbcAlpha = MaterialsSbcAlpha.GetValueOrDefault(mat),
-                        MaterialsUseSkinBoost = this.MaterialsUseSkinBoost
-                    });
+                    mat.TextureOptions = CurrentSkin.Textures;
                 }
-                DynamicExpanderList.ItemsSource = MaterialDropdowns;
+
+                DynamicExpanderList.ItemsSource = CurrentSkin.Materials;
 
                 void OnLayoutUpdated(object s, object e)
                 {
                     DynamicExpanderList.LayoutUpdated -= OnLayoutUpdated;
                     IsLoadingDropdowns = false;
+                    string imgPath;
+                    if (CurrentSkin.Series == "None")
+                    {
+                        imgPath = $"ms-appx:///Assets/{CurrentSkin.Rarity}_Icon.png";
+                        iconOverlay.Source = new BitmapImage(new Uri(imgPath));
+
+                        imgPath = $"ms-appx:///Assets/{CurrentSkin.Rarity}_Text.png";
+                        textOverlay.Source = new BitmapImage(new Uri(imgPath));
+                    }
+
+                    else
+                    {
+                        imgPath = $"ms-appx:///Assets/{CurrentSkin.Series}_Icon.png";
+                        iconOverlay.Source = new BitmapImage(new Uri(imgPath));
+
+                        imgPath = $"ms-appx:///Assets/{CurrentSkin.Series}_Text.png";
+                        textOverlay.Source = new BitmapImage(new Uri(imgPath));
+                    }
+
+                    if (!CurrentSkin.Materials.Any(mat => !mat.Swizzle) && CurrentSkin.Materials.Count > 0) AllSwizzleCheckBoxValue = true;
+                    else { IsUpdatingFromCode = true; AllSwizzleCheckBoxValue = false; IsUpdatingFromCode = false; };
                 }
                 DynamicExpanderList.LayoutUpdated += OnLayoutUpdated;
                 ConsoleWriteLineSuccess("Updated the dropdowns!");
@@ -653,14 +653,15 @@ namespace UFMT
         {
             List<string> pskPaths = new();
             List<string> alreadyUsedMaterials = new List<string>();
+            List<CharacterPart> allCharacterParts = new() { Body, Head, FaceAcc, Hat };
             CurrentSkin.CodeName = new DirectoryInfo(CurrentSkinPath).Name;
             CurrentSkin.CID = $"CID_{CurrentSkin.CodeName}";
             characterCIDTextBox.Text = CurrentSkin.CID;
-            TexturesPath = Path.Combine(SourcePath, "Textures");
-            LobbyAnimationPath = Path.Combine(SourcePath, "Lobby_Animation");
-            PhysicsPath = Path.Combine(SourcePath, "Physics");
+            CurrentSkin.TexturesPath = Path.Combine(CurrentSkin.SourcePath, "Textures");
+            CurrentSkin.LobbyAnimationPath = Path.Combine(CurrentSkin.SourcePath, "Lobby_Animation");
+            CurrentSkin.PhysicsPath = Path.Combine(CurrentSkin.SourcePath, "Physics");
 
-            foreach (string meshFolder in Directory.GetDirectories(MeshesPath))
+            foreach (string meshFolder in Directory.GetDirectories(CurrentSkin.MeshesPath))
             {
                 string[] pskFiles = Directory.GetFiles(meshFolder, "*.psk");
                 if (pskFiles.Length == 1)
@@ -677,7 +678,6 @@ namespace UFMT
 
             foreach (string pskPath in pskPaths)
             {
-                List<CharacterPart> allCharacterParts = new() {Body, Head, FaceAcc, Hat };
                 CharacterPart currentCp = allCharacterParts.FirstOrDefault(cp => cp.Type ==
                 Path.GetFileName(Path.GetDirectoryName(pskPath)).ToLower());
                 List<string> currentPskMaterials = new();
@@ -707,42 +707,39 @@ namespace UFMT
                 {
                     if (!alreadyUsedMaterials.Contains(mat))
                     {
-                        Materials.Add(mat);
+                        CurrentSkin.Materials.Add(new Material()
+                        {
+                            Name = mat,
+                            ParentPage = this,
+                            Cp = currentCp,
+                            Swizzle = allSwizzleCheckBox.IsChecked ?? false
+                        });
                         alreadyUsedMaterials.Add(mat);
-                        MaterialsTextures.TryAdd(mat, ["Default_Diffuse", "Default_Mask",
-                        "Default_Normal", "Default_Specular"]);
-                        MaterialsCpPart.TryAdd(mat, currentCp);
-                        MaterialsSwizzle.Add(mat, allSwizzleCheckBox.IsChecked ?? false);
-                        MaterialsUseSkinBoost.Add(mat, false);
-                        MaterialsSbcRed.Add(mat, 0f);
-                        MaterialsSbcGreen.Add(mat, 0f);
-                        MaterialsSbcBlue.Add(mat, 0f);
-                        MaterialsSbcAlpha.Add(mat, 0f);
                     }
                 }
                 currentCp.PskPath = pskPath;
 
-                List<string> jsonFiles = Directory.GetFiles(Path.Combine(PhysicsPath, currentCp.Type[0].ToString().ToUpper() + currentCp.Type.Substring(1)), "*.json").ToList();
+                List<string> jsonFiles = Directory.GetFiles(Path.Combine(CurrentSkin.PhysicsPath, currentCp.Type[0].ToString().ToUpper() + currentCp.Type.Substring(1)), "*.json").ToList();
                 jsonFiles.ForEach(json => { currentCp.PhysicsAssetJsonPaths.Add(json); Console.WriteLine
                 ($"Added {Path.GetFileNameWithoutExtension(json)} to {Path.GetFileNameWithoutExtension(pskPath)}"); });
-                CharacterParts.Add(currentCp);
+                CurrentSkin.CharacterParts.Add(currentCp);
                 ConsoleWriteLineSuccess($"{Path.GetFileName(pskPath)} is a {currentCp.Type} character part type!");
             }
 
             if (string.IsNullOrEmpty(Body.PskPath))
             {
-                return (false, $"Cannot find a body .psk file in {SourcePath}\nThe character must have at least a body and a head!");
+                return (false, $"Cannot find a body .psk file in {CurrentSkin.SourcePath}\nThe character must have at least a body and a head!");
             }
             if (string.IsNullOrEmpty(Head.PskPath))
             {
-                return (false, $"Cannot find a head .psk file in {SourcePath}\nThe character must have at least a body and a head!");
+                return (false, $"Cannot find a head .psk file in {CurrentSkin.SourcePath}\nThe character must have at least a body and a head!");
             }
 
             try
             {
-                string[] lobbyAnimationFiles = Directory.GetFiles(LobbyAnimationPath, "*.psa");
+                string[] lobbyAnimationFiles = Directory.GetFiles(CurrentSkin.LobbyAnimationPath, "*.psa");
                 if (lobbyAnimationFiles.Length > 1)
-                    return (false, $"Multiple .psa files in {LobbyAnimationPath}!\nMake sure there is only 1 .psa lobby animation!");
+                    return (false, $"Multiple .psa files in {CurrentSkin.LobbyAnimationPath}!\nMake sure there is only 1 .psa lobby animation!");
                 if (lobbyAnimationFiles.Length != 0)
                 {
                     CurrentSkin.LobbyAnimationPsa = Path.GetFileNameWithoutExtension(lobbyAnimationFiles[0]);
@@ -759,43 +756,17 @@ namespace UFMT
 
         private void ResetCpData()
         {
-            for (int i = 0; i < CharacterParts.Count; i++)
-            {
-                CharacterParts[i].PskPath = string.Empty;
-                CharacterParts[i].FbxPath = string.Empty;
-                CharacterParts[i].PhysicsAssetJsonPaths.Clear();
-            }
-            Materials.Clear();
-            Textures.Clear();
-            MaterialsTextures.Clear();
-            MaterialsSwizzle.Clear();
-            MaterialsCpPart.Clear();
-            CurrentSkin.CodeName = string.Empty;
-            CurrentSkin.SmallIcon = string.Empty;
-            CurrentSkin.LargeIcon = string.Empty;
-            CurrentSkin.CID = string.Empty;
-            CurrentSkin.LobbyAnimationPsa = string.Empty;
-            CurrentSkin.LobbyAnimationFbx = string.Empty;
-            characterCIDTextBox.Text = CurrentSkin.CID;
-            TexturesPath = string.Empty;
-            PhysicsPath = string.Empty;
-            CharacterParts.Clear();
-            MaterialDropdowns.Clear();
-            LobbyAnimationLength = 0;
-            MaterialsUseSkinBoost.Clear();
-            MaterialsSbcRed.Clear();
-            MaterialsSbcGreen.Clear();
-            MaterialsSbcBlue.Clear();
-            MaterialsSbcAlpha.Clear();
+            CurrentSkin = new SkinData();
+            UpdateDropdowns();
         }
 
         public async void ConvertPskToFbx()
         {
             Console.WriteLine("Converting .psk files to .fbx");
 
-            foreach (CharacterPart cp in CharacterParts)
+            foreach (CharacterPart cp in CurrentSkin.CharacterParts)
             {
-                string exportFbxPath = Path.Combine(SourcePath, "Fbx", cp.Type[0].ToString().ToUpper() + cp.Type.Substring(1));
+                string exportFbxPath = Path.Combine(CurrentSkin.SourcePath, "Fbx", cp.Type[0].ToString().ToUpper() + cp.Type.Substring(1));
                 if (!Directory.Exists(exportFbxPath))
                 {
                     Directory.CreateDirectory(exportFbxPath);
@@ -811,8 +782,8 @@ namespace UFMT
                 });
                 
                 ConsoleWriteLineSuccess($"Succesfully converted " +
-                $"{Path.Combine(SourcePath, Path.GetFileName(cp.PskPath))}" +
-                $" to {Path.Combine(SourcePath, "Fbx", exportName)}.fbx!");
+                $"{Path.Combine(CurrentSkin.SourcePath, Path.GetFileName(cp.PskPath))}" +
+                $" to {Path.Combine(CurrentSkin.SourcePath, "Fbx", exportName)}.fbx!");
                 cp.FbxPath = Path.Combine(exportFbxPath, exportName);
             }
             ConvertPsaToFbx();
@@ -824,11 +795,11 @@ namespace UFMT
             await Task.Run(() =>
             {
                 string blendFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "proper_fn_skeleton.blend");
-                string exportFbxPath = Path.Combine(SourcePath, "Fbx", "Lobby_Animation");
+                string exportFbxPath = Path.Combine(CurrentSkin.SourcePath, "Fbx", "Lobby_Animation");
                 if (!Directory.Exists(exportFbxPath)) Directory.CreateDirectory(exportFbxPath);
                 string exportName = $"{CurrentSkin.CodeName}_Lobby_Animation";
                 CurrentSkin.LobbyAnimationFbx = exportName;
-                string psaPath = Path.Combine(LobbyAnimationPath, $"{CurrentSkin.LobbyAnimationPsa}.psa");
+                string psaPath = Path.Combine(CurrentSkin.LobbyAnimationPath, $"{CurrentSkin.LobbyAnimationPsa}.psa");
                 string fbxFullPath = Path.Combine(exportFbxPath, $"{exportName}.fbx");
                 string arguments = $"-b \"{blendFilePath}\" --python \"{PsaConvertScript}\" -- \"{psaPath}\" \"{fbxFullPath}\"";
 
@@ -854,7 +825,7 @@ namespace UFMT
                     string content = File.ReadAllText(metaPath).Trim();
                     if (int.TryParse(content, out int animLength))
                     {
-                        LobbyAnimationLength = (float)animLength/30; //Divide the animation length by 30 since it's in 30fps
+                        CurrentSkin.LobbyAnimationLength = (float)animLength/30; //Divide the animation length by 30 since it's in 30fps
                     }
                     File.Delete(metaPath);
                 }
@@ -870,62 +841,54 @@ namespace UFMT
         public (bool Success, string ErrorMsg) GetValidTextures()
         {
             List<KeyValuePair<string, int[]>> missingDefaultTextures = DefaultTexturesColors.Where
-            (tex => !Path.Exists(Path.Combine(TexturesPath, $"{tex.Key}.png"))).ToList();
+            (tex => !Path.Exists(Path.Combine(CurrentSkin.TexturesPath, $"{tex.Key}.png"))).ToList();
 
             foreach (KeyValuePair<string, int[]> missingDefTex in missingDefaultTextures)
             {
-                CreateDefaultTexture(Path.Combine(TexturesPath, $"{missingDefTex.Key}.png"),
+                CreateDefaultTexture(Path.Combine(CurrentSkin.TexturesPath, $"{missingDefTex.Key}.png"),
                 Color.FromArgb(missingDefTex.Value[0], missingDefTex.Value[1], missingDefTex.Value[2], missingDefTex.Value[3]));
                 Console.WriteLine($"Created a default {missingDefTex.Key} texture");
             }
 
-            if (!Directory.Exists(TexturesPath))
+            if (!Directory.Exists(CurrentSkin.TexturesPath))
             {
-                ConsoleWriteLineWarning($"{SourcePath}" +
+                ConsoleWriteLineWarning($"{CurrentSkin.SourcePath}" +
                 $" doesn't exist, the skin won't have any textures.");
                 return (true, string.Empty);
             }
 
-            List<string> specularTextures = Directory.GetFiles(TexturesPath, "*_S.png").ToList();
-            specularTextures.Add(Path.Combine(TexturesPath, "Default_Specular.png"));
-            var swizzledFolder = Directory.CreateDirectory(Path.Combine(TexturesPath, "Swizzled"));
-            swizzledFolder.Attributes |= System.IO.FileAttributes.Hidden;
-
             if (App.FnVersion == "13.40")
             {
+                List<string> specularTextures = Directory.GetFiles(CurrentSkin.TexturesPath, "*_S.png").ToList();
+                specularTextures.Add(Path.Combine(CurrentSkin.TexturesPath, "Default_Specular.png"));
+                var swizzledFolder = Directory.CreateDirectory(Path.Combine(CurrentSkin.TexturesPath, "Swizzled"));
+                swizzledFolder.Attributes |= System.IO.FileAttributes.Hidden;
                 Parallel.ForEach(specularTextures, t => SwizzleTextures(t));
             }
 
-            Console.WriteLine($"Searching for valid textures inside {TexturesPath}");
+            Console.WriteLine($"Searching for valid textures inside {CurrentSkin.TexturesPath}");
 
-            Textures = Directory.GetFiles(TexturesPath, "*.png").ToList().Select(tex => Path.GetFileNameWithoutExtension(tex)).ToList();
+            CurrentSkin.Textures = Directory.GetFiles(CurrentSkin.TexturesPath, "*.png").ToList().Select(tex => Path.GetFileNameWithoutExtension(tex)).ToList();
 
-            if (Textures.Count == 0)
+            if (CurrentSkin.Textures.Count == 0)
             {
-                ConsoleWriteLineWarning($"No .png files found inside {TexturesPath}, " +
+                ConsoleWriteLineWarning($"No .png files found inside {CurrentSkin.TexturesPath}, " +
                 $"the skin won't have any textures.");
                 return (true, string.Empty);
             }
 
-            List<string> texturesLower = Textures.Select(tex => tex.ToLower()).ToList();
+            List<string> texturesLower = CurrentSkin.Textures.Select(tex => tex.ToLower()).ToList();
 
-            string largeIcon = Textures.FirstOrDefault(tex =>
+            string largeIcon = CurrentSkin.Textures.FirstOrDefault(tex =>
             (tex.ToLower().Contains("t_soldier") || tex.ToLower().Contains("t-soldier")) && 
             (tex.ToLower().EndsWith("_l") || tex.ToLower().EndsWith("-l")));
 
-            string smallIcon = Textures.FirstOrDefault(tex =>
+            string smallIcon = CurrentSkin.Textures.FirstOrDefault(tex =>
             (tex.ToLower().Contains("t_soldier") || tex.ToLower().Contains("t-soldier")) &&
             (!tex.ToLower().EndsWith("_l") && !tex.ToLower().EndsWith("-l")));
 
-            List<string> validTextures = Textures.Where(tex => tex.EndsWith("_D") || tex.EndsWith("_M") ||
+            List<string> validMatTextures = CurrentSkin.Textures.Where(tex => tex.EndsWith("_D") || tex.EndsWith("_M") ||
             tex.EndsWith("_N") || tex.EndsWith("_S")).ToList();
-
-            foreach (string tex in validTextures) FindTexturesMaterial(tex, false);
-            if (validTextures.FirstOrDefault(t => MaterialsTextures.Values.Any(value => value.Contains(t))) == null)
-            {
-                //ConsoleWriteLineTest("Using FallBack keywords!");
-                validTextures.ForEach(t => FindTexturesMaterial(t, true));
-            }
 
             if (largeIcon != null) CurrentSkin.LargeIcon = largeIcon;
             if (smallIcon != null) CurrentSkin.SmallIcon = smallIcon;
@@ -943,13 +906,16 @@ namespace UFMT
                 " small icon as well.");
             }
 
-            List<string> materialsWithMissingTextures = Materials.Where(mat =>
-            MaterialsTextures.GetValueOrDefault(mat)[0] == "Default_Diffuse" &&
-            MaterialsTextures.GetValueOrDefault(mat)[1] == "Default_Mask" &&
-            MaterialsTextures.GetValueOrDefault(mat)[2] == "Default_Normal" &&
-            MaterialsTextures.GetValueOrDefault(mat)[3] == "Default_Specular").ToList();
+            foreach (string tex in validMatTextures) FindTexturesMaterial(tex, false);
 
-            foreach (string mat in materialsWithMissingTextures) GuessMaterialsTextures(mat, MaterialsCpPart.GetValueOrDefault(mat));
+            if (!CurrentSkin.Materials.Any(mat => validMatTextures.Contains(mat.SelectedDiffuse) || validMatTextures.Contains(mat.SelectedMask) ||
+            validMatTextures.Contains(mat.SelectedNormal) || validMatTextures.Contains(mat.SelectedSpecular))) validMatTextures.ForEach(t => FindTexturesMaterial(t, true));
+
+            List<Material> materialsWithMissingTextures = CurrentSkin.Materials.Where(mat =>
+            mat.SelectedDiffuse == "Default_Diffuse" && mat.SelectedMask == "Default_Mask" &&
+            mat.SelectedNormal == "Default_Normal" && mat.SelectedSpecular == "Default_Specular").ToList();
+
+            materialsWithMissingTextures.ForEach(mat => GuessMaterialsTextures(mat));
 
             return (true, string.Empty);
         }
@@ -957,10 +923,6 @@ namespace UFMT
         private void FindTexturesMaterial(string texture, bool useFallbackKeywords)
         {
             int textureIndex = 0;
-            if (texture.EndsWith("_D")) textureIndex = 0;
-            if (texture.EndsWith("_M")) textureIndex = 1;
-            if (texture.EndsWith("_N")) textureIndex = 2;
-            if (texture.EndsWith("_S")) textureIndex = 3;
             string findFallbackKeyword(string input, string keyword)
             {
                 string name = input.ToLower();
@@ -997,35 +959,36 @@ namespace UFMT
                 }
                 return null;
             }
+            void applyTexture(Material material, string texture)
+            {
+                if (texture.EndsWith("_D")) material.SelectedDiffuse = texture;
+                if (texture.EndsWith("_M")) material.SelectedMask = texture;
+                if (texture.EndsWith("_N")) material.SelectedNormal = texture;
+                if (texture.EndsWith("_S")) material.SelectedSpecular = texture;
+            }
 
             if (useFallbackKeywords)
             {
                 List<string> fallbackKeywords = new() { "body", "head", "faceacc", "eyes", "hair" };
+                Dictionary<string, string> fallBackKeywordPairs = new() { {"head", "eyes" }, { "faceacc", "hair" }};
                 string textureKeyword = fallbackKeywords.FirstOrDefault(keyword => findFallbackKeyword(texture, keyword) != null);
                 if (textureKeyword == null) return;
 
-                string material = Materials.FirstOrDefault(material => fallbackKeywords.FirstOrDefault
-                (keyword => findFallbackKeyword(material, keyword) != null) == textureKeyword);
-                if (material != null) { MaterialsTextures.GetValueOrDefault(material)[textureIndex] = texture; return; }
-
-                if (textureKeyword == "head") material = Materials.FirstOrDefault(material => fallbackKeywords.FirstOrDefault
-                (keyword => findFallbackKeyword(material, keyword) != null) == "eyes");
-                if (material != null) { MaterialsTextures.GetValueOrDefault(material)[textureIndex] = texture; return; }
-
-                if (textureKeyword == "faceacc") material = Materials.FirstOrDefault(material => fallbackKeywords.FirstOrDefault
-                (keyword => findFallbackKeyword(material, keyword) != null) == "hair");
-                if (material != null) { MaterialsTextures.GetValueOrDefault(material)[textureIndex] = texture; return; }
-
-                if (textureKeyword == "faceacc") material = Materials.FirstOrDefault(material => fallbackKeywords.FirstOrDefault
-                (keyword => findFallbackKeyword(material, keyword) != null) == "glass");
-                if (material != null) { MaterialsTextures.GetValueOrDefault(material)[textureIndex] = texture; return; }
+                foreach (Material mat in CurrentSkin.Materials)
+                {
+                    string matName = mat.Name;
+                    string matFallBackKeyword = fallbackKeywords.FirstOrDefault(keyword => findFallbackKeyword(matName, keyword) != null);
+                    if (matFallBackKeyword != null && (matFallBackKeyword == textureKeyword || fallBackKeywordPairs.GetValueOrDefault(matFallBackKeyword) == textureKeyword))
+                    {
+                        applyTexture(mat, texture);
+                        return;
+                    }
+                }
                 return;
             }
-
-            if (!useFallbackKeywords)
+            else
             {
-            string textureKeyword = texture.Substring(0, texture.Length - 2)
-            .Replace(CurrentSkin.CodeName, "").ToLower();
+                string textureKeyword = texture.Substring(0, texture.Length - 2).Replace(CurrentSkin.CodeName, "").ToLower();
                 string previousSearchElement = textureKeyword + "|";
 
                 while (previousSearchElement != textureKeyword)
@@ -1043,47 +1006,54 @@ namespace UFMT
                 {
                     textureKeyword = textureKeyword.Replace(splitName.ToLower(), "");
                 }
-                Materials.Where(mat => mat.Replace(CurrentSkin.CodeName, "").ToLower().EndsWith(textureKeyword)).ToList()
-                .ForEach(mat => MaterialsTextures.GetValueOrDefault(mat)[textureIndex] = texture);
+
+                foreach (Material material in CurrentSkin.Materials)
+                {
+                    string matForSearching = material.Name.Replace(CurrentSkin.CodeName, "").ToLower();
+                    if (matForSearching.EndsWith(textureKeyword))
+                    {
+                        applyTexture(material, texture);
+                        return;
+                    }
+                }
             }
         }
 
-        private void GuessMaterialsTextures(string mat, CharacterPart cp)
+        private void GuessMaterialsTextures(Material mat)
         {
-            string workingMat = MaterialsTextures.FirstOrDefault
-            (m => m.Value[0] != "Default_Diffuse" && m.Value[1] != "Default_Mask" &&
-             m.Value[2] != "Default_Normal" && m.Value[3] != "Default_Specular" && MaterialsCpPart.GetValueOrDefault(m.Key) == cp).Key;
+            Material workingMat = CurrentSkin.Materials.FirstOrDefault
+            (m => m.SelectedDiffuse != "Default_Diffuse" && m.SelectedMask != "Default_Mask" && m.SelectedNormal != "Default_Normal" && 
+            m.SelectedSpecular != "Default_Specular" && m.Cp == mat.Cp);
             //Get the first material that is the same character part type and has all the textures correctly assigned
+            if (workingMat == null) return;
 
-            if (workingMat == null)
-            {
-                return;
-            }
-
-            MaterialsTextures.GetValueOrDefault(mat)[0] = MaterialsTextures.GetValueOrDefault(workingMat)[0];
-            MaterialsTextures.GetValueOrDefault(mat)[1] = MaterialsTextures.GetValueOrDefault(workingMat)[1];
-            MaterialsTextures.GetValueOrDefault(mat)[2] = MaterialsTextures.GetValueOrDefault(workingMat)[2];
-            MaterialsTextures.GetValueOrDefault(mat)[3] = MaterialsTextures.GetValueOrDefault(workingMat)[3];
+            mat.SelectedDiffuse = workingMat.SelectedDiffuse;
+            mat.SelectedMask = workingMat.SelectedMask;
+            mat.SelectedNormal = workingMat.SelectedNormal;
+            mat.SelectedSpecular = workingMat.SelectedSpecular;
         }
 
         private async void RenderPreviewImage()
         {
             try
             {
-                string[] pskPaths = CharacterParts.Select(cp => cp.PskPath).ToArray();
+                string[] pskPaths = CurrentSkin.CharacterParts.Select(cp => cp.PskPath).ToArray();
                 List<string> materials = new();
                 List<string> texturePaths = new();
                 List<bool> swizzleMaterials = new();
                 string lobbyAnimPath = CurrentSkin.Gender == "Male" ? MaleLobbyAnimPath : FemaleLobbyAnimPath;
                 lobbyAnimPath = CurrentSkin.LobbyAnimationPsa == string.Empty ? lobbyAnimPath :
-                Path.Combine(LobbyAnimationPath, $"{CurrentSkin.LobbyAnimationPsa}.psa");
+                Path.Combine(CurrentSkin.LobbyAnimationPath, $"{CurrentSkin.LobbyAnimationPsa}.psa");
 
-                foreach (string mat in MaterialsTextures.Keys)
+                foreach (Material mat in CurrentSkin.Materials)
                 {
-                    materials.Add(mat);
-                    texturePaths.AddRange(MaterialsTextures.GetValueOrDefault(mat).Select
-                    (tex => Path.Combine(TexturesPath, $"{tex}.png")));
-                    swizzleMaterials.Add(MaterialsSwizzle.GetValueOrDefault(mat));
+                    materials.Add(mat.Name);
+                    texturePaths.Add(Path.Combine(CurrentSkin.TexturesPath, $"{mat.SelectedDiffuse}.png"));
+                    texturePaths.Add(Path.Combine(CurrentSkin.TexturesPath, $"{mat.SelectedMask}.png"));
+                    texturePaths.Add(Path.Combine(CurrentSkin.TexturesPath, $"{mat.SelectedNormal}.png"));
+                    texturePaths.Add(Path.Combine(CurrentSkin.TexturesPath, $"{mat.SelectedSpecular}.png"));
+
+                    swizzleMaterials.Add(mat.Swizzle);
                 }
 
                 var exportData = new BlenderExportData
@@ -1094,7 +1064,7 @@ namespace UFMT
                     Materials = materials,
                     RenderPath = Path.Combine(CurrentSkinPath, "Source", $"{CurrentSkin.CodeName}.png"),
                     LobbyAnimPath = lobbyAnimPath,
-                    HeadPsk = Head.PskPath,
+                    HeadPsk = CurrentSkin.CharacterParts.FirstOrDefault(cp => cp.Type == "head").PskPath
                 };
 
                 string jsonString = System.Text.Json.JsonSerializer.Serialize(exportData, AppJsonContext.Default.BlenderExportData);
@@ -1117,11 +1087,11 @@ namespace UFMT
                 await Task.Delay(10);
 
                 var bitmap = new BitmapImage { CreateOptions = BitmapCreateOptions.IgnoreImageCache };
-                using (var fileStream = System.IO.File.OpenRead(Path.Combine(SourcePath, $"{CurrentSkin.CodeName}.png")))
+                using (var fileStream = System.IO.File.OpenRead(Path.Combine(CurrentSkin.SourcePath, $"{CurrentSkin.CodeName}.png")))
                 {
                     var inMemoryStream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
                     await System.IO.WindowsRuntimeStreamExtensions.AsStreamForWrite(inMemoryStream).WriteAsync(
-                        await System.IO.File.ReadAllBytesAsync(Path.Combine(SourcePath, $"{CurrentSkin.CodeName}.png"))
+                        await System.IO.File.ReadAllBytesAsync(Path.Combine(CurrentSkin.SourcePath, $"{CurrentSkin.CodeName}.png"))
                     );
                     inMemoryStream.Seek(0);
 
@@ -1132,7 +1102,7 @@ namespace UFMT
                 if (!string.IsNullOrEmpty(CurrentSkin.LargeIcon))
                 {
                     var iconBitmap = new BitmapImage { CreateOptions = BitmapCreateOptions.IgnoreImageCache };
-                    string iconPath = Path.Combine(SourcePath, "Textures", $"{CurrentSkin.LargeIcon}.png");
+                    string iconPath = Path.Combine(CurrentSkin.SourcePath, "Textures", $"{CurrentSkin.LargeIcon}.png");
 
                     var inMemoryStream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
                     byte[] fileBytes = await System.IO.File.ReadAllBytesAsync(iconPath);
@@ -1169,8 +1139,8 @@ namespace UFMT
 
                 if (CurrentSkin.SmallIcon != "")
                 {
-                    iconTexturePaths.Add(Path.Combine(SourcePath, "Textures", $"{CurrentSkin.SmallIcon}.png"));
-                    iconTexturePaths.Add(Path.Combine(SourcePath, "Textures", $"{CurrentSkin.LargeIcon}.png"));
+                    iconTexturePaths.Add(Path.Combine(CurrentSkin.SourcePath, "Textures", $"{CurrentSkin.SmallIcon}.png"));
+                    iconTexturePaths.Add(Path.Combine(CurrentSkin.SourcePath, "Textures", $"{CurrentSkin.LargeIcon}.png"));
                 }
                 else iconTexturePaths = [CurrentSkin.SmallIcon, CurrentSkin.LargeIcon];
 
@@ -1222,39 +1192,38 @@ namespace UFMT
 
                 Console.WriteLine("Launching unreal engine...");
 
-                foreach (string mat in MaterialsTextures.Keys)
+                foreach (Material mat in CurrentSkin.Materials)
                 {
-                    diffuseTexturePaths.Add(Path.Combine(TexturesPath, $"{MaterialsTextures.GetValueOrDefault(mat)[0]}.png"));
-                    maskTexturePaths.Add(Path.Combine(TexturesPath, $"{MaterialsTextures.GetValueOrDefault(mat)[1]}.png"));
-                    normalTexturePaths.Add(Path.Combine(TexturesPath, $"{MaterialsTextures.GetValueOrDefault(mat)[2]}.png"));
+                    diffuseTexturePaths.Add(Path.Combine(CurrentSkin.TexturesPath, $"{mat.SelectedDiffuse}.png"));
+                    maskTexturePaths.Add(Path.Combine(CurrentSkin.TexturesPath, $"{mat.SelectedMask}.png"));
+                    normalTexturePaths.Add(Path.Combine(CurrentSkin.TexturesPath, $"{mat.SelectedNormal}.png"));
 
-                    if (App.FnVersion == "13.40")
+                    if (App.FnVersion == "13.40" && mat.Swizzle)
                     {
-                        if (MaterialsSwizzle.GetValueOrDefault(mat)) specularTexturePaths.Add(Path.Combine(TexturesPath, "Swizzled", $"{MaterialsTextures.GetValueOrDefault(mat)[3]}.png"));
-                        else specularTexturePaths.Add(Path.Combine(TexturesPath, $"{MaterialsTextures.GetValueOrDefault(mat)[3]}.png"));
+                        specularTexturePaths.Add(Path.Combine(CurrentSkin.TexturesPath, "Swizzled", $"{mat.SelectedSpecular}.png"));
                     }
                     else
                     {
-                        specularTexturePaths.Add(Path.Combine(TexturesPath, $"{MaterialsTextures.GetValueOrDefault(mat)[3]}.png"));
+                        specularTexturePaths.Add(Path.Combine(CurrentSkin.TexturesPath, $"{mat.SelectedSpecular}.png"));
                     }
                 }
-                Path.Combine(SourcePath, "Fbx", $"{CurrentSkin.LobbyAnimationFbx}.fbx");
+                Path.Combine(CurrentSkin.SourcePath, "Fbx", $"{CurrentSkin.LobbyAnimationFbx}.fbx");
                 var unrealData = new UnrealExportData()
                 {
-                    FbxPaths = CharacterParts.Select(cp => $"{cp.FbxPath}.fbx").ToList(),
-                    PhysicsMeshNames = CharacterParts.Where(cp => cp.PhysicsAssetJsonPaths.Count > 0).ToList().Select(cp => Path.GetFileNameWithoutExtension(cp.FbxPath)).ToList(),
-                    PhysicsAssetsPaths = CharacterParts.Select(cp => cp.PhysicsAssetJsonPaths).ToList(),
+                    FbxPaths = CurrentSkin.CharacterParts.Select(cp => $"{cp.FbxPath}.fbx").ToList(),
+                    PhysicsMeshNames = CurrentSkin.CharacterParts.Where(cp => cp.PhysicsAssetJsonPaths.Count > 0).ToList().Select(cp => Path.GetFileNameWithoutExtension(cp.FbxPath)).ToList(),
+                    PhysicsAssetsPaths = CurrentSkin.CharacterParts.Select(cp => cp.PhysicsAssetJsonPaths).ToList(),
                     DiffuseTextures = diffuseTexturePaths,
                     MaskTextures = maskTexturePaths,
                     NormalTextures = normalTexturePaths,
                     SpecularTextures = specularTexturePaths,
                     IconTextures = iconTexturePaths,
-                    Materials = Materials,
+                    Materials = CurrentSkin.Materials.Select(mat => mat.Name).ToList(),
                     CodeName = CurrentSkin.CodeName,
-                    MeshNames = CharacterParts.Select(cp => Path.GetFileNameWithoutExtension(cp.FbxPath)).ToList(),
+                    MeshNames = CurrentSkin.CharacterParts.Select(cp => Path.GetFileNameWithoutExtension(cp.FbxPath)).ToList(),
                     CID = CurrentSkin.CID,
                     LobbyAnimationFbxPath = CurrentSkin.LobbyAnimationPsa == string.Empty ? string.Empty :
-                    Path.Combine(SourcePath, "Fbx", "Lobby_Animation", $"{CurrentSkin.LobbyAnimationFbx}.fbx"),
+                    Path.Combine(CurrentSkin.SourcePath, "Fbx", "Lobby_Animation", $"{CurrentSkin.LobbyAnimationFbx}.fbx"),
                     RetargetSource = CurrentSkin.Gender == "Male" ? "MPR_SK_M_MALE_Base_Skeleton" : "SK_M_Female_Base_Skeleton"
                 };
 
@@ -1303,7 +1272,7 @@ namespace UFMT
             }
             catch (Exception ex)
             {
-                ConsoleWriteLineError(ex.Message);
+                ConsoleWriteLineError(ex.ToString());
             }
         }
 
@@ -1408,6 +1377,10 @@ namespace UFMT
             string contentFolderPath = Path.Combine(OutputFnGamePath, "Content", "CustomSkins", CurrentSkin.CodeName);
             string characterPartsPath = Path.Combine(contentFolderPath, "CharacterParts");
             string materialsPath = Path.Combine(contentFolderPath, "Materials");
+            CharacterPart body = CurrentSkin.CharacterParts.FirstOrDefault(cp => cp.Type == "body");
+            CharacterPart head = CurrentSkin.CharacterParts.FirstOrDefault(cp => cp.Type == "head");
+            CharacterPart faceacc = CurrentSkin.CharacterParts.FirstOrDefault(cp => cp.Type == "faceacc");
+            CharacterPart hat = CurrentSkin.CharacterParts.FirstOrDefault(cp => cp.Type == "hat");
             if (!Path.Exists(contentFolderPath)) Directory.CreateDirectory(contentFolderPath);
 
             foreach (DirectoryInfo subFolder in cookedCharacterDirectory.GetDirectories("*", SearchOption.AllDirectories))
@@ -1425,12 +1398,12 @@ namespace UFMT
 
             if (CurrentSkin.Gender == "Female")
             {
-                Body.uassetFileBase64 = BodyCpFemaleUassetBase64;
-                Body.uexpFileBase64 = BodyCpFemaleUexpBase64;
-                Head.uassetFileBase64 = HeadCpFemaleUassetBase64;
-                Head.uexpFileBase64 = HeadCpFemaleUexpBase64;
-                FaceAcc.uassetFileBase64 = FaceAccCpFemaleUassetBase64;
-                FaceAcc.uexpFileBase64 = FaceAccCpFemaleUexpBase64;
+                body.uassetFileBase64 = BodyCpFemaleUassetBase64;
+                body.uexpFileBase64 = BodyCpFemaleUexpBase64;
+                head.uassetFileBase64 = HeadCpFemaleUassetBase64;
+                head.uexpFileBase64 = HeadCpFemaleUexpBase64;
+                faceacc.uassetFileBase64 = FaceAccCpFemaleUassetBase64;
+                faceacc.uexpFileBase64 = FaceAccCpFemaleUexpBase64;
             }
             else if (CurrentSkin.Gender == "Male")
             {
@@ -1443,7 +1416,7 @@ namespace UFMT
             }
 
             //Character part creation
-            foreach (CharacterPart cp in CharacterParts)
+            foreach (CharacterPart cp in CurrentSkin.CharacterParts)
             {
                 Console.WriteLine($"Currently editing the {cp.Type} of the skin");
                 string uassetPath = Path.Combine(characterPartsPath,
@@ -1481,18 +1454,18 @@ namespace UFMT
             }
 
             //Material creation
-            foreach (string material in Materials)
+            foreach (Material material in CurrentSkin.Materials)
             {
-                string uassetMaterialPath = Path.Combine(materialsPath, $"{material}.uasset");
-                string uexpMaterialPath = Path.Combine(materialsPath, $"{material}.uexp");
+                string uassetMaterialPath = Path.Combine(materialsPath, $"{material.Name}.uasset");
+                string uexpMaterialPath = Path.Combine(materialsPath, $"{material.Name}.uexp");
                 string materialUassetBase64;
                 string materialUexpBase64;
                 if (App.FnVersion != "13.40")
                 {
                     materialUassetBase64 =
-                    MaterialsSwizzle.GetValueOrDefault(material) ? MiSwizzleUassetBase64 : MiNoSwizzleUassetBase64;
+                    material.Swizzle ? MiSwizzleUassetBase64 : MiNoSwizzleUassetBase64;
                     materialUexpBase64 =
-                    MaterialsSwizzle.GetValueOrDefault(material) ? MiSwizzleUexpBase64 : MiNoSwizzleUexpBase64; ;
+                    material.Swizzle ? MiSwizzleUexpBase64 : MiNoSwizzleUexpBase64; ;
                 }
                 else
                 {
@@ -1504,8 +1477,8 @@ namespace UFMT
                 Convert.FromBase64String(materialUassetBase64));
                 File.WriteAllBytes(Path.Combine(uexpMaterialPath),
                 Convert.FromBase64String(materialUexpBase64));
-                ConsoleWriteLineSuccess($"Created material instance {material}");
-                Console.WriteLine($"Editing {material}");
+                ConsoleWriteLineSuccess($"Created material instance {material.Name}");
+                Console.WriteLine($"Editing {material.Name}");
 
                 var currentMi = new UAsset(uassetMaterialPath, EngineVersion.VER_UE4_26);
                 var miImportData = currentMi.Imports;
@@ -1514,50 +1487,49 @@ namespace UFMT
                 int diffusePathIndex = App.FnVersion == "13.40" ? 37 : 11;
                 int diffuseNameIndex = App.FnVersion == "13.40" ? 160 : 23;
                 string fnTexturesPath = $"/Game/CustomSkins/{CurrentSkin.CodeName}/Textures/";
-                miImportData[diffusePathIndex].ObjectName.Value.Value = Path.Combine(fnTexturesPath, MaterialsTextures.GetValueOrDefault(material)[0]);
-                Console.WriteLine($"Changed the diffuse texture path in {material} to {Path.Combine(fnTexturesPath, MaterialsTextures.GetValueOrDefault(material)[0])}");
-                miImportData[diffusePathIndex+1].ObjectName.Value.Value = Path.Combine(fnTexturesPath, MaterialsTextures.GetValueOrDefault(material)[1]);
-                Console.WriteLine($"Changed the mask texture path in {material} to {Path.Combine(fnTexturesPath, MaterialsTextures.GetValueOrDefault(material)[1])}");
-                miImportData[diffusePathIndex+2].ObjectName.Value.Value = Path.Combine(fnTexturesPath, MaterialsTextures.GetValueOrDefault(material)[2]);
-                Console.WriteLine($"Changed the normal texture path in {material} to {Path.Combine(fnTexturesPath, MaterialsTextures.GetValueOrDefault(material)[2])}");
-                miImportData[diffusePathIndex+3].ObjectName.Value.Value = Path.Combine(fnTexturesPath, MaterialsTextures.GetValueOrDefault(material)[3]);
-                Console.WriteLine($"Changed the specular texture path in {material} to {Path.Combine(fnTexturesPath, MaterialsTextures.GetValueOrDefault(material)[3])}");
-                miImportData[diffuseNameIndex].ObjectName.Value.Value = MaterialsTextures.GetValueOrDefault(material)[0];
-                Console.WriteLine($"Changed the diffuse texture in {material} to {MaterialsTextures.GetValueOrDefault(material)[0]}");
-                miImportData[diffuseNameIndex+1].ObjectName.Value.Value = MaterialsTextures.GetValueOrDefault(material)[1];
-                Console.WriteLine($"Changed the mask texture in {material} to {MaterialsTextures.GetValueOrDefault(material)[1]}");
-                miImportData[diffuseNameIndex+2].ObjectName.Value.Value = MaterialsTextures.GetValueOrDefault(material)[2];
-                Console.WriteLine($"Changed the normal texture in {material} to {MaterialsTextures.GetValueOrDefault(material)[2]}");
-                miImportData[diffuseNameIndex+3].ObjectName.Value.Value = MaterialsTextures.GetValueOrDefault(material)[3];
-                Console.WriteLine($"Changed the specular texture in {material} to {MaterialsTextures.GetValueOrDefault(material)[3]}");
-                miExportData[0].ObjectName.Value.Value = material;
+                miImportData[diffusePathIndex].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedDiffuse);
+                Console.WriteLine($"Changed the diffuse texture path in {material.Name} to {Path.Combine(fnTexturesPath, material.SelectedDiffuse)}");
+                miImportData[diffusePathIndex+1].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedMask);
+                Console.WriteLine($"Changed the mask texture path in {material.Name} to {Path.Combine(fnTexturesPath, material.SelectedMask)}");
+                miImportData[diffusePathIndex+2].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedNormal);
+                Console.WriteLine($"Changed the normal texture path in {material.Name} to {Path.Combine(fnTexturesPath, material.SelectedNormal)}");
+                miImportData[diffusePathIndex+3].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedSpecular);
+                Console.WriteLine($"Changed the specular texture path in {material.Name} to {Path.Combine(fnTexturesPath, material.SelectedSpecular)}");
+                miImportData[diffuseNameIndex].ObjectName.Value.Value = material.SelectedDiffuse;
+                Console.WriteLine($"Changed the diffuse texture in {material.Name} to {material.SelectedDiffuse}");
+                miImportData[diffuseNameIndex+1].ObjectName.Value.Value = material.SelectedMask;
+                Console.WriteLine($"Changed the mask texture in {material.Name} to {material.SelectedMask}");
+                miImportData[diffuseNameIndex+2].ObjectName.Value.Value = material.SelectedNormal;
+                Console.WriteLine($"Changed the normal texture in {material.Name} to {material.SelectedNormal}");
+                miImportData[diffuseNameIndex+3].ObjectName.Value.Value = material.SelectedSpecular;
+                Console.WriteLine($"Changed the specular texture in {material.Name} to {material.SelectedSpecular}");
+                miExportData[0].ObjectName.Value.Value = material.Name;
 
-                if (MaterialsUseSkinBoost.GetValueOrDefault(material))
+                if (material.UseSkinBoostColor)
                 {
                     var vectorParamaterValues = (ArrayPropertyData)miExport0["VectorParameterValues"];
                     var vectorParamaterValues2 = (StructPropertyData)vectorParamaterValues.Value[0];
                     var parameterValue = (StructPropertyData)vectorParamaterValues2.Value[1];
                     var colors = (LinearColorPropertyData)parameterValue.Value[0];
 
-                    colors.Value = new FLinearColor(MaterialsSbcRed.GetValueOrDefault(material), MaterialsSbcGreen.GetValueOrDefault(material),
-                    MaterialsSbcBlue.GetValueOrDefault(material), MaterialsSbcAlpha.GetValueOrDefault(material));
+                    colors.Value = new FLinearColor(material.SbcRed, material.SbcGreen, material.SbcBlue, material.SbcAlpha);
 
                     Console.WriteLine($"Changed the skin boost color and exponent to {colors.Value.ToString()} in {material}");
                 }
 
                 currentMi.Write(uassetMaterialPath);
-                ConsoleWriteLineSuccess($"Successfully edited {material}.uasset and {material}.uexp");
+                ConsoleWriteLineSuccess($"Successfully edited {material.Name}.uasset and {material.Name}.uexp");
             }
 
             //HS creation
             string hsUassetBase64;
             string hsUexpBase64;
-            if (!string.IsNullOrEmpty(FaceAcc.PskPath))
+            if (!string.IsNullOrEmpty(faceacc?.PskPath))
             {
                 hsUassetBase64 = HsBodyHeadFaceAccUassetBase64;
                 hsUexpBase64 = HsBodyHeadFaceAccUexpBase64;
             }
-            else if (!string.IsNullOrEmpty(Hat.PskPath))
+            else if (!string.IsNullOrEmpty(hat?.PskPath))
             {
                 hsUassetBase64 = HsBodyHeadHatUassetBase64;
                 hsUexpBase64 = HsBodyHeadHatUexpBase64;
@@ -1588,7 +1560,8 @@ namespace UFMT
             Console.WriteLine($"Changed the Body Character Part path in HS_{CurrentSkin.CodeName} to " +
             $"/Game/CustomSkins/{CurrentSkin.CodeName}/CharacterParts/CP_body_{CurrentSkin.CodeName}.CP_body_{CurrentSkin.CodeName}");
 
-            if (!string.IsNullOrEmpty(FaceAcc.PskPath))
+
+            if (!string.IsNullOrEmpty(faceacc?.PskPath))
             {
                 var faceAccCp = (SoftObjectPropertyData)characterPartsArray.Value[2];
                 faceAccCp.Value.AssetPath.AssetName.Value.Value =
@@ -1597,7 +1570,7 @@ namespace UFMT
                 $"/Game/CustomSkins/{CurrentSkin.CodeName}/CharacterParts/CP_faceacc_{CurrentSkin.CodeName}.CP_faceacc_{CurrentSkin.CodeName}");
 
             }
-            else if (!string.IsNullOrEmpty(Hat.PskPath))
+            else if (!string.IsNullOrEmpty(hat?.PskPath))
             {
                 var hatCp = (SoftObjectPropertyData)characterPartsArray.Value[2];
                 hatCp.Value.AssetPath.AssetName.Value.Value =
@@ -1720,8 +1693,8 @@ namespace UFMT
             var AnimSegments = (ArrayPropertyData)AnimTrack.Value[0];
             var AnimSegments2 = (StructPropertyData)AnimSegments.Value[0];
             var AnimEndTime = (FloatPropertyData)AnimSegments2.Value[3];
-            AnimEndTime.Value = (float)Math.Round(LobbyAnimationLength, 5);
-            Console.WriteLine($"Changed the animation length in {CurrentSkin.CodeName}_Idle_Montage to {Math.Round(LobbyAnimationLength, 5)}");
+            AnimEndTime.Value = (float)Math.Round(CurrentSkin.LobbyAnimationLength, 5);
+            Console.WriteLine($"Changed the animation length in {CurrentSkin.CodeName}_Idle_Montage to {Math.Round(CurrentSkin.LobbyAnimationLength, 5)}");
             currentIdleAnimation.Write(idleAnimationUassetPath);
             ConsoleWriteLineSuccess($"Successfuly edited {CurrentSkin.CodeName}_Idle_Montage.uasset");
         }
@@ -1733,7 +1706,7 @@ namespace UFMT
             //This is a function I made that I tested with 50+ meshes so it should work properly
             string assetsPath = Path.Combine(CookedAssetsPath, "CustomSkins", CurrentSkin.CodeName, "Meshes");
 
-            List<string> fbxPaths = CharacterParts.Select(cp => cp.FbxPath).ToList();
+            List<string> fbxPaths = CurrentSkin.CharacterParts.Select(cp => cp.FbxPath).ToList();
             foreach (string fbxPath in fbxPaths)
             {
                 string uassetPath = Path.Combine
@@ -1783,7 +1756,7 @@ namespace UFMT
             }
         }
 
-        public static void SwizzleTextures(string texturePath)
+        private void SwizzleTextures(string texturePath)
         {
             using Bitmap bmp = new Bitmap(texturePath);
             var rect = new Rectangle(0, 0, bmp.Width, bmp.Height);
@@ -1804,7 +1777,7 @@ namespace UFMT
             }
 
             bmp.UnlockBits(bmpData);
-            bmp.Save(Path.Combine(TexturesPath, "Swizzled", Path.GetFileName(texturePath)));
+            bmp.Save(Path.Combine(CurrentSkin.TexturesPath, "Swizzled", Path.GetFileName(texturePath)));
             Console.WriteLine($"Swizzled {texturePath}");
         }
 
@@ -1865,6 +1838,36 @@ namespace UFMT
             if (val <= 0.04045f) return val / 12.92f;
             else return MathF.Pow((val + 0.055f) / 1.055f, 2.4f);
         }
+
+        private SkinData LoadSkinConfig(string jsonPath)
+        {
+            string filePath = jsonPath;
+
+            if (!File.Exists(filePath)) return null;
+
+            string jsonString = File.ReadAllText(filePath);
+            SkinData loadedSkin = System.Text.Json.JsonSerializer.Deserialize<SkinData>(jsonString);
+
+            // Reconstruct the ignored ParentPage and Cp properties for the UI
+            foreach (var mat in loadedSkin.Materials)
+            {
+                mat.ParentPage = this;
+                mat.Cp = loadedSkin.CharacterParts.FirstOrDefault(cp => cp.Type == mat.Cp?.Type);
+            }
+
+            return loadedSkin;
+        }
+
+        public void SaveSkinConfig()
+        {
+            if (CurrentSkin == null || string.IsNullOrEmpty(CurrentSkinPath)) return;
+
+            string jsonPath = Path.Combine(CurrentSkinPath, $"{CurrentSkin.CodeName}_Settings.json");
+            var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
+            string jsonString = System.Text.Json.JsonSerializer.Serialize(CurrentSkin, options);
+
+            File.WriteAllText(jsonPath, jsonString);
+        }
     }
 
     public class CharacterPart
@@ -1877,29 +1880,122 @@ namespace UFMT
         public string uexpFileBase64 { get; set; } = string.Empty;
     }
 
-    public class SkinData
+    public class SkinData : INotifyPropertyChanged
     {
         public string CodeName { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public string Rarity { get; set; } = "Common";
-        public string Series { get; set; } = "None";
-        public string Gender { get; set; } = null;
+        private string _name = string.Empty;
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                if (_name != value)
+                {
+                    _name = value;
+                    OnPropertyChanged();
+                }
+            }
+
+        }
+        private string _description = string.Empty;
+        public string Description
+        {
+            get => _description;
+            set
+            {
+                if (_description != value)
+                {
+                    _description = value;
+                    OnPropertyChanged();
+                }
+            }
+
+        }
+        private string _rarity = "Common";
+        public string Rarity
+        {
+            get => _rarity;
+            set
+            {
+                if (_rarity != value)
+                {
+                    _rarity = value;
+                    OnPropertyChanged();
+                }
+            }
+
+        }
+        private string _series = "None";
+        public string Series
+        {
+            get => _series;
+            set
+            {
+                if (_series != value)
+                {
+                    _series = value;
+                    OnPropertyChanged();
+                }
+            }
+
+        }
+        private string _gender;
+        public string Gender
+        {
+            get => _gender;
+            set
+            {
+                if (_gender != value)
+                {
+                    _gender = value;
+                    OnPropertyChanged();
+                }
+            }
+
+        }
         public string SmallIcon { get; set; } = string.Empty;
         public string LargeIcon { get; set; } = string.Empty;
-        public string CID { get; set; } = string.Empty;
+        private string _cid = string.Empty;
+        public string CID
+        {
+            get => _cid;
+            set
+            {
+                if (_cid != value)
+                {
+                    _cid = value;
+                    OnPropertyChanged();
+                }
+            }
+
+        }
         public string LobbyAnimationPsa { get; set; } = string.Empty;
         public string LobbyAnimationFbx { get; set; } = string.Empty;
         public string OutputContentPath { get; set; } = string.Empty;
+        public ObservableCollection<Material> Materials { get; set; } = new();
+        public string SourcePath { get; set; } = string.Empty;
+        public string MeshesPath { get; set; } = string.Empty;
+        public string TexturesPath { get; set; } = string.Empty;
+        public string PhysicsPath { get; set; } = string.Empty;
+        public string LobbyAnimationPath { get; set; } = string.Empty;
+        public float LobbyAnimationLength { get; set; } = 0;
+        public List<CharacterPart> CharacterParts { get; set; } = new();
+        public List<string> Textures { get; set; } = new();
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 
-    public class MaterialDropdown : INotifyPropertyChanged
+    public class Material : INotifyPropertyChanged
     {
+        [System.Text.Json.Serialization.JsonIgnore]
         public Windows.Globalization.NumberFormatting.DecimalFormatter DotFormatter { get; } =
-        new Windows.Globalization.NumberFormatting.DecimalFormatter(new[] { "en-US" }, "US");
+            new Windows.Globalization.NumberFormatting.DecimalFormatter(new[] { "en-US" }, "US");
         public string Name { get; set; }
         public List<string> TextureOptions { get; set; }
-        private string _selectedDiffuse;
+        private string _selectedDiffuse = "Default_Diffuse";
         public string SelectedDiffuse
         {
             get => _selectedDiffuse;
@@ -1910,27 +2006,22 @@ namespace UFMT
                     _selectedDiffuse = value;
                     OnPropertyChanged();
 
-                    if (ParentPage?.MaterialsTextures.ContainsKey(Name) == true)
+                    if (!string.IsNullOrEmpty(value) && value.Length > 0)
                     {
-                        ParentPage.MaterialsTextures[Name][0] = value;
+                        string baseName = value.Substring(0, value.Length - 1);
+                        string mask = baseName + "M";
+                        string normal = baseName + "N";
+                        string spec = baseName + "S";
 
-                        if (!string.IsNullOrEmpty(value) && value.Length > 0)
-                        {
-                            string baseName = value.Substring(0, value.Length - 1);
-                            string mask = baseName + "M";
-                            string normal = baseName + "N";
-                            string spec = baseName + "S";
-
-                            if (TextureOptions.Contains(mask)) SelectedMask = mask;
-                            if (TextureOptions.Contains(normal)) SelectedNormal = normal;
-                            if (TextureOptions.Contains(spec)) SelectedSpecular = spec;
-                        }
+                        if (TextureOptions?.Contains(mask) == true) SelectedMask = mask;
+                        if (TextureOptions?.Contains(normal) == true) SelectedNormal = normal;
+                        if (TextureOptions?.Contains(spec) == true) SelectedSpecular = spec;
                     }
                 }
             }
         }
 
-        private string _selectedMask;
+        private string _selectedMask = "Default_Mask";
         public string SelectedMask
         {
             get => _selectedMask;
@@ -1940,13 +2031,11 @@ namespace UFMT
                 {
                     _selectedMask = value;
                     OnPropertyChanged();
-                    if (ParentPage?.MaterialsTextures.ContainsKey(Name) == true)
-                        ParentPage.MaterialsTextures[Name][1] = value;
                 }
             }
         }
 
-        private string _selectedNormal;
+        private string _selectedNormal = "Default_Normal";
         public string SelectedNormal
         {
             get => _selectedNormal;
@@ -1956,13 +2045,11 @@ namespace UFMT
                 {
                     _selectedNormal = value;
                     OnPropertyChanged();
-                    if (ParentPage?.MaterialsTextures.ContainsKey(Name) == true)
-                        ParentPage.MaterialsTextures[Name][2] = value;
                 }
             }
         }
 
-        private string _selectedSpecular;
+        private string _selectedSpecular = "Default_Specular";
         public string SelectedSpecular
         {
             get => _selectedSpecular;
@@ -1972,43 +2059,26 @@ namespace UFMT
                 {
                     _selectedSpecular = value;
                     OnPropertyChanged();
-                    if (ParentPage?.MaterialsTextures.ContainsKey(Name) == true)
-                        ParentPage.MaterialsTextures[Name][3] = value;
                 }
             }
         }
-        public string DiffuseTag { get; set; }
-        public string MaskTag { get; set; }
-        public string NormalTag { get; set; }
-        public string SpecularTag { get; set; }
-        public string SwizzleTag { get; set; }
-        public string SkinBoostTag { get; set; }
-        public Dictionary<string, bool> MaterialsUseSkinBoost;
 
-        public Dictionary<string, float> MaterialsSbcRed;
-        public Dictionary<string, float> MaterialsSbcGreen;
-        public Dictionary<string, float> MaterialsSbcBlue;
-        public Dictionary<string, float> MaterialsSbcAlpha;
-
-        private bool _useSkinBoost;
-        public bool UseSkinBoost
+        private bool _useSkinBoostColor = false;
+        public bool UseSkinBoostColor
         {
-            get => _useSkinBoost;
+            get => _useSkinBoostColor;
 
             set
             {
-                if (_useSkinBoost != value) 
+                if (_useSkinBoostColor != value)
                 {
-                    _useSkinBoost = value;
-
-                    if (MaterialsUseSkinBoost != null) MaterialsUseSkinBoost[Name] = value;
-
+                    _useSkinBoostColor = value;
                     OnPropertyChanged();
                 }
             }
         }
 
-        private float _sbcRed;
+        private float _sbcRed = 0f;
         public float SbcRed
         {
             get => _sbcRed;
@@ -2016,16 +2086,18 @@ namespace UFMT
             set
             {
                 _sbcRed = value;
-                if (MaterialsSbcRed != null) MaterialsSbcRed[Name] = value;
 
-                if (ParentPage?.MaterialDropdowns != null)
+                if (ParentPage?.CurrentSkin?.Materials == null)
                 {
-                    foreach (var dropdown in ParentPage.MaterialDropdowns)
+                    OnPropertyChanged();
+                    return;
+                }
+
+                foreach (Material mat in ParentPage?.CurrentSkin.Materials)
+                {
+                    if (!mat.UseSkinBoostColor && value != 0 && Math.Abs(mat._sbcRed - value) > 0.0001f)
                     {
-                        if (!dropdown.UseSkinBoost && value != 0 && Math.Abs(dropdown._sbcRed - value) > 0.0001f)
-                        {
-                            dropdown.SbcRed = value;
-                        }
+                        mat.SbcRed = value;
                     }
                 }
 
@@ -2034,7 +2106,7 @@ namespace UFMT
             }
         }
 
-        private float _sbcGreen;
+        private float _sbcGreen = 0f;
         public float SbcGreen
         {
             get => _sbcGreen;
@@ -2042,16 +2114,18 @@ namespace UFMT
             set
             {
                 _sbcGreen = value;
-                if (MaterialsSbcGreen != null) MaterialsSbcGreen[Name] = value;
 
-                if (ParentPage?.MaterialDropdowns != null)
+                if (ParentPage?.CurrentSkin?.Materials == null)
                 {
-                    foreach (var dropdown in ParentPage.MaterialDropdowns)
+                    OnPropertyChanged();
+                    return;
+                }
+
+                foreach (Material mat in ParentPage?.CurrentSkin.Materials)
+                {
+                    if (!mat.UseSkinBoostColor && value != 0 && Math.Abs(mat._sbcGreen - value) > 0.0001f)
                     {
-                        if (!dropdown.UseSkinBoost && value != 0 && Math.Abs(dropdown._sbcGreen - value) > 0.0001f)
-                        {
-                            dropdown.SbcGreen = value;
-                        }
+                        mat.SbcGreen = value;
                     }
                 }
 
@@ -2060,7 +2134,7 @@ namespace UFMT
             }
         }
 
-        private float _sbcBlue;
+        private float _sbcBlue = 0f;
         public float SbcBlue
         {
             get => _sbcBlue;
@@ -2068,16 +2142,18 @@ namespace UFMT
             set
             {
                 _sbcBlue = value;
-                if (MaterialsSbcBlue != null) MaterialsSbcBlue[Name] = value;
 
-                if (ParentPage?.MaterialDropdowns != null)
+                if (ParentPage?.CurrentSkin?.Materials == null)
                 {
-                    foreach (var dropdown in ParentPage.MaterialDropdowns)
+                    OnPropertyChanged();
+                    return;
+                }
+
+                foreach (Material mat in ParentPage?.CurrentSkin.Materials)
+                {
+                    if (!mat.UseSkinBoostColor && value != 0 && Math.Abs(mat._sbcBlue - value) > 0.0001f)
                     {
-                        if (!dropdown.UseSkinBoost && value != 0 && Math.Abs(dropdown._sbcBlue - value) > 0.0001f)
-                        {
-                            dropdown.SbcBlue = value;
-                        }
+                        mat.SbcBlue = value;
                     }
                 }
 
@@ -2086,7 +2162,7 @@ namespace UFMT
             }
         }
 
-        private float _sbcAlpha;
+        private float _sbcAlpha = 0f;
         public float SbcAlpha
         {
             get => _sbcAlpha;
@@ -2094,48 +2170,51 @@ namespace UFMT
             set
             {
                 _sbcAlpha = value;
-                if (MaterialsSbcAlpha != null) MaterialsSbcAlpha[Name] = value;
 
-                if (ParentPage?.MaterialDropdowns != null)
+                if (ParentPage?.CurrentSkin?.Materials == null)
                 {
-                    foreach (var dropdown in ParentPage.MaterialDropdowns)
+                    OnPropertyChanged();
+                    return;
+                }
+
+                foreach (Material mat in ParentPage?.CurrentSkin.Materials)
+                {
+                    if (!mat.UseSkinBoostColor && value != 0 && Math.Abs(mat._sbcAlpha - value) > 0.0001f)
                     {
-                        if (!dropdown.UseSkinBoost && value != 0 && Math.Abs(dropdown._sbcAlpha - value) > 0.0001f)
-                        {
-                            dropdown.SbcAlpha = value;
-                        }
+                        mat.SbcAlpha = value;
                     }
                 }
 
-                Console.WriteLine($"New sbc alpha is {value}");
+                Console.WriteLine($"New sbc Alpha is {value}");
                 OnPropertyChanged();
             }
         }
-        public Dictionary<string, bool> MaterialsSwizzle { get; set; }
+        [System.Text.Json.Serialization.JsonIgnore]
         public SkinsPage ParentPage { get; set; }
 
-        private bool _isSwizzled;
-        public bool IsSwizzled
+        private bool _swizzle = false;
+        public bool Swizzle
         {
-            get => _isSwizzled;
+            get => _swizzle;
             set
             {
-                if (_isSwizzled != value)
+                if (_swizzle != value)
                 {
-                    _isSwizzled = value;
-                    MaterialsSwizzle.Keys.ToList().ForEach(mat => Console.WriteLine($"Swizzle material: {mat}"));
-                    MaterialsSwizzle[SwizzleTag.Replace("_Swizzle", "")] = value;
-
+                    _swizzle = value;
                     OnPropertyChanged();
                     ParentPage?.UpdateAllSwizzleCheckBoxState();
                 }
             }
         }
 
+        [System.Text.Json.Serialization.JsonIgnore]
+        public CharacterPart Cp { get; set; }
+
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            ParentPage?.SaveSkinConfig();
         }
     }
 

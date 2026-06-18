@@ -29,6 +29,15 @@ namespace UFMT
             UeProjectPath = AppSettings.GetValue("UeProjectPath", "");
             UeVersion = AppSettings.GetValue("UeVersion", "");
             FnVersion = AppSettings.GetValue("FnVersion", "");
+
+            this.UnhandledException += (sender, e) =>
+            {
+                string desktopPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop);
+                string filePath = System.IO.Path.Combine(desktopPath, "crash_log.txt");
+                string logContent = $"[{System.DateTime.Now}] Exception: {e.Message}\nStack Trace:\n{e.Exception?.StackTrace}\n\n";
+
+                System.IO.File.AppendAllText(filePath, logContent);
+            };
         }
 
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)

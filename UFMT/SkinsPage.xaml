@@ -40,7 +40,7 @@
                     <Border Height="10"/>
                     <ListView x:Name="DynamicExpanderList" SelectionMode="None">
                         <ListView.ItemTemplate>
-                            <DataTemplate x:DataType="local:MaterialDropdown">
+                            <DataTemplate x:DataType="local:Material">
                                 <Expander Header="{x:Bind Name}" HorizontalAlignment="Stretch" Margin="0,0,0,12">
                                     <StackPanel Spacing="12" Padding="16">
                                         <Grid RowSpacing="8" ColumnSpacing="20">
@@ -66,66 +66,58 @@
                                                     FontSize="16"/>
                                             <ComboBox ItemsSource="{Binding TextureOptions}" 
                           SelectedItem="{Binding SelectedDiffuse, Mode=TwoWay}"
-                          Grid.Row="0" Grid.Column="1" HorizontalAlignment="Stretch"
-                          PlaceholderText="Select Texture..."
-                          Tag="{x:Bind DiffuseTag}"/>
+                          Grid.Row="0" Grid.Column="1" HorizontalAlignment="Stretch" PlaceholderText="Select Texture..."/>
 
                                             <TextBlock Text="Mask Texture" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"
                                                     FontSize="16"/>
                                             <ComboBox ItemsSource="{Binding TextureOptions}"
                           SelectedItem="{Binding SelectedMask, Mode=TwoWay}"
-                          Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch"
-                          PlaceholderText="Select Texture..."
-                          Tag="{x:Bind MaskTag}"/>
+                          Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch" PlaceholderText="Select Texture..."/>
 
                                             <TextBlock Text="Normal Texture" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"
                                                     FontSize="16"/>
                                             <ComboBox ItemsSource="{Binding TextureOptions}"
                           SelectedItem="{Binding SelectedNormal, Mode=TwoWay}"
-                          Grid.Row="2" Grid.Column="1" HorizontalAlignment="Stretch"
-                          PlaceholderText="Select Texture..."
-                          Tag="{x:Bind NormalTag}"/>
+                          Grid.Row="2" Grid.Column="1" HorizontalAlignment="Stretch" PlaceholderText="Select Texture..."/>
 
                                             <TextBlock Text="Specular Texture" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"
                                                     FontSize="16"/>
                                             <ComboBox ItemsSource="{Binding TextureOptions}"
                           SelectedItem="{Binding SelectedSpecular, Mode=TwoWay}"
-                          Grid.Row="3" Grid.Column="1" HorizontalAlignment="Stretch"
-                          PlaceholderText="Select Texture..."
-                          Tag="{x:Bind SpecularTag}"/>
+                          Grid.Row="3" Grid.Column="1" HorizontalAlignment="Stretch" PlaceholderText="Select Texture..."/>
 
                                             <TextBlock Text="SwizzleRougnessToGreen" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center"
                                                     FontSize="14.5"/>
                                             <CheckBox Grid.Row="4" Grid.Column="1" VerticalAlignment="Center" MinWidth="0"
-                          IsChecked="{x:Bind IsSwizzled, Mode=TwoWay}"/>
+                          IsChecked="{x:Bind Swizzle, Mode=TwoWay}"/>
 
                                             <TextBlock Text="Skin Boost Color" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center"
                                                     FontSize="16"/>
                                             <CheckBox Grid.Row="5" Grid.Column="1" VerticalAlignment="Center" MinWidth="0"
-                          IsChecked="{x:Bind UseSkinBoost, Mode=TwoWay}"/>
+                          IsChecked="{x:Bind UseSkinBoostColor, Mode=TwoWay}"/>
 
                                             <TextBlock Text="Red" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center"
-                                                    FontSize="16" Visibility="{x:Bind UseSkinBoost, Mode=OneWay}"/>
+                                                    FontSize="16" Visibility="{x:Bind UseSkinBoostColor, Mode=OneWay}"/>
                                             <NumberBox Grid.Row="6" Grid.Column="1" VerticalAlignment="Center" MinWidth="0" PlaceholderText="2.0"
-                                            Value="{x:Bind SbcRed, Mode=TwoWay}" Visibility="{x:Bind UseSkinBoost, Mode=OneWay}"
+                                            Value="{x:Bind SbcRed, Mode=TwoWay}" Visibility="{x:Bind UseSkinBoostColor, Mode=OneWay}"
                                             NumberFormatter="{x:Bind DotFormatter}"/>
 
                                             <TextBlock Text="Green" Grid.Row="7" Grid.Column="0" VerticalAlignment="Center"
-                                                    FontSize="16" Visibility="{x:Bind UseSkinBoost, Mode=OneWay}"/>
+                                                    FontSize="16" Visibility="{x:Bind UseSkinBoostColor, Mode=OneWay}"/>
                                             <NumberBox Grid.Row="7" Grid.Column="1" VerticalAlignment="Center" MinWidth="0" PlaceholderText="2.0"
-                                            Value="{x:Bind SbcGreen, Mode=TwoWay}" Visibility="{x:Bind UseSkinBoost, Mode=OneWay}"
+                                            Value="{x:Bind SbcGreen, Mode=TwoWay}" Visibility="{x:Bind UseSkinBoostColor, Mode=OneWay}"
                                             NumberFormatter="{x:Bind DotFormatter}"/>
 
                                             <TextBlock Text="Blue" Grid.Row="8" Grid.Column="0" VerticalAlignment="Center"
-                                                    FontSize="16" Visibility="{x:Bind UseSkinBoost, Mode=OneWay}"/>
+                                                    FontSize="16" Visibility="{x:Bind UseSkinBoostColor, Mode=OneWay}"/>
                                             <NumberBox Grid.Row="8" Grid.Column="1" VerticalAlignment="Center" MinWidth="0" PlaceholderText="2.0"
-                                            Value="{x:Bind SbcBlue, Mode=TwoWay}" Visibility="{x:Bind UseSkinBoost, Mode=OneWay}"
+                                            Value="{x:Bind SbcBlue, Mode=TwoWay}" Visibility="{x:Bind UseSkinBoostColor, Mode=OneWay}"
                                             NumberFormatter="{x:Bind DotFormatter}"/>
 
                                             <TextBlock Text="Alpha" Grid.Row="9" Grid.Column="0" VerticalAlignment="Center"
-                                                    FontSize="16" Visibility="{x:Bind UseSkinBoost, Mode=OneWay}"/>
+                                                    FontSize="16" Visibility="{x:Bind UseSkinBoostColor, Mode=OneWay}"/>
                                             <NumberBox Grid.Row="9" Grid.Column="1" VerticalAlignment="Center" MinWidth="0" PlaceholderText="2.0"
-                                            Value="{x:Bind SbcAlpha, Mode=TwoWay}" Visibility="{x:Bind UseSkinBoost, Mode=OneWay}"
+                                            Value="{x:Bind SbcAlpha, Mode=TwoWay}" Visibility="{x:Bind UseSkinBoostColor, Mode=OneWay}"
                                             NumberFormatter="{x:Bind DotFormatter}"/>
 
 
@@ -151,26 +143,26 @@
                                 FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBox Width="300" HorizontalAlignment="Center" VerticalAlignment="Center"
                                 PlaceholderText="Name" MaxLength="35" x:Name="characterNameTextBox"
-                                TextChanged="CharacterTextBoxChanged" Tag="characterName"/>
+                                TextChanged="CharacterTextBoxChanged" Tag="characterName" Text="{x:Bind CurrentSkin.Name, Mode=TwoWay}"/>
                         <Border Width="5"/>
                         <TextBlock Text="Skin description" 
                                 FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBox Width="300" HorizontalAlignment="Center" VerticalAlignment="Center"
                                 PlaceholderText="Description" MaxLength="100" x:Name="characterDescriptionTextBox"
-                                TextChanged="CharacterTextBoxChanged" Tag="characterDescription"/>
+                                TextChanged="CharacterTextBoxChanged" Tag="characterDescription" Text="{x:Bind CurrentSkin.Description, Mode=TwoWay}"/>
                         <Border Width="5"/>
                         <TextBlock Text="Skin CID" 
                                 FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBox Width="300" HorizontalAlignment="Center" VerticalAlignment="Center"
                                 PlaceholderText="CID_Example" MaxLength="35" x:Name="characterCIDTextBox"
-                                TextChanged="CharacterTextBoxChanged" Tag="characterCID"/>
+                                TextChanged="CharacterTextBoxChanged" Tag="characterCID" Text="{x:Bind CurrentSkin.CID, Mode=TwoWay}"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="8" Margin="6, 0, 0, 0">
                         <TextBlock Text="Gender" 
                                 FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <ComboBox
                                 PlaceholderText="Select The gender..."
-                                Tag="gender" SelectionChanged="ComboBoxChanged" x:Name="genderComboBox">
+                                Tag="gender" SelectionChanged="ComboBoxChanged" x:Name="genderComboBox" SelectedItem="{x:Bind CurrentSkin.Gender, Mode=TwoWay}">
                             <x:String>Male</x:String>
                             <x:String>Female</x:String>
                         </ComboBox>
@@ -179,7 +171,7 @@
                                 FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <ComboBox
                                 PlaceholderText="Select The rarity..."
-                                Tag="rarity" SelectionChanged="ComboBoxChanged" x:Name="rarityComboBox">
+                                Tag="rarity" SelectionChanged="ComboBoxChanged" x:Name="rarityComboBox" SelectedItem="{x:Bind CurrentSkin.Rarity, Mode=TwoWay}">
                             <x:String>Common</x:String>
                             <x:String>Uncommon</x:String>
                             <x:String>Rare</x:String>
@@ -194,7 +186,7 @@
                                 FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <ComboBox
                                 PlaceholderText="Select The series..."
-                                Tag="series" SelectionChanged="ComboBoxChanged" x:Name="seriesComboBox">
+                                Tag="series" SelectionChanged="ComboBoxChanged" x:Name="seriesComboBox" SelectedItem="{x:Bind CurrentSkin.Series, Mode=TwoWay}">
                             <x:String>None</x:String>
                             <x:String>Dark Series</x:String>
                             <x:String>Star Wars Series</x:String>
