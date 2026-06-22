@@ -24,11 +24,11 @@ namespace UFMT
         public App()
         {
             InitializeComponent();
-            BlenderPath = AppSettings.GetValue("BlenderPath", "");
-            UeExecutablePath = AppSettings.GetValue("UeExecutablePath", "");
-            UeProjectPath = AppSettings.GetValue("UeProjectPath", "");
             UeVersion = AppSettings.GetValue("UeVersion", "");
             FnVersion = AppSettings.GetValue("FnVersion", "");
+            BlenderPath = AppSettings.GetValue("BlenderPath", "");
+            UeExecutablePath = AppSettings.GetValue($"Ue{UeVersion}ExecutablePath", "");
+            UeProjectPath = AppSettings.GetValue($"Ue{UeVersion}ProjectPath", "");
 
             this.UnhandledException += (sender, e) =>
             {
