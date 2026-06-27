@@ -13,22 +13,13 @@ namespace UFMT
 {
     public partial class App : Application
     {
-        public static ApplicationDataContainer Settings;
+        public static ApplicationDataContainer AppSettings;
         public static Window m_window;
-        public static string BlenderPath;
-        public static string UeExecutablePath;
-        public static string UeProjectPath;
-        static public string UeVersion;
-        static public string FnVersion;
+        public static SettingsData Settings { get; } = new SettingsData();
 
         public App()
         {
             InitializeComponent();
-            UeVersion = AppSettings.GetValue("UeVersion", "");
-            FnVersion = AppSettings.GetValue("FnVersion", "");
-            BlenderPath = AppSettings.GetValue("BlenderPath", "");
-            UeExecutablePath = AppSettings.GetValue($"Ue{UeVersion}ExecutablePath", "");
-            UeProjectPath = AppSettings.GetValue($"Ue{UeVersion}ProjectPath", "");
 
             this.UnhandledException += (sender, e) =>
             {

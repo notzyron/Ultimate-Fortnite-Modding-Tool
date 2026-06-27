@@ -52,17 +52,18 @@ using Windows.Storage.Streams;
 using Windows.UI.ViewManagement;
 using static System.Net.Mime.MediaTypeNames;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using UFMT.Helper;
 
 namespace UFMT
 {
     public sealed partial class SkinsPage : Page, INotifyPropertyChanged
     {
-        public static FnVersion CurrentFnVersion = FnVersionsData.FnVersions.GetValueOrDefault(App.FnVersion);
-        public static UeVersion CurrentUeVersion = UeVersionsData.UeVersions.GetValueOrDefault(App.UeVersion);
+        public static FnVersion CurrentFnVersion = FnVersionsData.FnVersions.GetValueOrDefault(App.Settings.FnVersion);
+        public static UeVersion CurrentUeVersion = UeVersionsData.UeVersions.GetValueOrDefault(App.Settings.UeVersion);
         private static string PskConvertScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_ConvertPsk.py");
         private static string PsaConvertScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_ConvertPsa.py");
         private static string RenderScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_RenderPreview.py");
-        private static string PhysicsImporterPath = CurrentUeVersion.PhysicsImporterPath;
+        private static string PhysicsImporterPath;
         private static string CookedAssetsPath;
         private static string ValidCodenameCharacters = "abcdefghijklmnopqrstuvwxyz1234567890_";
         private static string CurrentSkinPath = string.Empty;
@@ -85,30 +86,10 @@ namespace UFMT
         };
         private bool IsUpdatingFromCode = false;
         private bool IsLoadingDropdowns = false;
-        CharacterPart Body = new CharacterPart
-        {
-            Type = "body",
-            uassetFileBase64 = CurrentFnVersion.BodyCpMaleUassetBase64,
-            uexpFileBase64 = CurrentFnVersion.BodyCpMaleUexpBase64
-        };
-        CharacterPart Head = new CharacterPart
-        {
-            Type = "head",
-            uassetFileBase64 = CurrentFnVersion.HeadCpMaleUassetBase64,
-            uexpFileBase64 = CurrentFnVersion.HeadCpMaleUexpBase64
-        };
-        CharacterPart FaceAcc = new CharacterPart
-        {
-            Type = "faceacc",
-            uassetFileBase64 = CurrentFnVersion.FaceAccCpMaleUassetBase64,
-            uexpFileBase64 = CurrentFnVersion.FaceAccCpMaleUexpBase64
-        };
-        CharacterPart Hat = new CharacterPart
-        {
-            Type = "hat",
-            uassetFileBase64 = CurrentFnVersion.HatCpUassetBase64,
-            uexpFileBase64 = CurrentFnVersion.HatCpUexpBase64
-        };
+        CharacterPart Body;
+        CharacterPart Head;
+        CharacterPart FaceAcc;
+        CharacterPart Hat;
         public event PropertyChangedEventHandler PropertyChanged;
 
         private SkinData _currentSkin;
@@ -151,20 +132,8 @@ namespace UFMT
             CurrentSkinPathBox.Text = AppSettings.GetValue("CurrentSkinPath", "");
             ((FrameworkElement)this.Content).Loaded += (s, e) =>
             {
-                CurrentFnVersion = FnVersionsData.FnVersions.GetValueOrDefault(App.FnVersion);
-                CurrentUeVersion = UeVersionsData.UeVersions.GetValueOrDefault(App.UeVersion);
-                CurrentSkinPathBox_TextChanged("NoDelay", null);
-
+                LoadContent();
             };
-
-            if (!string.IsNullOrEmpty(App.UeProjectPath))
-            {
-                CookedAssetsPath = Path.Combine(Path.GetDirectoryName(App.UeProjectPath),
-                "Saved", "Cooked", "WindowsNoEditor", new DirectoryInfo(Path.GetDirectoryName(App.UeProjectPath)).Name, "Content");
-
-                string pluginsPath = Path.Combine(Path.GetDirectoryName(App.UeProjectPath), "Plugins", "PhysicsImporter");
-                if (!Path.Exists(pluginsPath)) ZipFile.ExtractToDirectory(PhysicsImporterPath, pluginsPath);
-            }
         }
 
         private void SkinsPathBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -192,8 +161,15 @@ namespace UFMT
                     return;
                 }
             }
-            CurrentSkinPath = CurrentSkinPathBox.Text;
-            OutputFnGamePath = Path.Combine(CurrentSkinPath, "Output", App.FnVersion, "FortniteGame");
+            try
+            {
+                CurrentSkinPath = CurrentSkinPathBox.Text;
+            }
+            catch (Exception ex)
+            {
+                ConsoleWriteLineError(ex.ToString());
+            }
+            OutputFnGamePath = Path.Combine(CurrentSkinPath, "Output", App.Settings.FnVersion, "FortniteGame");
             ResetCpData();
 
             if (CurrentSkinPath == string.Empty)
@@ -276,7 +252,7 @@ namespace UFMT
 
         private async void RenderButton_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(App.UeVersion))
+            if (string.IsNullOrEmpty(App.Settings.UeVersion))
             {
                 ConsoleWriteLineError($"No unreal engine selected! Make sure you selected the correct ue version in setting!");
                 return;
@@ -292,7 +268,7 @@ namespace UFMT
 
         private async void ExportButton_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(App.UeVersion))
+            if (string.IsNullOrEmpty(App.Settings.UeVersion))
             {
                 ConsoleWriteLineError($"No unreal engine selected! Make sure you selected the correct ue version in setting!");
                 return;
@@ -574,29 +550,72 @@ namespace UFMT
             Console.ForegroundColor = ConsoleColor.White;
         }
 
-        public void ConsoleWriteLineSuccess(string message)
+        public static void ConsoleWriteLineSuccess(string message)
         {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine(message);
             Console.ForegroundColor = ConsoleColor.White;
         }
 
-        public void ConsoleWriteLineWarning(string message)
+        public static void ConsoleWriteLineWarning(string message)
         {
             Console.ForegroundColor = ConsoleColor.DarkYellow;
             Console.WriteLine(message);
             Console.ForegroundColor = ConsoleColor.White;
         }
 
-        public void ConsoleWriteLineTest(string message)
+        public static void ConsoleWriteLineTest(string message)
         {
             Console.ForegroundColor = ConsoleColor.Magenta;
             Console.WriteLine(message);
             Console.ForegroundColor = ConsoleColor.White;
         }
 
+        public void LoadContent()
+        {
+            CurrentFnVersion = FnVersionsData.FnVersions.GetValueOrDefault(App.Settings.FnVersion);
+            CurrentUeVersion = UeVersionsData.UeVersions.GetValueOrDefault(App.Settings.UeVersion);
+            PhysicsImporterPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", CurrentUeVersion.PhysicsImporterName);
+            Body = new CharacterPart
+            {
+                Type = "body",
+                uassetFileBase64 = CurrentFnVersion.BodyCpMaleUassetBase64,
+                uexpFileBase64 = CurrentFnVersion.BodyCpMaleUexpBase64
+            };
+            Head = new CharacterPart
+            {
+                Type = "head",
+                uassetFileBase64 = CurrentFnVersion.HeadCpMaleUassetBase64,
+                uexpFileBase64 = CurrentFnVersion.HeadCpMaleUexpBase64
+            };
+            FaceAcc = new CharacterPart
+            {
+                Type = "faceacc",
+                uassetFileBase64 = CurrentFnVersion.FaceAccCpMaleUassetBase64,
+                uexpFileBase64 = CurrentFnVersion.FaceAccCpMaleUexpBase64
+            };
+            Hat = new CharacterPart
+            {
+                Type = "hat",
+                uassetFileBase64 = CurrentFnVersion.HatCpUassetBase64,
+                uexpFileBase64 = CurrentFnVersion.HatCpUexpBase64
+            };
+
+            if (string.IsNullOrEmpty(App.Settings.UeProjectPath)) { ConsoleWriteLineError("Unreal Engine Project path is empty!"); return; }
+            if (!Path.Exists(App.Settings.UeProjectPath)) { ConsoleWriteLineError($"{App.Settings.UeProjectPath} doesn't exist!"); return; }
+
+            CookedAssetsPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath),
+            "Saved", "Cooked", "WindowsNoEditor", new DirectoryInfo(Path.GetDirectoryName(App.Settings.UeProjectPath)).Name, "Content");
+
+            string pluginsPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), "Plugins", "PhysicsImporter");
+            if (!Path.Exists(pluginsPath)) ZipFile.ExtractToDirectory(PhysicsImporterPath, pluginsPath);
+
+            CurrentSkinPathBox_TextChanged("NoDelay", null);
+        }
+
         private (bool Success, string ErrorMsg) GetPskData()
         {
+            if (string.IsNullOrEmpty(CurrentSkinPath)) return (false, "CurrentSkinPath is empty!");
             List<string> pskPaths = new();
             List<string> alreadyUsedMaterials = new List<string>();
             List<CharacterPart> allCharacterParts = new() { Body, Head, FaceAcc, Hat };
@@ -722,7 +741,7 @@ namespace UFMT
 
                 await Task.Run(() =>
                 {
-                    Process blender = Process.Start(App.BlenderPath, $"-b --python \"{PskConvertScript}\" -- \"{cp.PskPath}\" " +
+                    Process blender = Process.Start(App.Settings.BlenderPath, $"-b --python \"{PskConvertScript}\" -- \"{cp.PskPath}\" " +
                 $"\"{Path.Combine(exportFbxPath, $"{exportName}.fbx")}\"");
                     blender.WaitForExit();
                 });
@@ -749,7 +768,7 @@ namespace UFMT
                 string fbxFullPath = Path.Combine(exportFbxPath, $"{exportName}.fbx");
                 string arguments = $"-b \"{blendFilePath}\" --python \"{PsaConvertScript}\" -- \"{psaPath}\" \"{fbxFullPath}\"";
 
-                ProcessStartInfo psi = new ProcessStartInfo(App.BlenderPath, arguments)
+                ProcessStartInfo psi = new ProcessStartInfo(App.Settings.BlenderPath, arguments)
                 {
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
@@ -1025,7 +1044,7 @@ namespace UFMT
 
                 await Task.Run(() =>
                 {
-                    Process blender = Process.Start(App.BlenderPath, arguments);
+                    Process blender = Process.Start(App.Settings.BlenderPath, arguments);
                     blender.WaitForExit();
                 });
                 ConsoleWriteLineSuccess("Successfully Rendered the preview image!");
@@ -1089,34 +1108,14 @@ namespace UFMT
                     iconTexturePaths.Add(Path.Combine(CurrentSkin.SourcePath, "Textures", $"{CurrentSkin.LargeIcon}.png"));
                 }
                 else iconTexturePaths = [CurrentSkin.SmallIcon, CurrentSkin.LargeIcon];
-
-                string skelTemplatePath = Path.Combine(Path.GetDirectoryName(App.UeProjectPath), "Content",
-                "Skeleton_Template.uasset");
-                string animBpTemplatePath = Path.Combine(Path.GetDirectoryName(App.UeProjectPath), "Content",
-                "AnimBP_Template.uasset");
-                string fakeCIDTemplatePath = Path.Combine(Path.GetDirectoryName(App.UeProjectPath), "Content",
+                string fakeCIDTemplatePath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), "Content",
                 "CID_Template.uasset");
-                string BaseMeshSkeletonPath = Path.Combine(Path.GetDirectoryName(App.UeProjectPath), "Content",
+                string BaseMeshSkeletonPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), "Content",
                 "Characters", "Player", "Male", "Male_Avg_Base", "Fortnite_M_Avg_Player_Skeleton.uasset");
-                string BaseMeshPath = Path.Combine(Path.GetDirectoryName(App.UeProjectPath), "Content",
+                string BaseMeshPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), "Content",
                 "Characters", "Player", "Male", "Male_Avg_Base", "Fortnite_M_Avg_Player.uasset");
                 string cookedCodeNamePath = Path.Combine(CookedAssetsPath, "CustomSkins", CurrentSkin.CodeName);
 
-                if (!File.Exists(skelTemplatePath))
-                {
-                    File.WriteAllBytes(skelTemplatePath, Convert.FromBase64String(CurrentUeVersion.SkeletonBase64));
-                    ConsoleWriteLineSuccess($"Created a Skeleton template!");
-                }
-                if (!File.Exists(animBpTemplatePath))
-                {
-                    File.WriteAllBytes(animBpTemplatePath, Convert.FromBase64String(CurrentUeVersion.AnimBPBase64));
-                    ConsoleWriteLineSuccess($"Created an Animation Blueprint template!");
-                }
-                if (!File.Exists(animBpTemplatePath))
-                {
-                    File.WriteAllBytes(animBpTemplatePath, Convert.FromBase64String(CurrentUeVersion.AnimBPBase64));
-                    ConsoleWriteLineSuccess($"Created an Animation Blueprint template!");
-                }
                 if (!File.Exists(fakeCIDTemplatePath))
                 {
                     File.WriteAllBytes(fakeCIDTemplatePath, Convert.FromBase64String(CurrentUeVersion.FakeCIDBase64));
@@ -1177,18 +1176,15 @@ namespace UFMT
                 string tempJsonPath = Path.Combine(Path.GetTempPath(), "ue_import_data.json");
                 File.WriteAllText(tempJsonPath, jsonString, new System.Text.UTF8Encoding(false));
 
-                //Format the script path cleanly
-                ConsoleWriteLineTest($"App.UeVersion is {App.UeVersion}");
-                ConsoleWriteLineTest($"The current Ue version's pythonscriptpath is {CurrentUeVersion.PythonScriptPath}");
-                string safeUeScript = CurrentUeVersion.PythonScriptPath.Replace('\\', '/');
+                string scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", CurrentUeVersion.PythonScriptName).Replace("\\", "/");
 
-                string arguments = $"\"{App.UeProjectPath}\" -run=PythonScriptCommandlet -script=\"{safeUeScript}\" -NullRHI -NoWindow -Silent";
+                string arguments = $"\"{App.Settings.UeProjectPath}\" -run=PythonScriptCommandlet -script=\"{scriptPath}\" -NullRHI -NoWindow -Silent";
 
                 Console.WriteLine($"Launching UE with args: {arguments}");
 
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
-                    FileName = App.UeExecutablePath,
+                    FileName = App.Settings.UeExecutablePath,
                     Arguments = arguments,
                     UseShellExecute = false, //This must be false for EnvironmentVariables to work
                     RedirectStandardOutput = true,
@@ -1211,9 +1207,12 @@ namespace UFMT
                 Console.WriteLine("Cooking the newly created assets...");
                 await CookProject();
                 Console.WriteLine("Done!");
-                Console.WriteLine("Creating the CID.json for the AssetRegistry.bin");
 
-                if (!CurrentUeVersion.ModdedUeVersion) FixMeshes();
+                CurrentUeVersion.FixRequiredFiles(Path.Combine
+                (cookedCodeNamePath, "Animations", $"{CurrentSkin.CodeName}_Lobby_Animation.uasset"), CurrentSkin.CharacterParts.Select
+                (cp => Path.Combine(cookedCodeNamePath, "Meshes", $"{Path.GetFileNameWithoutExtension(cp.FbxPath)}.uasset")).ToArray());
+
+                Console.WriteLine("Creating the CID.json for the AssetRegistry.bin");
                 CreateAssetRegistry();
                 CreateCharacterAssets();
                 ConsoleWriteLineSuccess("\nYour custom skin is ready! Check the output folder");
@@ -1235,11 +1234,11 @@ namespace UFMT
 
         private async Task CookProject()
         {
-            string arguments = $"\"{App.UeProjectPath}\" -run=Cook -TargetPlatform=WindowsNoEditor -unversioned -iterate -NullRHI -NoWindow -Silent";
+            string arguments = $"\"{App.Settings.UeProjectPath}\" -run=Cook -TargetPlatform=WindowsNoEditor -unversioned -iterate -NullRHI -NoWindow -Silent";
 
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
-                FileName = App.UeExecutablePath,
+                FileName = App.Settings.UeExecutablePath,
                 Arguments = arguments,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
@@ -1264,8 +1263,8 @@ namespace UFMT
         {
             if (!Path.Exists(CookedAssetsPath))
             {
-                CookedAssetsPath = Path.Combine(Path.GetDirectoryName(App.UeProjectPath),
-                "Saved", "Cooked", "WindowsNoEditor", Path.GetFileNameWithoutExtension(App.UeProjectPath), "Content");
+                CookedAssetsPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath),
+                "Saved", "Cooked", "WindowsNoEditor", Path.GetFileNameWithoutExtension(App.Settings.UeProjectPath), "Content");
             }
             //Just in case the user has the project folder named differently than the .uproject
 
@@ -1321,8 +1320,6 @@ namespace UFMT
 
         private void CreateCharacterAssets()
         {
-            ConsoleWriteLineTest($"Cooked Assets Path: {CookedAssetsPath}");
-            ConsoleWriteLineTest($"Skin's CodeName: {CurrentSkin.CodeName}");
 
             DirectoryInfo cookedCharacterDirectory = new DirectoryInfo(Path.Combine(CookedAssetsPath, "CustomSkins", CurrentSkin.CodeName));
             string contentFolderPath = Path.Combine(OutputFnGamePath, "Content", "CustomSkins", CurrentSkin.CodeName);
@@ -1431,24 +1428,22 @@ namespace UFMT
                 var miImportData = currentMi.Imports;
                 var miExportData = currentMi.Exports;
                 var miExport0 = (NormalExport)currentMi.Exports[0];
-                int diffusePathIndex = App.FnVersion == "13.40" ? 37 : 11;
-                int diffuseNameIndex = App.FnVersion == "13.40" ? 160 : 23;
                 string fnTexturesPath = $"/Game/CustomSkins/{CurrentSkin.CodeName}/Textures/";
-                miImportData[diffusePathIndex].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedDiffuse);
+                miImportData[CurrentFnVersion.DiffusePathIndex].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedDiffuse);
                 Console.WriteLine($"Changed the diffuse texture path in {material.Name} to {Path.Combine(fnTexturesPath, material.SelectedDiffuse)}");
-                miImportData[diffusePathIndex+1].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedMask);
+                miImportData[CurrentFnVersion.DiffusePathIndex + 1].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedMask);
                 Console.WriteLine($"Changed the mask texture path in {material.Name} to {Path.Combine(fnTexturesPath, material.SelectedMask)}");
-                miImportData[diffusePathIndex+2].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedNormal);
+                miImportData[CurrentFnVersion.DiffusePathIndex + 2].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedNormal);
                 Console.WriteLine($"Changed the normal texture path in {material.Name} to {Path.Combine(fnTexturesPath, material.SelectedNormal)}");
-                miImportData[diffusePathIndex+3].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedSpecular);
+                miImportData[CurrentFnVersion.DiffusePathIndex + 3].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedSpecular);
                 Console.WriteLine($"Changed the specular texture path in {material.Name} to {Path.Combine(fnTexturesPath, material.SelectedSpecular)}");
-                miImportData[diffuseNameIndex].ObjectName.Value.Value = material.SelectedDiffuse;
+                miImportData[CurrentFnVersion.DiffuseNameIndex].ObjectName.Value.Value = material.SelectedDiffuse;
                 Console.WriteLine($"Changed the diffuse texture in {material.Name} to {material.SelectedDiffuse}");
-                miImportData[diffuseNameIndex+1].ObjectName.Value.Value = material.SelectedMask;
+                miImportData[CurrentFnVersion.DiffuseNameIndex + 1].ObjectName.Value.Value = material.SelectedMask;
                 Console.WriteLine($"Changed the mask texture in {material.Name} to {material.SelectedMask}");
-                miImportData[diffuseNameIndex+2].ObjectName.Value.Value = material.SelectedNormal;
+                miImportData[CurrentFnVersion.DiffuseNameIndex + 2].ObjectName.Value.Value = material.SelectedNormal;
                 Console.WriteLine($"Changed the normal texture in {material.Name} to {material.SelectedNormal}");
-                miImportData[diffuseNameIndex+3].ObjectName.Value.Value = material.SelectedSpecular;
+                miImportData[CurrentFnVersion.DiffuseNameIndex + 3].ObjectName.Value.Value = material.SelectedSpecular;
                 Console.WriteLine($"Changed the specular texture in {material.Name} to {material.SelectedSpecular}");
                 miExportData[0].ObjectName.Value.Value = material.Name;
 
@@ -1579,17 +1574,31 @@ namespace UFMT
             var currentCid = new UAsset(cidUassetPath, EngineVersion.VER_UE4_26);
             var cidExport0 = (NormalExport)currentCid.Exports[0];
             var cidImport = currentCid.Imports;
-            cidImport[2].ObjectName.Value.Value = $"HID_{CurrentSkin.CodeName}";
+            cidImport[CurrentFnVersion.HidNameIndex].ObjectName.Value.Value = $"HID_{CurrentSkin.CodeName}";
             Console.WriteLine($"Changed the Hero Id in {CurrentSkin.CID} to HID_{CurrentSkin.CodeName}");
-            cidImport[4].ObjectName.Value.Value = $"/Game/CustomSkins/{CurrentSkin.CodeName}/HID_{CurrentSkin.CodeName}";
+            cidImport[CurrentFnVersion.HidPathIndex].ObjectName.Value.Value = $"/Game/CustomSkins/{CurrentSkin.CodeName}/HID_{CurrentSkin.CodeName}";
             Console.WriteLine($"Changed the Hero Id path in {CurrentSkin.CID} to " +
             $"/Game/CustomSkins/{CurrentSkin.CodeName}/HID_{CurrentSkin.CodeName}");
 
             cidExport0.ObjectName.Value.Value = CurrentSkin.CID;
             var rarity = (EnumPropertyData)cidExport0["Rarity"];
             rarity.Value.Value.Value = $"EFortRarity::{CurrentSkin.Rarity}";
+
             if (CurrentSkin.Rarity == "Uncommon") cidExport0.Data.RemoveAt(1); //Removes the rarity property since no rarity is equal to uncommon in fn
-            if (CurrentSkin.Rarity == "Unattainable (Impossible T7)") rarity.Value.Value.Value = $"EFortRarity::Unattainable"; ;
+            else if (CurrentSkin.Rarity == "Unattainable (Impossible T7)") rarity.Value.Value.Value = $"EFortRarity::Unattainable";
+            if (App.Settings.FnVersion == "8.51" && CurrentSkin.Rarity != "Uncommon")
+            {
+                string rarityCodename = "";
+                if (CurrentSkin.Rarity == "Common") rarityCodename = "Handmade";
+                else if (CurrentSkin.Rarity == "Rare") rarityCodename = "Sturdy";
+                else if (CurrentSkin.Rarity == "Epic") rarityCodename = "Quality";
+                else if (CurrentSkin.Rarity == "Legendary") rarityCodename = "Fine";
+                else if (CurrentSkin.Rarity == "Mythic") rarityCodename = "Elegant";
+                else if (CurrentSkin.Rarity == "Transcendent") rarityCodename = "Masterwork";
+                else if (CurrentSkin.Rarity == "Unattainable (Impossible T7)") rarityCodename = "Epic";
+                rarity.Value.Value.Value = $"EFortRarity::{rarityCodename}";
+            }
+
             Console.WriteLine($"Changed the Rarity in {CurrentSkin.CID} to {CurrentSkin.Rarity}");
             ((TextPropertyData)cidExport0["DisplayName"]).CultureInvariantString.Value = CurrentSkin.Name;
             Console.WriteLine($"Changed the DisplayName in {CurrentSkin.CID} to {CurrentSkin.Name}");
@@ -1646,63 +1655,6 @@ namespace UFMT
             ConsoleWriteLineSuccess($"Successfuly edited {CurrentSkin.CodeName}_Idle_Montage.uasset");
         }
 
-        private void FixMeshes()
-        {
-            //Because Epic added extra booleans that write in cooked skeletal meshes in 4.26.2, we have to remove it
-            //since Fn uses 4.26.0 where the extra booleans didn't exist yet in the cooked skeletal meshes
-            //This is a function I made that I tested with 50+ meshes so it should work properly
-            string assetsPath = Path.Combine(CookedAssetsPath, "CustomSkins", CurrentSkin.CodeName, "Meshes");
-
-            List<string> fbxPaths = CurrentSkin.CharacterParts.Select(cp => cp.FbxPath).ToList();
-            foreach (string fbxPath in fbxPaths)
-            {
-                string uassetPath = Path.Combine
-                (assetsPath, $"{Path.GetFileNameWithoutExtension(fbxPath)}.uasset");
-                string uexpPath = Path.Combine
-                (assetsPath, $"{Path.GetFileNameWithoutExtension(fbxPath)}.uexp");
-                byte[] uasset = File.ReadAllBytes(uassetPath);
-                byte[] uexp = File.ReadAllBytes(uexpPath);
-
-                List<int> insertions = FindInsertions(uexp);
-
-                if (insertions.Count == 0)
-                {
-                    ConsoleWriteLineWarning("The cooked mesh may already be correct or was not cooked by UE 4.26.2.");
-                    Console.WriteLine("No changes made to skeletal meshes.");
-                }
-                else
-                {
-                    Console.WriteLine("\nFound " + insertions.Count + " extra boolean(s)");
-                    foreach (int off in insertions)
-                        Console.WriteLine("  uexp offset 0x" + off.ToString("X5") + "  value=0x" + uexp[off].ToString("X2"));
-                    //Fix .uexp 
-                    byte[] fixedUexp = RemoveBytes(uexp, insertions);
-                    Console.Write("};");
-                    Console.WriteLine();
-
-                    //.uasset
-                    int oldSerial = uexp.Length - 4;
-                    int newSerial = fixedUexp.Length - 4;
-                    int oldPkgSize = uasset.Length + oldSerial;
-                    int newPkgSize = uasset.Length + newSerial;
-
-                    byte[] fixedUasset = (byte[])uasset.Clone();
-                    int c1 = PatchInt32All(fixedUasset, oldSerial, newSerial);
-                    int c2 = PatchInt32All(fixedUasset, oldPkgSize, newPkgSize);
-
-                    Console.WriteLine("\nSerialSize:    " + oldSerial + " -> " + newSerial + "  (" + c1 + " patch(es))");
-                    Console.WriteLine("SizeOfPackage: " + oldPkgSize + " -> " + newPkgSize + "  (" + c2 + " patch(es))");
-
-                    if (c1 == 0 || c2 == 0)
-                    {
-                        Console.WriteLine("\nWARNING: A header field was not found/patched. Output may be invalid.");
-                    }
-                    File.WriteAllBytes(uassetPath, fixedUasset);
-                    File.WriteAllBytes(uexpPath, fixedUexp);
-                }
-            }
-        }
-
         private void SwizzleTextures(string texturePath)
         {
             using Bitmap bmp = new Bitmap(texturePath);
@@ -1727,57 +1679,6 @@ namespace UFMT
             bmp.Save(Path.Combine(CurrentSkin.TexturesPath, "Swizzled", Path.GetFileName(texturePath)));
             Console.WriteLine($"Swizzled {texturePath}");
         }
-
-        private List<int> FindInsertions(byte[] uexp)
-        {
-            var results = new List<int>();
-
-            int[] ones = { -17, -1, 0 };
-            int[] zeros = { -20, -19, -18, -16, -14, -10, -7, -6, -5, -4, -3, -2, 1, 2, 3, 6, 7, 8, 9, 10, 11, 13, 14, 15, 17 };
-
-            for (int i = 20; i < uexp.Length - 17; i++)
-            {
-                if (ones.Any(o => uexp[i + o] != 0x01)) continue;
-
-                if (zeros.Any(o => uexp[i + o] != 0x00)) continue;
-
-                results.Add(i);
-            }
-
-            return results;
-        }
-
-        private byte[] RemoveBytes(byte[] data, List<int> offsets)
-        {
-            var sorted = offsets.OrderBy(x => x).ToList();
-            var result = new List<byte>(data.Length - sorted.Count);
-            int prev = 0;
-            foreach (int off in sorted)
-            {
-                for (int i = prev; i < off; i++) result.Add(data[i]);
-                prev = off + 1;
-            }
-            for (int i = prev; i < data.Length; i++) result.Add(data[i]);
-            return result.ToArray();
-        }
-
-        private int PatchInt32All(byte[] data, int oldValue, int newValue)
-        {
-            byte b0 = (byte)(oldValue & 0xFF), b1 = (byte)((oldValue >> 8) & 0xFF),
-             b2 = (byte)((oldValue >> 16) & 0xFF), b3 = (byte)((oldValue >> 24) & 0xFF);
-            byte n0 = (byte)(newValue & 0xFF), n1 = (byte)((newValue >> 8) & 0xFF),
-             n2 = (byte)((newValue >> 16) & 0xFF), n3 = (byte)((newValue >> 24) & 0xFF);
-            int count = 0;
-            for (int i = 0; i <= data.Length - 4; i++)
-            {
-                if (data[i] == b0 && data[i + 1] == b1 && data[i + 2] == b2 && data[i + 3] == b3)
-                { data[i] = n0; data[i + 1] = n1; data[i + 2] = n2; data[i + 3] = n3; count++; }
-            }
-            return count;
-        }
-
-        private uint ReadUInt32(byte[] data, int offset) =>
-         (uint)(data[offset] | (data[offset + 1] << 8) | (data[offset + 2] << 16) | (data[offset + 3] << 24));
 
         private float sRGBToLinearRGB(float val)
         {

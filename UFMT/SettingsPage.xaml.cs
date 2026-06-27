@@ -9,114 +9,141 @@ using Microsoft.UI.Xaml.Navigation;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.InteropServices.WindowsRuntime;
 using UAssetAPI.UnrealTypes;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using WinRT.UFMTGenericHelpers;
 
 namespace UFMT;
 public sealed partial class SettingsPage : Page
 {
-    public string UeVersion
-    {
-        get => App.UeVersion;
-        set
-        {
-            if (App.UeVersion != value)
-            {
-                App.UeVersion = value;
-                AppSettings.SetValue("UeVersion", value);
-                AvailableFnVersions = UesFnVersions.GetValueOrDefault(value.Replace("_FnGameProj", ""));
-                FnVersionComboBox.ItemsSource = AvailableFnVersions;
-            }
-        }
-    }
-    public string FnVersion
-    {
-        get => App.FnVersion;
-        set
-        {
-            if (App.FnVersion != value)
-            {
-                App.FnVersion = value;
-                AppSettings.SetValue("FnVersion", value);
-            }
-        }
-    }
-    public Dictionary<string, string[]> UesFnVersions = new() { {"UE_4.26", new string[] { "13.40", "14.30" } }, 
-    { "UE_4.23", new string[] { "8.51"} } };
-    public string[] AvailableFnVersions;
+    public SettingsData Settings => App.Settings;
     public SettingsPage()
     {
         InitializeComponent();
-        BlenderPathBox.Text = App.BlenderPath ?? "";
-        UeExecutablePathBox.Text = App.UeExecutablePath ?? "";
-        UeProjectPathBox.Text = App.UeProjectPath ?? "";
-        AvailableFnVersions = UesFnVersions.GetValueOrDefault(UeVersion.Replace("_FnGameProj", ""));
-        FnVersionComboBox.ItemsSource = AvailableFnVersions;
     }
-    #region base64
-    string DefaultEngineIniBase64 = @"Wy9TY3JpcHQvRW5naW5lU2V0dGluZ3MuR2FtZU1hcHNTZXR0aW5nc10NCkdhbWVEZWZhdWx0TWFwPS9HYW1lL1N0YXJ0ZXJDb250ZW50L01hcHMvTWluaW1hbF9EZWZhdWx0DQoNCg0KRWRpdG9yU3RhcnR1cE1hcD0vR2FtZS9TdGFydGVyQ29udGVudC9NYXBzL01pbmltYWxfRGVmYXVsdA0KDQpbL1NjcmlwdC9IYXJkd2FyZVRhcmdldGluZy5IYXJkd2FyZVRhcmdldGluZ1NldHRpbmdzXQ0KVGFyZ2V0ZWRIYXJkd2FyZUNsYXNzPURlc2t0b3ANCkFwcGxpZWRUYXJnZXRlZEhhcmR3YXJlQ2xhc3M9RGVza3RvcA0KRGVmYXVsdEdyYXBoaWNzUGVyZm9ybWFuY2U9TWF4aW11bQ0KQXBwbGllZERlZmF1bHRHcmFwaGljc1BlcmZvcm1hbmNlPU1heGltdW0NCg0KW1N5c3RlbVNldHRpbmdzXQ0Kci5Pb2RsZURhdGFDb21wcmVzc2lvbkZvcm1hdD1LcmFrZW4NCnIuT29kbGVEYXRhQ29tcHJlc3Npb25MZXZlbD01DQpyLlN0YXRpY01lc2guU3RyaXBNaW5Mb2REYXRhRHVyaW5nQ29va2luZz0xDQpyLlNrZWxldGFsTWVzaC5TdHJpcE1pbkxvRERhdGFEdXJpbmdDb29raW5nPTENCnIuU2tlbGV0YWxNZXNoLlN0cmlwT3B0aW9uYWxMT0RzPTENCnIuU2tpbkNhY2hlLkNvbXBpbGVTaGFkZXJzPTANCnIuUmF5VHJhY2luZz0wDQpyLlNraW5DYWNoZS5Nb2RlPTANCnIuU2tlbGV0YWxNZXNoLktlZXBNb2JpbGVNaW5MT0REYXRhPTANCnIuRm9yY2VTdHJpcEFkamFjZW5jeURhdGFEdXJpbmdDb29raW5nPTENCkNvbXBhdC5NQVhfR1BVU0tJTl9CT05FUz03NQ0Kci5Ta2VsZXRhbE1lc2guU3RyaXBWZXJ0ZXhDb2xvcnM9MQ0Kci5Ta2VsZXRhbE1lc2guRGlzY2FyZEF0dHJpYnV0ZXM9MQ0Kci5Ta2VsZXRhbE1lc2guT3B0aW1pemVTZWN0aW9uRGF0YT0xDQoNCltDb3JlLlN5c3RlbV0NCkxlZ2FjeUJ1bGtEYXRhT2Zmc2V0cz1UcnVlDQoNCltPb2RsZUhhbmRsZXJDb21wb25lbnRdDQpiRW5hYmxlT29kbGU9dHJ1ZQ0KU2VydmVyRW5hYmxlTW9kZT1BbHdheXNFbmFibGVkDQpDbGllbnRFbmFibGVNb2RlPUFsd2F5c0VuYWJsZWQNCk1vZGU9UmVsZWFzZQ0KYlVzZURpY3Rpb25hcnlJZlByZXNlbnQ9dHJ1ZQ0KU2VydmVyRGljdGlvbmFyeT1Db250ZW50L09vZGxlL0ZvcnRuaXRlR2FtZU91dHB1dC51ZGljDQpDbGllbnREaWN0aW9uYXJ5PUNvbnRlbnQvT29kbGUvRm9ydG5pdGVHYW1lSW5wdXQudWRpYw==";
-    #endregion
-    
-    private void BlenderTextBoxChanged(object sender, TextChangedEventArgs e)
+    private void Remove_Quotes(object sender, TextChangedEventArgs e)
     {
-        BlenderPathBox.Text = BlenderPathBox.Text.Replace(@"""", "");
-        AppSettings.SetValue("BlenderPath", BlenderPathBox.Text);
-        App.BlenderPath = BlenderPathBox.Text;
-    }
-
-    private void UeExecutableTextBoxChanged(object sender, TextChangedEventArgs e)
-    {
-        UeExecutablePathBox.Text = UeExecutablePathBox.Text.Replace(@"""", "");
-        AppSettings.SetValue($"Ue{UeVersion}ExecutablePath", UeExecutablePathBox.Text);
-        App.UeExecutablePath = UeExecutablePathBox.Text;
-    }
-    
-    private void UeProjectTextBoxChanged(object sender, TextChangedEventArgs e)
-    {
-        UeProjectPathBox.Text = UeProjectPathBox.Text.Replace(@"""", "");
-        AppSettings.SetValue($"Ue{UeVersion}ProjectPath", UeProjectPathBox.Text);
-        App.UeProjectPath = UeProjectPathBox.Text;
-
-        if (!string.IsNullOrEmpty(App.UeProjectPath))
+        if (sender is TextBox box && box.Text.Contains("\""))
         {
-            string defaultEngineIniPath = Path.Combine(Path.GetDirectoryName(App.UeProjectPath), "Config", "DefaultEngine.ini");
-            if (File.Exists(defaultEngineIniPath))
+            box.Text = box.Text.Replace("\"", "");
+        }
+    }
+}
+
+public class SettingsData : INotifyPropertyChanged
+{
+    public event PropertyChangedEventHandler PropertyChanged;
+    private void OnPropertyChanged([CallerMemberName] string propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    public SettingsData()
+    {
+        AvailableFnVersions = UeFnVersions.GetValueOrDefault(UeVersion);
+        _fnVersion = AppSettings.GetValue($"{UeVersion}_FnVersion", "8.51");
+        _ueExecutablePath = AppSettings.GetValue($"{UeVersion}_ExecutablePath", "");
+        _ueProjectPath = AppSettings.GetValue($"{UeVersion}_ProjectPath", "");
+    }
+
+    private Dictionary<string, string[]> UeFnVersions = new()
+    {
+        {"UE_4.22", new string[] {"8.51" } },       
+        {"UE_4.25", new string[] {"14.30", "13.40" } },
+        {"UE_4.26", new string[] {"14.30", "13.40" } },
+        {"UE_4.26_FnGameProj", new string[] {"14.30", "13.40" } },
+    };
+    private string _ueVersion = AppSettings.GetValue("UeVersion", "UE_4.22");
+    public string UeVersion
+    {
+        get => _ueVersion;
+        set
+        {
+            if (_ueVersion != value)
             {
-                try
-                {
-                    File.WriteAllBytes(defaultEngineIniPath, Convert.FromBase64String(DefaultEngineIniBase64));
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine($"Modified {defaultEngineIniPath}!");
-                    Console.ForegroundColor = ConsoleColor.White;
-                }
-                catch (Exception ex)
-                {
-                    Console.ForegroundColor = ConsoleColor.DarkRed;
-                    Console.WriteLine($"[SettingsPage] Error modifying DefaultEngine.ini: {ex.Message}");
-                    Console.ForegroundColor = ConsoleColor.White;
-                }
+                _ueVersion = value;
+                AvailableFnVersions = UeFnVersions.GetValueOrDefault(value);
+                OnPropertyChanged(nameof(AvailableFnVersions));
+
+                _fnVersion = AppSettings.GetValue($"{value}_FnVersion", UeFnVersions.GetValueOrDefault(value)[0]);
+                AppSettings.SetValue($"{value}_FnVersion", _fnVersion);
+                _ueExecutablePath = AppSettings.GetValue($"{value}_ExecutablePath", "");
+                _ueProjectPath = AppSettings.GetValue($"{value}_ProjectPath", "");
+
+                AppSettings.SetValue("UeVersion", value);
+
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(FnVersion));
+                OnPropertyChanged(nameof(UeExecutablePath));
+                OnPropertyChanged(nameof(UeProjectPath));
             }
         }
     }
 
-    private void UeVersionChanged(object sender, SelectionChangedEventArgs e)
+    public string[] AvailableFnVersions { get; set; }
+
+    private string _fnVersion;
+    public string FnVersion
     {
-        var c = sender as ComboBox;
-        UeVersion = c.SelectedItem.ToString();
-        UeExecutablePathBox.Text = AppSettings.GetValue($"Ue{UeVersion}ExecutablePath", "");
-        UeProjectPathBox.Text = AppSettings.GetValue($"Ue{UeVersion}ProjectPath", "");
-        App.UeExecutablePath = UeExecutablePathBox.Text;
-        App.UeProjectPath = UeProjectPathBox.Text;
+        get => _fnVersion;
+        set
+        {
+            if (!string.IsNullOrEmpty(value) && _fnVersion != value)
+            {
+                _fnVersion = value;
+                AppSettings.SetValue($"{UeVersion}_FnVersion", value);
+                OnPropertyChanged();
+            }
+        }
+    }
+    private string _blenderPath = AppSettings.GetValue("BlenderPath", "");
+    public string BlenderPath
+    {
+        get => _blenderPath;
+        set
+        {
+            if (_blenderPath != value)
+            {
+                _blenderPath = value;
+                AppSettings.SetValue("BlenderPath", value);
+                OnPropertyChanged();
+            }
+        }
     }
 
-    private void FnVersionChanged(object sender, SelectionChangedEventArgs e)
+    private string _ueExecutablePath;
+    public string UeExecutablePath
     {
-        var c = sender as ComboBox;
-        FnVersion = c.SelectedItem.ToString();
+        get => _ueExecutablePath;
+        set
+        {
+            if (_ueExecutablePath != value)
+            {
+                _ueExecutablePath = value;
+                AppSettings.SetValue($"{UeVersion}_ExecutablePath", value);
+                OnPropertyChanged();
+            }
+        }
+    }
+    private string _ueProjectPath;
+    public string UeProjectPath
+    {
+        get => _ueProjectPath;
+        set
+        {
+            if (_ueProjectPath != value)
+            {
+                _ueProjectPath = value;
+                AppSettings.SetValue($"{UeVersion}_ProjectPath", value);
+                OnPropertyChanged();
+            }
+        }
     }
 }
