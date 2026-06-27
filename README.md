@@ -84,8 +84,8 @@ Before using this tool, you need to install and configure:
 
 ## Compatibility
 
-- **Unreal Engine:** 4.26 (original or modded for Fortnite)
-- **Fortnite Versions:** v14.30, v13.40
+- **Unreal Engine:** 4.22, 4.25, 4.26, 4.26 Modded (FnGameProj14.30)
+- **Fortnite Versions:** v8.51, v13.40, v14.30
 - **Blender:** 4.5
 
 ## Credits
