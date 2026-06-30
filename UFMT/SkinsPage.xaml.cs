@@ -62,7 +62,7 @@ namespace UFMT
         public static UeVersion CurrentUeVersion = UeVersionsData.UeVersions.GetValueOrDefault(App.Settings.UeVersion);
         private static string PskConvertScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_ConvertPsk.py");
         private static string PsaConvertScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_ConvertPsa.py");
-        private static string RenderScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_RenderPreview.py");
+        private static string RenderScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_RenderPreviewCh1.py");
         private static string PhysicsImporterPath;
         private static string CookedAssetsPath;
         private static string ValidCodenameCharacters = "abcdefghijklmnopqrstuvwxyz1234567890_";
@@ -441,38 +441,86 @@ namespace UFMT
                     if (CurrentSkin.Gender != null || c?.SelectedItem == null) return;
                     CurrentSkin.Gender = c.SelectedItem.ToString();
                 }
-                else if (c.Tag.ToString() == "series")
-                {
-                    string fullPath = $"ms-appx:///Assets/{CurrentSkin.Series}_Icon_Background.png";
-                    iconBackgroundOverlay.Source = new BitmapImage(new Uri(fullPath));
 
-                    if (c.SelectedItem.ToString() == "None")
+                if (App.Settings.FnVersion == "8.51")
+                {
+                    if (c.Tag.ToString() == "series")
                     {
-                        fullPath = $"ms-appx:///Assets/{CurrentSkin.Rarity}_Icon.png";
-                        iconOverlay.Source = new BitmapImage(new Uri(fullPath));
+                        string fullPath = $"ms-appx:///Assets/{CurrentSkin.Series}_Icon_Background.png";
+
+                        if (c.SelectedItem.ToString() == "None")
+                        {
+                            fullPath = $"ms-appx:///Assets/Chapter1/{CurrentSkin.Rarity}.png";
+                            iconOverlayCh1.Source = new BitmapImage(new Uri(fullPath));
+
+                            fullPath = $"ms-appx:///Assets/Chapter1/{CurrentSkin.Rarity}_Icon_Overlay.png";
+                            RarityIconOverlayCh1.Source = new BitmapImage(new Uri(fullPath));
+
+                            fullPath = $"ms-appx:///Assets/{CurrentSkin.Rarity}_Text.png";
+                        }
+
+                        else
+                        {
+                            fullPath = $"ms-appx:///Assets/Chapter1/{CurrentSkin.Series}.png";
+                            iconOverlayCh1.Source = new BitmapImage(new Uri(fullPath));
+
+                            fullPath = $"ms-appx:///Assets/Chapter1/{CurrentSkin.Series}_Icon_Overlay.png";
+                            RarityIconOverlayCh1.Source = new BitmapImage(new Uri(fullPath));
+
+
+                            fullPath = $"ms-appx:///Assets/{CurrentSkin.Series}_Text.png";
+                        }
+
+                    }
+                    else if (c?.Tag.ToString() == "rarity" && c?.SelectedItem != null && seriesComboBox?.SelectedItem != null)
+                    {
+                        if (CurrentSkin.Series != "None") return;
+                        string fullPath = $"ms-appx:///Assets/Chapter1/{CurrentSkin.Rarity}.png";
+                        iconOverlayCh1.Source = new BitmapImage(new Uri(fullPath));
+
+                        fullPath = $"ms-appx:///Assets/Chapter1/{CurrentSkin.Rarity}_Icon_Overlay.png";
+                        RarityIconOverlayCh1.Source = new BitmapImage(new Uri(fullPath));
 
                         fullPath = $"ms-appx:///Assets/{CurrentSkin.Rarity}_Text.png";
-                        textOverlay.Source = new BitmapImage(new Uri(fullPath));
                     }
-
-                    else
+                }
+                else
+                {
+                    Ch1PreviewViewBox.Visibility = Visibility.Collapsed;
+                    Ch2PreviewViewBox.Visibility = Visibility.Visible;
+                    if (c.Tag.ToString() == "series")
                     {
-                        fullPath = $"ms-appx:///Assets/{CurrentSkin.Series}_Icon.png";
+                        string fullPath = $"ms-appx:///Assets/Chapter2/{CurrentSkin.Series}_Icon_Background.png";
+                        iconBackgroundOverlay.Source = new BitmapImage(new Uri(fullPath));
+
+                        if (c.SelectedItem.ToString() == "None")
+                        {
+                            fullPath = $"ms-appx:///Assets/Chapter2/{CurrentSkin.Rarity}_Icon.png";
+                            iconOverlay.Source = new BitmapImage(new Uri(fullPath));
+
+                            fullPath = $"ms-appx:///Assets/Chapter2/{CurrentSkin.Rarity}_Text.png";
+                            textOverlay.Source = new BitmapImage(new Uri(fullPath));
+                        }
+
+                        else
+                        {
+                            fullPath = $"ms-appx:///Assets/Chapter2/{CurrentSkin.Series}_Icon.png";
+                            iconOverlay.Source = new BitmapImage(new Uri(fullPath));
+
+                            fullPath = $"ms-appx:///Assets/Chapter2/{CurrentSkin.Series}_Text.png";
+                            textOverlay.Source = new BitmapImage(new Uri(fullPath));
+                        }
+
+                    }
+                    else if (c?.Tag.ToString() == "rarity" && c?.SelectedItem != null && seriesComboBox?.SelectedItem != null)
+                    {
+                        if (CurrentSkin.Series != "None") return;
+                        string fullPath = $"ms-appx:///Assets/Chapter2/{CurrentSkin.Rarity}_Icon.png";
                         iconOverlay.Source = new BitmapImage(new Uri(fullPath));
 
-                        fullPath = $"ms-appx:///Assets/{CurrentSkin.Series}_Text.png";
+                        fullPath = $"ms-appx:///Assets/Chapter2/{CurrentSkin.Rarity}_Text.png";
                         textOverlay.Source = new BitmapImage(new Uri(fullPath));
                     }
-
-                }
-                else if (c?.Tag.ToString() == "rarity" && c?.SelectedItem != null && seriesComboBox?.SelectedItem != null)
-                {
-                    if (CurrentSkin.Series != "None") return;
-                    string fullPath = $"ms-appx:///Assets/{CurrentSkin.Rarity}_Icon.png";
-                    iconOverlay.Source = new BitmapImage(new Uri(fullPath));
-
-                    fullPath = $"ms-appx:///Assets/{CurrentSkin.Rarity}_Text.png";
-                    textOverlay.Source = new BitmapImage(new Uri(fullPath));
                 }
             }
         }
@@ -484,6 +532,7 @@ namespace UFMT
             {
                 CurrentSkin.Name = c.Text;
                 characterNameText.Text = CurrentSkin.Name.ToUpper();
+                characterNameTextCh1.Text = CurrentSkin.Name.ToUpper();
             }
             else if (c.Tag.ToString() == "characterDescription")
             {
@@ -513,22 +562,44 @@ namespace UFMT
                     DynamicExpanderList.LayoutUpdated -= OnLayoutUpdated;
                     IsLoadingDropdowns = false;
                     string imgPath;
-                    if (CurrentSkin.Series == "None")
+                    if (App.Settings.FnVersion == "8.51")
                     {
-                        imgPath = $"ms-appx:///Assets/{CurrentSkin.Rarity}_Icon.png";
-                        iconOverlay.Source = new BitmapImage(new Uri(imgPath));
+                        if (CurrentSkin.Series == "None")
+                        {
+                            imgPath = $"ms-appx:///Assets/Chapter1/{CurrentSkin.Rarity}.png";
+                            iconOverlayCh1.Source = new BitmapImage(new Uri(imgPath));
 
-                        imgPath = $"ms-appx:///Assets/{CurrentSkin.Rarity}_Text.png";
-                        textOverlay.Source = new BitmapImage(new Uri(imgPath));
+                            imgPath = $"ms-appx:///Assets/Chapter1/{CurrentSkin.Rarity}_Icon_Overlay.png";
+                            RarityIconOverlayCh1.Source = new BitmapImage(new Uri(imgPath));
+                        }
+                        else
+                        {
+                            imgPath = $"ms-appx:///Assets/Chapter1/{CurrentSkin.Series}.png";
+                            iconOverlayCh1.Source = new BitmapImage(new Uri(imgPath));
+
+                            imgPath = $"ms-appx:///Assets/Chapter1/{CurrentSkin.Series}_Icon_Overlay.png";
+                            RarityIconOverlayCh1.Source = new BitmapImage(new Uri(imgPath));
+                        }
                     }
-
                     else
                     {
-                        imgPath = $"ms-appx:///Assets/{CurrentSkin.Series}_Icon.png";
-                        iconOverlay.Source = new BitmapImage(new Uri(imgPath));
+                        if (CurrentSkin.Series == "None")
+                        {
+                            imgPath = $"ms-appx:///Assets/Chapter2/{CurrentSkin.Rarity}_Icon.png";
+                            iconOverlay.Source = new BitmapImage(new Uri(imgPath));
 
-                        imgPath = $"ms-appx:///Assets/{CurrentSkin.Series}_Text.png";
-                        textOverlay.Source = new BitmapImage(new Uri(imgPath));
+                            imgPath = $"ms-appx:///Assets/Chapter2/{CurrentSkin.Rarity}_Text.png";
+                            textOverlay.Source = new BitmapImage(new Uri(imgPath));
+                        }
+
+                        else
+                        {
+                            imgPath = $"ms-appx:///Assets/Chapter2/{CurrentSkin.Series}_Icon.png";
+                            iconOverlay.Source = new BitmapImage(new Uri(imgPath));
+
+                            imgPath = $"ms-appx:///Assets/Chapter2/{CurrentSkin.Series}_Text.png";
+                            textOverlay.Source = new BitmapImage(new Uri(imgPath));
+                        }
                     }
 
                     if (!CurrentSkin.Materials.Any(mat => !mat.Swizzle) && CurrentSkin.Materials.Count > 0) AllSwizzleCheckBoxValue = true;
@@ -575,6 +646,18 @@ namespace UFMT
         {
             CurrentFnVersion = FnVersionsData.FnVersions.GetValueOrDefault(App.Settings.FnVersion);
             CurrentUeVersion = UeVersionsData.UeVersions.GetValueOrDefault(App.Settings.UeVersion);
+            if (App.Settings.FnVersion == "8.51")
+            {
+                Ch1PreviewViewBox.Visibility = Visibility.Visible;
+                Ch2PreviewViewBox.Visibility = Visibility.Collapsed;
+                RenderScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_RenderPreviewCh1.py");
+            }
+            else
+            {
+                Ch1PreviewViewBox.Visibility = Visibility.Collapsed;
+                Ch2PreviewViewBox.Visibility = Visibility.Visible;
+                RenderScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_RenderPreviewCh2.py");
+            }
             PhysicsImporterPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", CurrentUeVersion.PhysicsImporterName);
             Body = new CharacterPart
             {
@@ -1062,6 +1145,7 @@ namespace UFMT
 
                     await bitmap.SetSourceAsync(inMemoryStream);
                     characterPreview.Source = bitmap;
+                    characterPreviewCh1.Source = bitmap;
                 }
 
                 if (!string.IsNullOrEmpty(CurrentSkin.LargeIcon))
@@ -1082,6 +1166,7 @@ namespace UFMT
 
                     await iconBitmap.SetSourceAsync(inMemoryStream);
                     iconPreview.Source = iconBitmap;
+                    iconPreviewCh1.Source = iconBitmap;
                 }
             }
             catch (Exception ex)
