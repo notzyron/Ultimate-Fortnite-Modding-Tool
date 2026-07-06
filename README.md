@@ -84,7 +84,7 @@ Before using this tool, you need to install and configure:
 
 ## Compatibility
 
-- **Unreal Engine:** 4.22, 4.25, 4.26, 4.26 Modded (FnGameProj14.30)
+- **Unreal Engine:** 4.22, 4.23 Modded (FnGameProj8.51), 4.25, 4.26, 4.26 Modded (FnGameProj14.30)
 - **Fortnite Versions:** v8.51, v13.40, v14.30
 - **Blender:** 4.5
 
@@ -93,19 +93,12 @@ Before using this tool, you need to install and configure:
 - **WinUI 3** — UI framework
 - **[QueenIO](https://github.com/Code-Vein-Tool-Hub/QueenIO)** — Asset extraction techniques (adapted code with attribution)
 - **[AssetRegistryInjector](https://github.com/Code-Vein-Tool-Hub/AssetRegistryTool)** — Registry injection utilities (adapted code with attribution)
-- **[Zylox](https://github.com/zyloxmods)** — BetterFBX exporter plugin
-- **[JsonAsAsset](https://github.com/JsonAsAsset/JsonAsAsset)** — Converting .json Physics Assets into Physics Assets
+- **[Zylox](https://github.com/zyloxmods)** — BetterFBX exporter plugin, Base Head (for facial animations)
+- **[JsonAsAsset](https://github.com/JsonAsAsset/JsonAsAsset)** — Converting .json Physics Assets into Physics Assets and importing .json animation sequences
+- **[U4pak](https://github.com/panzi/u4pak)** — Packing the skin after it's finished
 
 ## License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
-
-## Troubleshooting
-
-- **Plugins not found in UE:** Ensure Python Script Editor and Scripting Utilities are enabled in Edit → Plugins
-- **Blender scripts failing:** Verify Python is accessible from your Blender installation
-- **Import stuck:** Check that all paths in Settings are correct and files exist
-
----
 
 **Have questions or found a bug?** Open an issue on GitHub!
