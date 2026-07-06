@@ -15,6 +15,7 @@
                 <TextBlock Text="Unreal Engine Version" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
                 <ComboBox VerticalAlignment="Center" SelectedItem="{x:Bind Settings.UeVersion, Mode=TwoWay}">
                     <x:String>UE_4.22</x:String>
+                    <x:String>UE_4.23_FnGameProj</x:String>
                     <x:String>UE_4.25</x:String>
                     <x:String>UE_4.26</x:String>
                     <x:String>UE_4.26_FnGameProj</x:String>

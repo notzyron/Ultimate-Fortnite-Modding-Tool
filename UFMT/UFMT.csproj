@@ -247,6 +247,9 @@
     <Content Update="Assets\PythonScripts\Blender_RenderPreviewCh2.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Update="Assets\PythonScripts\CombineShapeKeys.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Update="Assets\PythonScripts\UE_4_26.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

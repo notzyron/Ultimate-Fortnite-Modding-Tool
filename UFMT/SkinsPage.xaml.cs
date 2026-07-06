@@ -62,6 +62,7 @@ namespace UFMT
         public static UeVersion CurrentUeVersion = UeVersionsData.UeVersions.GetValueOrDefault(App.Settings.UeVersion);
         private static string PskConvertScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_ConvertPsk.py");
         private static string PsaConvertScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_ConvertPsa.py");
+        private static string CombineShapeKeysScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_CombineShapeKeys.py");
         private static string RenderScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_RenderPreviewCh1.py");
         private static string PhysicsImporterPath;
         private static string CookedAssetsPath;
@@ -793,6 +794,15 @@ namespace UFMT
                     CurrentSkin.LobbyAnimationPsa = Path.GetFileNameWithoutExtension(lobbyAnimationFiles[0]);
                     ConsoleWriteLineSuccess($"The lobby animation is {CurrentSkin.LobbyAnimationPsa}.psa");
                 }
+
+                string[] lobbyAnimationJsonFiles = Directory.GetFiles(CurrentSkin.LobbyAnimationPath, "*.json");
+                if (lobbyAnimationFiles.Length > 1)
+                    return (false, $"Multiple .json files in {CurrentSkin.LobbyAnimationPath}!\nMake sure there is only 1 .json lobby animation!");
+                if (lobbyAnimationJsonFiles.Length != 0)
+                {
+                    CurrentSkin.LobbyAnimationJson = Path.GetFileNameWithoutExtension(lobbyAnimationJsonFiles[0]);
+                    ConsoleWriteLineSuccess($"The lobby animation is {CurrentSkin.LobbyAnimationJson}.json");
+                }
             }
             catch (DirectoryNotFoundException)
             {
@@ -822,17 +832,32 @@ namespace UFMT
                 }
                 string exportName = $"{CurrentSkin.CodeName}_{cp.Type}";
 
-                await Task.Run(() =>
-                {
-                    Process blender = Process.Start(App.Settings.BlenderPath, $"-b --python \"{PskConvertScript}\" -- \"{cp.PskPath}\" " +
-                $"\"{Path.Combine(exportFbxPath, $"{exportName}.fbx")}\"");
-                    blender.WaitForExit();
-                });
-                
-                ConsoleWriteLineSuccess($"Succesfully converted " +
-                $"{Path.Combine(CurrentSkin.SourcePath, Path.GetFileName(cp.PskPath))}" +
-                $" to {Path.Combine(CurrentSkin.SourcePath, "Fbx", exportName)}.fbx!");
                 cp.FbxPath = Path.Combine(exportFbxPath, exportName);
+                if (!File.Exists(Path.Combine(exportFbxPath, $"{exportName}.fbx")))
+                {
+                    await Task.Run(() =>
+                    {
+                        Process blender = Process.Start(App.Settings.BlenderPath, $"-b --python \"{PskConvertScript}\" -- \"{cp.PskPath}\" " +
+                    $"\"{Path.Combine(exportFbxPath, $"{exportName}.fbx")}\"");
+                        blender.WaitForExit();
+                    });
+
+                    ConsoleWriteLineSuccess($"Succesfully converted " +
+                    $"{Path.Combine(CurrentSkin.SourcePath, Path.GetFileName(cp.PskPath))}" +
+                    $" to {Path.Combine(CurrentSkin.SourcePath, "Fbx", exportName)}.fbx!");
+                }
+
+                if (cp.Type == "head")
+                {
+                    await Task.Run(() =>
+                    {
+                        Process blender = Process.Start(App.Settings.BlenderPath, $"-b --python \"{CombineShapeKeysScript}\" -- \"{cp.PskPath}\" " +
+                    $"\"{Path.Combine(exportFbxPath, $"{exportName}.fbx")}\"");
+                        blender.WaitForExit();
+                    });
+
+                    ConsoleWriteLineSuccess($"Succesfully combined shape keys for {cp.FbxPath}");
+                }
             }
             ConvertPsaToFbx();
         }
@@ -1200,6 +1225,10 @@ namespace UFMT
                 string BaseMeshPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), "Content",
                 "Characters", "Player", "Male", "Male_Avg_Base", "Fortnite_M_Avg_Player.uasset");
                 string cookedCodeNamePath = Path.Combine(CookedAssetsPath, "CustomSkins", CurrentSkin.CodeName);
+                string baseHeadPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), "Content", "Base", "Head", "Skeleton");
+                string baseHeadAnimBpPath = Path.Combine(baseHeadPath, "Base_Head_AnimBP.uasset");
+                string baseHeadSkeletonPath = Path.Combine(baseHeadPath, "Base_Head_Skeleton.uasset");
+                string frontEndDefaultFaceIdlePath = Path.Combine(baseHeadPath, "Frontend_Default_Face_Idle.uasset");
 
                 if (!File.Exists(fakeCIDTemplatePath))
                 {
@@ -1214,11 +1243,17 @@ namespace UFMT
                 {
                     File.WriteAllBytes(BaseMeshPath, Convert.FromBase64String(CurrentUeVersion.BaseMeshBase64));
                 }
-
                 if (Directory.Exists(cookedCodeNamePath))
                 {
                     Directory.Delete(cookedCodeNamePath, true);
                 }
+                if (!Directory.Exists(baseHeadPath))
+                {
+                    Directory.CreateDirectory(baseHeadPath);
+                }
+                if (!File.Exists(baseHeadAnimBpPath)) File.WriteAllBytes(baseHeadAnimBpPath, Convert.FromBase64String(CurrentUeVersion.BaseHeadAnimBpBase64));
+                if (!File.Exists(baseHeadSkeletonPath)) File.WriteAllBytes(baseHeadSkeletonPath, Convert.FromBase64String(CurrentUeVersion.BaseHeadSkeletonBase64));
+                if (!File.Exists(frontEndDefaultFaceIdlePath)) File.WriteAllBytes(frontEndDefaultFaceIdlePath, Convert.FromBase64String(CurrentUeVersion.FrontEndDefaultFaceIdleBase64));
 
                 Console.WriteLine("Launching unreal engine...");
 
@@ -1254,7 +1289,10 @@ namespace UFMT
                     CID = CurrentSkin.CID,
                     LobbyAnimationFbxPath = CurrentSkin.LobbyAnimationPsa == string.Empty ? string.Empty :
                     Path.Combine(CurrentSkin.SourcePath, "Fbx", "Lobby_Animation", $"{CurrentSkin.LobbyAnimationFbx}.fbx"),
-                    RetargetSource = CurrentSkin.Gender == "Male" ? "MPR_SK_M_MALE_Base_Skeleton" : "SK_M_Female_Base_Skeleton"
+                    RetargetSource = CurrentSkin.Gender == "Male" ? "MPR_SK_M_MALE_Base_Skeleton" : "SK_M_Female_Base_Skeleton",
+                    LobbyAnimationJsonPath = string.IsNullOrEmpty(CurrentSkin.LobbyAnimationJson) ? string.Empty :
+                    Path.Combine(CurrentSkin.SourcePath, "Lobby_Animation", $"{CurrentSkin.LobbyAnimationJson}.json"),
+                    HeadMeshName = Path.GetFileNameWithoutExtension(CurrentSkin.CharacterParts.FirstOrDefault(cp => cp.Type == "head").FbxPath),
                 };
 
                 string jsonString = System.Text.Json.JsonSerializer.Serialize(unrealData, AppJsonContext.Default.UnrealExportData);
@@ -1300,6 +1338,7 @@ namespace UFMT
                 Console.WriteLine("Creating the CID.json for the AssetRegistry.bin");
                 CreateAssetRegistry();
                 CreateCharacterAssets();
+                U4Pak.Pack(OutputFnGamePath, Path.Combine(Path.GetDirectoryName(OutputFnGamePath), $"z_{CurrentSkin.CodeName}.pak"));
                 ConsoleWriteLineSuccess("\nYour custom skin is ready! Check the output folder");
             }
             catch (Exception ex)
@@ -1426,6 +1465,29 @@ namespace UFMT
                     file.CopyTo(Path.Combine(targetSubDir, file.Name), true);
                 }
             }
+
+            string cookedBaseHeadPath = Path.Combine(CookedAssetsPath, "Base", "Head", "Skeleton");
+            string outputBaseHeadPath = Path.Combine(OutputFnGamePath, "Content", "Base", "Head", "Skeleton");
+
+            if (!Directory.Exists(outputBaseHeadPath)) Directory.CreateDirectory(outputBaseHeadPath);
+
+            if (CurrentUeVersion.ReplaceCookedBaseHead)
+            {
+                File.WriteAllBytes(Path.Combine(cookedBaseHeadPath, "Base_Head_AnimBP.uasset"), Convert.FromBase64String(CurrentUeVersion.CookedBaseHeadAnimBpUassetBase64));
+                File.WriteAllBytes(Path.Combine(cookedBaseHeadPath, "Base_Head_AnimBP.uexp"), Convert.FromBase64String(CurrentUeVersion.CookedBaseHeadAnimBpUexpBase64));
+                File.WriteAllBytes(Path.Combine(cookedBaseHeadPath, "Base_Head_Skeleton.uasset"), Convert.FromBase64String(CurrentUeVersion.CookedBaseHeadSkeletonUassetBase64));
+                File.WriteAllBytes(Path.Combine(cookedBaseHeadPath, "Base_Head_Skeleton.uexp"), Convert.FromBase64String(CurrentUeVersion.CookedBaseHeadSkeletonUexpBase64));
+                File.WriteAllBytes(Path.Combine(cookedBaseHeadPath, "Frontend_Default_Face_Idle.uasset"), Convert.FromBase64String(CurrentUeVersion.CookedFrontendFaceIdleUassetBase64));
+                File.WriteAllBytes(Path.Combine(cookedBaseHeadPath, "Frontend_Default_Face_Idle.uexp"), Convert.FromBase64String(CurrentUeVersion.CookedFrontendFaceIdleUexpBase64));
+            }
+
+            File.Copy(Path.Combine(cookedBaseHeadPath, "Base_Head_AnimBP.uasset"), Path.Combine(outputBaseHeadPath, "Base_Head_AnimBP.uasset"), true);
+            File.Copy(Path.Combine(cookedBaseHeadPath, "Base_Head_AnimBP.uexp"), Path.Combine(outputBaseHeadPath, "Base_Head_AnimBP.uexp"), true);
+            File.Copy(Path.Combine(cookedBaseHeadPath, "Base_Head_Skeleton.uasset"), Path.Combine(outputBaseHeadPath, "Base_Head_Skeleton.uasset"), true);
+            File.Copy(Path.Combine(cookedBaseHeadPath, "Base_Head_Skeleton.uexp"), Path.Combine(outputBaseHeadPath, "Base_Head_Skeleton.uexp"), true);
+            File.Copy(Path.Combine(cookedBaseHeadPath, "Frontend_Default_Face_Idle.uasset"), Path.Combine(outputBaseHeadPath, "Frontend_Default_Face_Idle.uasset"), true);
+            File.Copy(Path.Combine(cookedBaseHeadPath, "Frontend_Default_Face_Idle.uexp"), Path.Combine(outputBaseHeadPath, "Frontend_Default_Face_Idle.uexp"), true);
+
             ConsoleWriteLineSuccess($"Coppied files from {cookedCharacterDirectory} to {contentFolderPath}");
             if (!Path.Exists(characterPartsPath)) Directory.CreateDirectory(characterPartsPath);
 
@@ -1435,17 +1497,23 @@ namespace UFMT
                 body.uexpFileBase64 = CurrentFnVersion.BodyCpFemaleUexpBase64;
                 head.uassetFileBase64 = CurrentFnVersion.HeadCpFemaleUassetBase64;
                 head.uexpFileBase64 = CurrentFnVersion.HeadCpFemaleUexpBase64;
-                faceacc.uassetFileBase64 = CurrentFnVersion.FaceAccCpFemaleUassetBase64;
-                faceacc.uexpFileBase64 = CurrentFnVersion.FaceAccCpFemaleUexpBase64;
+                if (faceacc != null)
+                {
+                    faceacc.uassetFileBase64 = CurrentFnVersion.FaceAccCpFemaleUassetBase64;
+                    faceacc.uexpFileBase64 = CurrentFnVersion.FaceAccCpFemaleUexpBase64;
+                }
             }
             else if (CurrentSkin.Gender == "Male")
             {
-                Body.uassetFileBase64 = CurrentFnVersion.BodyCpMaleUassetBase64;
-                Body.uexpFileBase64 = CurrentFnVersion.BodyCpMaleUexpBase64;
-                Head.uassetFileBase64 = CurrentFnVersion.HeadCpMaleUassetBase64;
-                Head.uexpFileBase64 = CurrentFnVersion.HeadCpMaleUexpBase64;
-                FaceAcc.uassetFileBase64 = CurrentFnVersion.FaceAccCpMaleUassetBase64;
-                FaceAcc.uexpFileBase64 = CurrentFnVersion.FaceAccCpMaleUexpBase64;
+                body.uassetFileBase64 = CurrentFnVersion.BodyCpMaleUassetBase64;
+                body.uexpFileBase64 = CurrentFnVersion.BodyCpMaleUexpBase64;
+                head.uassetFileBase64 = CurrentFnVersion.HeadCpMaleUassetBase64;
+                head.uexpFileBase64 = CurrentFnVersion.HeadCpMaleUexpBase64;
+                if (faceacc != null)
+                {
+                    faceacc.uassetFileBase64 = CurrentFnVersion.FaceAccCpMaleUassetBase64;
+                    faceacc.uexpFileBase64 = CurrentFnVersion.FaceAccCpMaleUexpBase64;
+                }
             }
 
             //Character part creation
@@ -1460,19 +1528,19 @@ namespace UFMT
                 File.WriteAllBytes(uassetPath, Convert.FromBase64String(cp.uassetFileBase64));
                 File.WriteAllBytes(uexpPath, Convert.FromBase64String(cp.uexpFileBase64));
 
-                var currentCp = new UAsset(uassetPath, EngineVersion.VER_UE4_26);
+                var currentCp = new UAsset(uassetPath, CurrentUeVersion.UassetApiEngineVer);
                 var cpExport0 = (NormalExport)currentCp.Exports[0];
                 var cpExport1 = (NormalExport)currentCp.Exports[1];
                 cpExport1.ObjectName.Value.Value = $"CP_{cp.Type}_{CurrentSkin.CodeName}";
                 if (cp.Type != "hat")
                 {
-                    var animBpData = (SoftObjectPropertyData)cpExport0["AnimClass"];
-                    animBpData.Value.AssetPath.AssetName.Value.Value =
-                    $"/Game/CustomSkins/{CurrentSkin.CodeName}/Meshes/" +
-                    $"{CurrentSkin.CodeName}_{cp.Type}_AnimBP.{CurrentSkin.CodeName}_{cp.Type}_AnimBP_C";
+                    string animBpPath = cp.Type == "head" ? "/Game/Base/Head/Skeleton/Base_Head_AnimBP.Base_Head_AnimBP_C" : 
+                    $"/Game/CustomSkins/{CurrentSkin.CodeName}/Meshes/{CurrentSkin.CodeName}_{cp.Type}_AnimBP.{CurrentSkin.CodeName}_{cp.Type}_AnimBP_C";
 
-                    Console.WriteLine($"Changed the Animation Blueprint in CP_{cp.Type}_{CurrentSkin.CodeName} to /Game/CustomSkins/{CurrentSkin.CodeName}/Meshes/" +
-                    $"{CurrentSkin.CodeName}_{cp.Type}_AnimBP.{CurrentSkin.CodeName}_{cp.Type}_AnimBP_C");
+                    var animBpData = (SoftObjectPropertyData)cpExport0["AnimClass"];
+                    animBpData.Value.AssetPath.AssetName.Value.Value = animBpPath;
+
+                    Console.WriteLine($"Changed the Animation Blueprint in CP_{cp.Type}_{CurrentSkin.CodeName} to {animBpPath}");
                 }
                 var mesh = (SoftObjectPropertyData)cpExport1["SkeletalMesh"];
                 mesh.Value.AssetPath.AssetName.Value.Value = $"/Game/CustomSkins/{CurrentSkin.CodeName}/Meshes/" +
@@ -1509,7 +1577,7 @@ namespace UFMT
                 ConsoleWriteLineSuccess($"Created material instance {material.Name}");
                 Console.WriteLine($"Editing {material.Name}");
 
-                var currentMi = new UAsset(uassetMaterialPath, EngineVersion.VER_UE4_26);
+                var currentMi = new UAsset(uassetMaterialPath, CurrentUeVersion.UassetApiEngineVer);
                 var miImportData = currentMi.Imports;
                 var miExportData = currentMi.Exports;
                 var miExport0 = (NormalExport)currentMi.Exports[0];
@@ -1572,7 +1640,7 @@ namespace UFMT
 
             Console.WriteLine("Editing the HS");
 
-            var currentHs = new UAsset(Path.Combine(contentFolderPath, $"HS_{CurrentSkin.CodeName}.uasset"), EngineVersion.VER_UE4_26);
+            var currentHs = new UAsset(Path.Combine(contentFolderPath, $"HS_{CurrentSkin.CodeName}.uasset"), CurrentUeVersion.UassetApiEngineVer);
             var hsExport0 = (NormalExport)currentHs.Exports[0];
             var characterPartsArray = (ArrayPropertyData)hsExport0["CharacterParts"];
             var headCp = (SoftObjectPropertyData)characterPartsArray.Value[0];
@@ -1620,7 +1688,7 @@ namespace UFMT
             File.WriteAllBytes(hidUexpPath, Convert.FromBase64String
             (CurrentSkin.Gender == "Male" ? CurrentFnVersion.HidMaleUexpBase64 : CurrentFnVersion.HidFemaleUexpBase64));
 
-            var currentHid = new UAsset(hidUassetPath, EngineVersion.VER_UE4_26);
+            var currentHid = new UAsset(hidUassetPath, CurrentUeVersion.UassetApiEngineVer);
             var hidExport0 = (NormalExport)currentHid.Exports[0];
             hidExport0.ObjectName.Value.Value = $"HID_{CurrentSkin.CodeName}";
             var hidSmallIcon = (SoftObjectPropertyData)hidExport0["SmallPreviewImage"];
@@ -1656,7 +1724,7 @@ namespace UFMT
             File.WriteAllBytes(cidUassetPath, Convert.FromBase64String(CurrentFnVersion.CidUassetBase64));
             File.WriteAllBytes(cidUexpPath, Convert.FromBase64String(CurrentFnVersion.CidUexpBase64));
 
-            var currentCid = new UAsset(cidUassetPath, EngineVersion.VER_UE4_26);
+            var currentCid = new UAsset(cidUassetPath, CurrentUeVersion.UassetApiEngineVer);
             var cidExport0 = (NormalExport)currentCid.Exports[0];
             var cidImport = currentCid.Imports;
             cidImport[CurrentFnVersion.HidNameIndex].ObjectName.Value.Value = $"HID_{CurrentSkin.CodeName}";
@@ -1714,7 +1782,7 @@ namespace UFMT
             File.WriteAllBytes(idleAnimationUassetPath, Convert.FromBase64String(CurrentFnVersion.IdleMontageUassetBase64));
             File.WriteAllBytes(idleAnimationUexpPath, Convert.FromBase64String(CurrentFnVersion.IdleMontageUexpBase64));
 
-            var currentIdleAnimation = new UAsset(idleAnimationUassetPath, EngineVersion.VER_UE4_26);
+            var currentIdleAnimation = new UAsset(idleAnimationUassetPath, CurrentUeVersion.UassetApiEngineVer);
             Console.WriteLine($"Editing {CurrentSkin.CodeName}_Idle_Montage.uasset");
 
             var idleAnimationImport = currentIdleAnimation.Imports;
@@ -1736,6 +1804,8 @@ namespace UFMT
             var AnimEndTime = (FloatPropertyData)AnimSegments2.Value[3];
             AnimEndTime.Value = (float)Math.Round(CurrentSkin.LobbyAnimationLength, 5);
             Console.WriteLine($"Changed the animation length in {CurrentSkin.CodeName}_Idle_Montage to {Math.Round(CurrentSkin.LobbyAnimationLength, 5)}");
+            if (string.IsNullOrEmpty(CurrentSkin.LobbyAnimationJson)) idleAnimationExport0.Data.RemoveAt(5); // Remove DisableFaceOverride if no .json is provided
+                                                                                                             // since there is no way to get the idle pose's facial animations
             currentIdleAnimation.Write(idleAnimationUassetPath);
             ConsoleWriteLineSuccess($"Successfuly edited {CurrentSkin.CodeName}_Idle_Montage.uasset");
         }
@@ -1807,9 +1877,13 @@ namespace UFMT
     {
         public string Type { get; set; }
         public string PskPath { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonIgnore]
         public string FbxPath { get; set; } = string.Empty;
         public List<string> PhysicsAssetJsonPaths { get; set; } = new();
+
+        [System.Text.Json.Serialization.JsonIgnore]
         public string uassetFileBase64 { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonIgnore]
         public string uexpFileBase64 { get; set; } = string.Empty;
     }
 
@@ -1903,6 +1977,7 @@ namespace UFMT
 
         }
         public string LobbyAnimationPsa { get; set; } = string.Empty;
+        public string LobbyAnimationJson { get; set; } = string.Empty;
         public string LobbyAnimationFbx { get; set; } = string.Empty;
         public string OutputContentPath { get; set; } = string.Empty;
         public ObservableCollection<Material> Materials { get; set; } = new();
@@ -2177,7 +2252,9 @@ namespace UFMT
         public List<string> MeshNames { get; set; }
         public string CID { get; set; } = string.Empty;
         public string LobbyAnimationFbxPath { get; set; } = string.Empty;
+        public string LobbyAnimationJsonPath { get; set; } = string.Empty;
         public string RetargetSource { get; set; }
+        public string HeadMeshName { get; set; }
     }
 
     [JsonSerializable(typeof(BlenderExportData))]
