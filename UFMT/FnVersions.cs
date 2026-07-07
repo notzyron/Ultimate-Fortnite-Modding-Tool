@@ -137,6 +137,6 @@ namespace UFMT
             HidPathIndex = 4,
             ManuallySwizzleMaterials = true
         };
-        public static Dictionary<string, FnVersion> FnVersions = new() { {"14.30", v14_30 }, { "13.40", v13_40 }, { "8.51", v8_51 } };
+        public static Dictionary<string, FnVersion> FnVersions = new() { {"14.30", v14_30 }, { "13.40", v13_40 }, { "8.51-9.10", v8_51 } };
     }
 }

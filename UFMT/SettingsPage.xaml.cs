@@ -48,18 +48,18 @@ public class SettingsData : INotifyPropertyChanged
     public SettingsData()
     {
         AvailableFnVersions = UeFnVersions.GetValueOrDefault(UeVersion);
-        _fnVersion = AppSettings.GetValue($"{UeVersion}_FnVersion", "8.51");
+        _fnVersion = AppSettings.GetValue($"{UeVersion}_FnVersion", "8.51-9.10");
         _ueExecutablePath = AppSettings.GetValue($"{UeVersion}_ExecutablePath", "");
         _ueProjectPath = AppSettings.GetValue($"{UeVersion}_ProjectPath", "");
     }
 
     private Dictionary<string, string[]> UeFnVersions = new()
     {
-        {"UE_4.22", new string[] {"8.51" } },       
+        {"UE_4.22", new string[] {"8.51-9.10" } },       
         {"UE_4.25", new string[] {"14.30", "13.40" } },
         {"UE_4.26", new string[] {"14.30", "13.40" } },
         {"UE_4.26_FnGameProj", new string[] {"14.30", "13.40" } },
-        {"UE_4.23_FnGameProj", new string[] {"8.51"} },
+        {"UE_4.23_FnGameProj", new string[] {"8.51-9.10"} },
     };
     private string _ueVersion = AppSettings.GetValue("UeVersion", "UE_4.22");
     public string UeVersion

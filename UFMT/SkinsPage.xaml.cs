@@ -443,7 +443,7 @@ namespace UFMT
                     CurrentSkin.Gender = c.SelectedItem.ToString();
                 }
 
-                if (App.Settings.FnVersion == "8.51")
+                if (App.Settings.FnVersion == "8.51-9.10")
                 {
                     if (c.Tag.ToString() == "series")
                     {
@@ -563,7 +563,7 @@ namespace UFMT
                     DynamicExpanderList.LayoutUpdated -= OnLayoutUpdated;
                     IsLoadingDropdowns = false;
                     string imgPath;
-                    if (App.Settings.FnVersion == "8.51")
+                    if (App.Settings.FnVersion == "8.51-9.10")
                     {
                         if (CurrentSkin.Series == "None")
                         {
@@ -647,7 +647,7 @@ namespace UFMT
         {
             CurrentFnVersion = FnVersionsData.FnVersions.GetValueOrDefault(App.Settings.FnVersion);
             CurrentUeVersion = UeVersionsData.UeVersions.GetValueOrDefault(App.Settings.UeVersion);
-            if (App.Settings.FnVersion == "8.51")
+            if (App.Settings.FnVersion == "8.51-9.10")
             {
                 Ch1PreviewViewBox.Visibility = Visibility.Visible;
                 Ch2PreviewViewBox.Visibility = Visibility.Collapsed;
@@ -1739,7 +1739,7 @@ namespace UFMT
 
             if (CurrentSkin.Rarity == "Uncommon") cidExport0.Data.RemoveAt(1); //Removes the rarity property since no rarity is equal to uncommon in fn
             else if (CurrentSkin.Rarity == "Unattainable (Impossible T7)") rarity.Value.Value.Value = $"EFortRarity::Unattainable";
-            if (App.Settings.FnVersion == "8.51" && CurrentSkin.Rarity != "Uncommon")
+            if (App.Settings.FnVersion == "8.51-9.10" && CurrentSkin.Rarity != "Uncommon")
             {
                 string rarityCodename = "";
                 if (CurrentSkin.Rarity == "Common") rarityCodename = "Handmade";
@@ -1978,7 +1978,9 @@ namespace UFMT
         }
         public string LobbyAnimationPsa { get; set; } = string.Empty;
         public string LobbyAnimationJson { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonIgnore]
         public string LobbyAnimationFbx { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonIgnore]
         public string OutputContentPath { get; set; } = string.Empty;
         public ObservableCollection<Material> Materials { get; set; } = new();
         public string SourcePath { get; set; } = string.Empty;

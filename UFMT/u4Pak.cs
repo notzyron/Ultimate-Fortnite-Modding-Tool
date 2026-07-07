@@ -90,7 +90,6 @@ namespace UFMT
             files.Sort(StringComparer.Ordinal);
             return files;
         }
-
         private static string ResolveDiskPath(string relativePath) =>
             _diskPathByRelativePath.TryGetValue(relativePath, out var full) ? full : relativePath;
 
