@@ -443,7 +443,7 @@ namespace UFMT
                     CurrentSkin.Gender = c.SelectedItem.ToString();
                 }
 
-                if (App.Settings.FnVersion == "8.51-9.10")
+                if (App.Settings.FnVersion == "8.51-9.10" || App.Settings.FnVersion == "9.41")
                 {
                     if (c.Tag.ToString() == "series")
                     {
@@ -563,7 +563,7 @@ namespace UFMT
                     DynamicExpanderList.LayoutUpdated -= OnLayoutUpdated;
                     IsLoadingDropdowns = false;
                     string imgPath;
-                    if (App.Settings.FnVersion == "8.51-9.10")
+                    if (App.Settings.FnVersion == "8.51-9.10" || App.Settings.FnVersion == "9.41")
                     {
                         if (CurrentSkin.Series == "None")
                         {
@@ -647,7 +647,7 @@ namespace UFMT
         {
             CurrentFnVersion = FnVersionsData.FnVersions.GetValueOrDefault(App.Settings.FnVersion);
             CurrentUeVersion = UeVersionsData.UeVersions.GetValueOrDefault(App.Settings.UeVersion);
-            if (App.Settings.FnVersion == "8.51-9.10")
+            if (App.Settings.FnVersion == "8.51-9.10" || App.Settings.FnVersion == "9.41")
             {
                 Ch1PreviewViewBox.Visibility = Visibility.Visible;
                 Ch2PreviewViewBox.Visibility = Visibility.Collapsed;
@@ -1225,10 +1225,7 @@ namespace UFMT
                 string BaseMeshPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), "Content",
                 "Characters", "Player", "Male", "Male_Avg_Base", "Fortnite_M_Avg_Player.uasset");
                 string cookedCodeNamePath = Path.Combine(CookedAssetsPath, "CustomSkins", CurrentSkin.CodeName);
-                string baseHeadPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), "Content", "Base", "Head", "Skeleton");
-                string baseHeadAnimBpPath = Path.Combine(baseHeadPath, "Base_Head_AnimBP.uasset");
-                string baseHeadSkeletonPath = Path.Combine(baseHeadPath, "Base_Head_Skeleton.uasset");
-                string frontEndDefaultFaceIdlePath = Path.Combine(baseHeadPath, "Frontend_Default_Face_Idle.uasset");
+                string baseHeadPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), CurrentUeVersion.BaseHeadPath);
 
                 if (!File.Exists(fakeCIDTemplatePath))
                 {
@@ -1251,9 +1248,16 @@ namespace UFMT
                 {
                     Directory.CreateDirectory(baseHeadPath);
                 }
-                if (!File.Exists(baseHeadAnimBpPath)) File.WriteAllBytes(baseHeadAnimBpPath, Convert.FromBase64String(CurrentUeVersion.BaseHeadAnimBpBase64));
-                if (!File.Exists(baseHeadSkeletonPath)) File.WriteAllBytes(baseHeadSkeletonPath, Convert.FromBase64String(CurrentUeVersion.BaseHeadSkeletonBase64));
-                if (!File.Exists(frontEndDefaultFaceIdlePath)) File.WriteAllBytes(frontEndDefaultFaceIdlePath, Convert.FromBase64String(CurrentUeVersion.FrontEndDefaultFaceIdleBase64));
+
+                foreach (var (fileName, base64String) in CurrentUeVersion.BaseHeadBase64Strings)
+                {
+                    string filePath = Path.Combine(baseHeadPath, $"{fileName}.uasset");
+                    if (!File.Exists(filePath))
+                    {
+                        Console.WriteLine($"{fileName}.uasset is missing, creating the file...");
+                        File.WriteAllBytes(filePath, Convert.FromBase64String(base64String));
+                    }
+                }
 
                 Console.WriteLine("Launching unreal engine...");
 
@@ -1293,6 +1297,7 @@ namespace UFMT
                     LobbyAnimationJsonPath = string.IsNullOrEmpty(CurrentSkin.LobbyAnimationJson) ? string.Empty :
                     Path.Combine(CurrentSkin.SourcePath, "Lobby_Animation", $"{CurrentSkin.LobbyAnimationJson}.json"),
                     HeadMeshName = Path.GetFileNameWithoutExtension(CurrentSkin.CharacterParts.FirstOrDefault(cp => cp.Type == "head").FbxPath),
+                    CurrentFnVersion = App.Settings.FnVersion,
                 };
 
                 string jsonString = System.Text.Json.JsonSerializer.Serialize(unrealData, AppJsonContext.Default.UnrealExportData);
@@ -1467,28 +1472,26 @@ namespace UFMT
             }
 
             string cookedBaseHeadPath = Path.Combine(CookedAssetsPath, "Base", "Head", "Skeleton");
-            string outputBaseHeadPath = Path.Combine(OutputFnGamePath, "Content", "Base", "Head", "Skeleton");
+            if (App.Settings.FnVersion == "9.41") cookedBaseHeadPath = Path.Combine(CookedAssetsPath, "Modding", "Base_Head"); // 9.41 uses a different location for base head
+
+            string outputBaseHeadPath = Path.Combine(OutputFnGamePath, CurrentUeVersion.BaseHeadPath);
 
             if (!Directory.Exists(outputBaseHeadPath)) Directory.CreateDirectory(outputBaseHeadPath);
 
             if (CurrentUeVersion.ReplaceCookedBaseHead)
             {
-                File.WriteAllBytes(Path.Combine(cookedBaseHeadPath, "Base_Head_AnimBP.uasset"), Convert.FromBase64String(CurrentUeVersion.CookedBaseHeadAnimBpUassetBase64));
-                File.WriteAllBytes(Path.Combine(cookedBaseHeadPath, "Base_Head_AnimBP.uexp"), Convert.FromBase64String(CurrentUeVersion.CookedBaseHeadAnimBpUexpBase64));
-                File.WriteAllBytes(Path.Combine(cookedBaseHeadPath, "Base_Head_Skeleton.uasset"), Convert.FromBase64String(CurrentUeVersion.CookedBaseHeadSkeletonUassetBase64));
-                File.WriteAllBytes(Path.Combine(cookedBaseHeadPath, "Base_Head_Skeleton.uexp"), Convert.FromBase64String(CurrentUeVersion.CookedBaseHeadSkeletonUexpBase64));
-                File.WriteAllBytes(Path.Combine(cookedBaseHeadPath, "Frontend_Default_Face_Idle.uasset"), Convert.FromBase64String(CurrentUeVersion.CookedFrontendFaceIdleUassetBase64));
-                File.WriteAllBytes(Path.Combine(cookedBaseHeadPath, "Frontend_Default_Face_Idle.uexp"), Convert.FromBase64String(CurrentUeVersion.CookedFrontendFaceIdleUexpBase64));
+                foreach (var (fileName, base64String) in CurrentUeVersion.CookedBaseHeadBase64Strings)
+                {
+                    File.WriteAllBytes(Path.Combine(cookedBaseHeadPath, fileName), Convert.FromBase64String(base64String));
+                }
+            } // Replace the files inside cooked ue folders
+
+            foreach (string file in Directory.GetFiles(cookedBaseHeadPath))
+            {
+                File.Copy(file, Path.Combine(outputBaseHeadPath, Path.GetFileName(file)), true);
             }
 
-            File.Copy(Path.Combine(cookedBaseHeadPath, "Base_Head_AnimBP.uasset"), Path.Combine(outputBaseHeadPath, "Base_Head_AnimBP.uasset"), true);
-            File.Copy(Path.Combine(cookedBaseHeadPath, "Base_Head_AnimBP.uexp"), Path.Combine(outputBaseHeadPath, "Base_Head_AnimBP.uexp"), true);
-            File.Copy(Path.Combine(cookedBaseHeadPath, "Base_Head_Skeleton.uasset"), Path.Combine(outputBaseHeadPath, "Base_Head_Skeleton.uasset"), true);
-            File.Copy(Path.Combine(cookedBaseHeadPath, "Base_Head_Skeleton.uexp"), Path.Combine(outputBaseHeadPath, "Base_Head_Skeleton.uexp"), true);
-            File.Copy(Path.Combine(cookedBaseHeadPath, "Frontend_Default_Face_Idle.uasset"), Path.Combine(outputBaseHeadPath, "Frontend_Default_Face_Idle.uasset"), true);
-            File.Copy(Path.Combine(cookedBaseHeadPath, "Frontend_Default_Face_Idle.uexp"), Path.Combine(outputBaseHeadPath, "Frontend_Default_Face_Idle.uexp"), true);
-
-            ConsoleWriteLineSuccess($"Coppied files from {cookedCharacterDirectory} to {contentFolderPath}");
+            ConsoleWriteLineSuccess($"Copied files from {cookedCharacterDirectory} to {contentFolderPath}");
             if (!Path.Exists(characterPartsPath)) Directory.CreateDirectory(characterPartsPath);
 
             if (CurrentSkin.Gender == "Female")
@@ -1534,8 +1537,13 @@ namespace UFMT
                 cpExport1.ObjectName.Value.Value = $"CP_{cp.Type}_{CurrentSkin.CodeName}";
                 if (cp.Type != "hat")
                 {
-                    string animBpPath = cp.Type == "head" ? "/Game/Base/Head/Skeleton/Base_Head_AnimBP.Base_Head_AnimBP_C" : 
-                    $"/Game/CustomSkins/{CurrentSkin.CodeName}/Meshes/{CurrentSkin.CodeName}_{cp.Type}_AnimBP.{CurrentSkin.CodeName}_{cp.Type}_AnimBP_C";
+                    string animBpPath;
+                    if (cp.Type == "head")
+                    {
+                        if (App.Settings.FnVersion == "9.41") animBpPath = "/Game/Modding/Base_Head/Base_Head_Modding_AnimBP.Base_Head_Modding_AnimBP_C";
+                        else animBpPath = "/Game/Base/Head/Skeleton/Base_Head_AnimBP.Base_Head_AnimBP_C";
+                    }
+                    else animBpPath = $"/Game/CustomSkins/{CurrentSkin.CodeName}/Meshes/{CurrentSkin.CodeName}_{cp.Type}_AnimBP.{CurrentSkin.CodeName}_{cp.Type}_AnimBP_C";
 
                     var animBpData = (SoftObjectPropertyData)cpExport0["AnimClass"];
                     animBpData.Value.AssetPath.AssetName.Value.Value = animBpPath;
@@ -1739,7 +1747,7 @@ namespace UFMT
 
             if (CurrentSkin.Rarity == "Uncommon") cidExport0.Data.RemoveAt(1); //Removes the rarity property since no rarity is equal to uncommon in fn
             else if (CurrentSkin.Rarity == "Unattainable (Impossible T7)") rarity.Value.Value.Value = $"EFortRarity::Unattainable";
-            if (App.Settings.FnVersion == "8.51-9.10" && CurrentSkin.Rarity != "Uncommon")
+            if ((App.Settings.FnVersion == "8.51-9.10" || App.Settings.FnVersion == "9.41") && CurrentSkin.Rarity != "Uncommon")
             {
                 string rarityCodename = "";
                 if (CurrentSkin.Rarity == "Common") rarityCodename = "Handmade";
@@ -2257,6 +2265,7 @@ namespace UFMT
         public string LobbyAnimationJsonPath { get; set; } = string.Empty;
         public string RetargetSource { get; set; }
         public string HeadMeshName { get; set; }
+        public string CurrentFnVersion { get; set; }
     }
 
     [JsonSerializable(typeof(BlenderExportData))]

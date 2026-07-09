@@ -58,8 +58,10 @@ public class SettingsData : INotifyPropertyChanged
         {"UE_4.22", new string[] {"8.51-9.10" } },       
         {"UE_4.25", new string[] {"14.30", "13.40" } },
         {"UE_4.26", new string[] {"14.30", "13.40" } },
-        {"UE_4.26_FnGameProj", new string[] {"14.30", "13.40" } },
-        {"UE_4.23_FnGameProj", new string[] {"8.51-9.10"} },
+        {"UE_4.26_FnGameProj14.30", new string[] {"14.30", "13.40" } },
+        {"UE_4.23_FnGameProj8.51", new string[] {"8.51-9.10"} },
+		{"UE_4.23_FnGameProj9.10", new string[] {"8.51-9.10"} },
+        {"UE_4.23_FnGameProj9.41", new string[] {"9.41"} },
     };
     private string _ueVersion = AppSettings.GetValue("UeVersion", "UE_4.22");
     public string UeVersion

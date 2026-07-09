@@ -1,3 +1,4 @@
+import unreal; unreal.AssetRegistryHelpers.get_asset_registry().scan_paths_synchronous(['/Game'])
 import os
 import unreal
 import json
@@ -28,11 +29,13 @@ lobby_animation_fbx_path = data.get("LobbyAnimationFbxPath")
 lobby_animation_json_path = data.get("LobbyAnimationJsonPath")
 retarget_source = data.get("RetargetSource")
 head_mesh_name = data.get("HeadMeshName")
+fn_version = data.get("CurrentFnVersion")
 
 fbx_destination_path = "/Game/CustomSkins/{}/Meshes".format(code_name)
 tex_destination_path = "/Game/CustomSkins/{}/Textures".format(code_name)
 mi_destination_path  = "/Game/CustomSkins/{}/Materials".format(code_name)
 EXISTING_SKELETON_PATH = None
+unreal.EditorAssetLibrary.load_asset("/Game/CID_Template")
 
 
 def delete_directory_if_exists(path):
@@ -46,7 +49,7 @@ delete_directory_if_exists(tex_destination_path)
 delete_directory_if_exists(mi_destination_path)
 
 
-def import_psk(fbx_path, asset_name, use_base_head = False):
+def import_fbx(fbx_path, asset_name, use_base_head = False):
     skel_data = unreal.FbxSkeletalMeshImportData()
     skel_data.set_editor_property("import_content_type", unreal.FBXImportContentType.FBXICT_ALL)
     skel_data.set_editor_property("import_translation",  unreal.Vector(0.0, 0.0, 0.0))
@@ -68,7 +71,7 @@ def import_psk(fbx_path, asset_name, use_base_head = False):
     ui.skeletal_mesh_import_data = skel_data
 
     if use_base_head:
-        target_skeleton_path = "/Game/Base/Head/Skeleton/Base_Head_Skeleton"
+        target_skeleton_path = "/Game/Modding/Base_Head/Base_Head_Modding" if fn_version == "9.41" else "/Game/Base/Head/Skeleton/Base_Head_Skeleton"
         sk = unreal.load_asset(target_skeleton_path)
         if sk:
             ui.skeleton = sk
@@ -346,15 +349,18 @@ for i in range(len(fbx_paths)):
             physics_assets.append(physics_asset)
             
     if (asset_names[i] == head_mesh_name):
-        import_psk(fbx_paths[i], asset_names[i], True)
+        import_fbx(fbx_paths[i], asset_names[i], True)
         mesh = unreal.EditorAssetLibrary.load_asset("{}/{}".format(fbx_destination_path, asset_names[i]))
+        anim_bp_path = "/Game/Base/Head/Skeleton/Base_Head_AnimBP.Base_Head_AnimBP_C"
+        if (fn_version == "9.41"):
+            anim_bp_path = "/Game/Modding/Base_Head/Base_Head_Modding_AnimBP.Base_Head_Modding_AnimBP_C"
         mesh.set_editor_property(
             "post_process_anim_blueprint",
-            unreal.load_class(None, "/Game/Base/Head/Skeleton/Base_Head_AnimBP.Base_Head_AnimBP_C")
+            unreal.load_class(None, anim_bp_path)
         )
 
     else:
-        import_psk(fbx_paths[i], asset_names[i])
+        import_fbx(fbx_paths[i], asset_names[i])
         anim_bp = create_anim_blueprint("{}_AnimBP".format(asset_names[i]), "{}_Skeleton".format(asset_names[i]))
         unreal.PhysicsImporter.build_anim_graph(anim_bp, physics_assets)
         unreal.EditorAssetLibrary.save_loaded_asset(anim_bp)
