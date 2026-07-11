@@ -199,14 +199,8 @@ def create_fake_cid():
     template_path = "/Game/CID_Template"
     new_path      = "/Game/CustomSkins/{}/{}".format(code_name, cid)
 
-    existing_assets = unreal.EditorAssetLibrary.list_assets(
-        "/Game/CustomSkins/{}".format(code_name), recursive=False
-    )
-    for asset_path in existing_assets:
-        asset = unreal.load_asset(asset_path)
-        if isinstance(asset, unreal.Blueprint):
-            unreal.EditorAssetLibrary.delete_asset(asset_path)
-            unreal.log("Deleted existing blueprint: {}".format(asset_path))
+    if unreal.EditorAssetLibrary.does_asset_exist(new_path):
+        unreal.EditorAssetLibrary.delete_asset(new_path)
 
     success = unreal.EditorAssetLibrary.duplicate_asset(template_path, new_path)
 
@@ -371,7 +365,7 @@ for i in range(len(fbx_paths)):
         )
 
     apply_materials_to_mesh(asset_names[i])
-    unreal.EditorAssetLibrary.save_asset("{}/{}".format(fbx_destination_path, asset_names[i]))
+    unreal.EditorAssetLibrary.save_loaded_asset(mesh)
 
 for i in range(len(diffuse_textures)):
     import_texture(diffuse_textures[i], "diffuse")

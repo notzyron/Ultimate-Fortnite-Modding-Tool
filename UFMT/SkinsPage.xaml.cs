@@ -1866,6 +1866,15 @@ namespace UFMT
                 mat.Cp = loadedSkin.CharacterParts.FirstOrDefault(cp => cp.Type == mat.Cp?.Type);
             }
 
+            if (CurrentFnVersion.ManuallySwizzleMaterials)
+            {
+                List<string> specularTextures = Directory.GetFiles(CurrentSkin.TexturesPath, "*_S.png").ToList();
+                specularTextures.Add(Path.Combine(CurrentSkin.TexturesPath, "Default_Specular.png"));
+                var swizzledFolder = Directory.CreateDirectory(Path.Combine(CurrentSkin.TexturesPath, "Swizzled"));
+                swizzledFolder.Attributes |= System.IO.FileAttributes.Hidden;
+                Parallel.ForEach(specularTextures, t => SwizzleTextures(t));
+            }
+
             return loadedSkin;
         }
 
