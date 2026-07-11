@@ -86,8 +86,8 @@ Open Unreal Engine, create a new project, then go to Edit → Plugins and enable
 
 ## Compatibility
 
-- **Unreal Engine:** 4.22, 4.23 Modded (FnGameProj8.51, FnGameProj9.10, FnGameProj9.41), 4.25, 4.26, 4.26 Modded (FnGameProj14.30)
-- **Fortnite Versions:** v8.51, v9.10, v9.41, v13.40, v14.30
+- **Unreal Engine:** 4.22, 4.23 Modded (FnGameProj8.51, FnGameProj9.10, FnGameProj9.41), 4.25, 4.25 Modded (FnGameProj12.41), 4.26, 4.26 Modded (FnGameProj14.30)
+- **Fortnite Versions:** v8.51, v9.10, v9.41, v12.41, v13.40, v14.30
 - **Blender:** 4.5
 
 ## Credits
