@@ -1859,20 +1859,29 @@ namespace UFMT
             string jsonString = File.ReadAllText(filePath);
             SkinData loadedSkin = System.Text.Json.JsonSerializer.Deserialize<SkinData>(jsonString);
 
-            // Reconstruct the ignored ParentPage and Cp properties for the UI
-            foreach (var mat in loadedSkin.Materials)
+            try
             {
-                mat.ParentPage = this;
-                mat.Cp = loadedSkin.CharacterParts.FirstOrDefault(cp => cp.Type == mat.Cp?.Type);
-            }
+                // Reconstruct the ignored ParentPage and Cp properties for the UI
+                foreach (var mat in loadedSkin.Materials)
+                {
+                    mat.ParentPage = this;
+                    mat.Cp = loadedSkin.CharacterParts.FirstOrDefault(cp => cp.Type == mat.Cp?.Type);
+                }
 
-            if (CurrentFnVersion.ManuallySwizzleMaterials)
+                if (CurrentFnVersion.ManuallySwizzleMaterials)
+                {
+                    CurrentSkin.TexturesPath = loadedSkin.TexturesPath;
+                    ConsoleWriteLineTest($"loaded skin textures path is {CurrentSkin.TexturesPath}");
+                    List<string> specularTextures = Directory.GetFiles(CurrentSkin.TexturesPath, "*_S.png").ToList();
+                    specularTextures.Add(Path.Combine(CurrentSkin.TexturesPath, "Default_Specular.png"));
+                    var swizzledFolder = Directory.CreateDirectory(Path.Combine(CurrentSkin.TexturesPath, "Swizzled"));
+                    swizzledFolder.Attributes |= System.IO.FileAttributes.Hidden;
+                    Parallel.ForEach(specularTextures, t => SwizzleTextures(t));
+                }
+            }
+            catch (Exception ex)
             {
-                List<string> specularTextures = Directory.GetFiles(CurrentSkin.TexturesPath, "*_S.png").ToList();
-                specularTextures.Add(Path.Combine(CurrentSkin.TexturesPath, "Default_Specular.png"));
-                var swizzledFolder = Directory.CreateDirectory(Path.Combine(CurrentSkin.TexturesPath, "Swizzled"));
-                swizzledFolder.Attributes |= System.IO.FileAttributes.Hidden;
-                Parallel.ForEach(specularTextures, t => SwizzleTextures(t));
+                ConsoleWriteLineError(ex.ToString());
             }
 
             return loadedSkin;

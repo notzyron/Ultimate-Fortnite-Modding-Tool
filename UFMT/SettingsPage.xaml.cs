@@ -56,7 +56,7 @@ public class SettingsData : INotifyPropertyChanged
     private Dictionary<string, string[]> UeFnVersions = new()
     {
         {"UE_4.22", new string[] {"8.51-9.10" } },       
-        {"UE_4.25", new string[] {"14.30", "13.40" } },
+        {"UE_4.25", new string[] {"14.30", "13.40", "12.41"} },
         {"UE_4.26", new string[] {"14.30", "13.40" } },
         {"UE_4.26_FnGameProj14.30", new string[] {"14.30", "13.40" } },
         {"UE_4.23_FnGameProj8.51", new string[] {"8.51-9.10"} },
