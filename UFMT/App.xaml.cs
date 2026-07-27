@@ -24,7 +24,7 @@ namespace UFMT
             this.UnhandledException += (sender, e) =>
             {
                 string desktopPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop);
-                string filePath = System.IO.Path.Combine(desktopPath, "crash_log.txt");
+                string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "UFMT", "crash_log.txt");
                 string logContent = $"[{System.DateTime.Now}] Exception: {e.Message}\nStack Trace:\n{e.Exception?.StackTrace}\n\n";
 
                 System.IO.File.AppendAllText(filePath, logContent);

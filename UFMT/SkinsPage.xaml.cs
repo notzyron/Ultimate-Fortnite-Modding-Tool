@@ -53,6 +53,7 @@ using Windows.UI.ViewManagement;
 using static System.Net.Mime.MediaTypeNames;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using UFMT.Helper;
+using Windows.ApplicationModel.Calls;
 
 namespace UFMT
 {
@@ -67,7 +68,6 @@ namespace UFMT
         private static string PhysicsImporterPath;
         private static string CookedAssetsPath;
         private static string ValidCodenameCharacters = "abcdefghijklmnopqrstuvwxyz1234567890_";
-        private static string CurrentSkinPath = string.Empty;
         private static string MaleLobbyAnimPath = Path.Combine
         (AppDomain.CurrentDomain.BaseDirectory, "Assets", "LobbyAnimations", "Male_Commando_Idle_01.psa");
         private static string FemaleLobbyAnimPath = Path.Combine
@@ -162,65 +162,98 @@ namespace UFMT
                     return;
                 }
             }
-            try
-            {
-                CurrentSkinPath = CurrentSkinPathBox.Text;
-            }
-            catch (Exception ex)
-            {
-                ConsoleWriteLineError(ex.ToString());
-            }
-            OutputFnGamePath = Path.Combine(CurrentSkinPath, "Output", App.Settings.FnVersion, "FortniteGame");
             ResetCpData();
+            if (!CheckCurrentSkinPathValidation(CurrentSkinPathBox.Text)) return;
 
-            if (CurrentSkinPath == string.Empty)
-            {   
-                if (sender as string != "NoDelay") ConsoleWriteLineError("The Current skin path is empty!");
-                return;
-            }
-            if (!Directory.Exists(CurrentSkinPath))
+            OutputFnGamePath = Path.Combine(CurrentSkin.Path, "Output", App.Settings.FnVersion, "FortniteGame");
+            CurrentSkin.CodeName = new DirectoryInfo(CurrentSkin.Path).Name;
+            CurrentSkin.CID = $"CID_{CurrentSkin.CodeName}";
+            characterCIDTextBox.Text = CurrentSkin.CID;
+
+
+            SkinData loadedJson = LoadSkinConfig(Path.Combine(CurrentSkin.Path, $"{CurrentSkin.CodeName}_Settings.json"));
+
+            if (loadedJson != null)
             {
-                ConsoleWriteLineError($"{CurrentSkinPath} doesn't exist!");
-                return;
+                CurrentSkin = loadedJson;
+                characterCIDTextBox.Text = CurrentSkin.CID;
+                CurrentSkin.Path = CurrentSkinPathBox.Text;
             }
-            CurrentSkin.SourcePath = Path.Combine(CurrentSkinPath, "Source");
-            if (!Directory.Exists(CurrentSkin.SourcePath))
+            else
             {
-                ConsoleWriteLineError($"Cannot find the Source folder inside {CurrentSkinPath}");
-                return;
+                List<CharacterPart> characterParts = 
+                SkinFolderScanner.FindCharacterParts(CurrentSkin.MeshesPath, CurrentSkin.PhysicsPath, new List<CharacterPart>() { Body, Head, FaceAcc, Hat });
+                if (characterParts == null) return;
+                CurrentSkin.CharacterParts = characterParts;
+
+                (bool isValid, string lobbyAnimationPsa, string lobbyAnimationJson) = SkinFolderScanner.FindLobbyAnimationFiles(CurrentSkin.LobbyAnimationPath);
+                if (!isValid) return;
+                CurrentSkin.LobbyAnimationPsa = lobbyAnimationPsa;
+                CurrentSkin.LobbyAnimationJson = lobbyAnimationJson;
+
+                List<Material> materials = 
+                PskReader.GetMaterialData(CurrentSkin.CharacterParts.Select(cp => cp.PskPath).ToList(), CurrentSkin.CharacterParts, allSwizzleCheckBox.IsChecked.Value, this);
+
+                if (materials == null) return;
+                CurrentSkin.Materials = new ObservableCollection<Material>(materials);
+
+                var result = GetValidTextures();
+                if (!result.Success) { Log.Error(result.ErrorMsg); UpdateDropdowns(); return; }
             }
-            CurrentSkin.MeshesPath = Path.Combine(CurrentSkin.SourcePath, "Meshes");
-            if (!Directory.Exists(CurrentSkin.MeshesPath))
+            CurrentSkin.PropertyChanged += (s, e) => SaveSkinConfig();
+            UpdateDropdowns();
+        }
+
+        private bool CheckCurrentSkinPathValidation(string currentSkinFolderPath)
+        {
+            if (currentSkinFolderPath == string.Empty)
             {
-                ConsoleWriteLineError($"Cannot find the Meshes folder inside {CurrentSkin.SourcePath}");
-                return;
+                Log.Error("The Current skin path is empty!");
+                return false;
+            }
+            if (!Directory.Exists(currentSkinFolderPath))
+            {
+                Log.Error($"\"{currentSkinFolderPath}\" doesn't exist!");
+                return false;
+            }
+            string sourcePath = Path.Combine(currentSkinFolderPath, "Source");
+            if (!Directory.Exists(sourcePath))
+            {
+                Log.Error($"Cannot find the Source folder inside \"{currentSkinFolderPath}\"");
+                return false;
+            }
+            string meshesPath = Path.Combine(sourcePath, "Meshes");
+            if (!Directory.Exists(meshesPath))
+            {
+                Log.Error($"Cannot find the Meshes folder inside \"{sourcePath}\"");
+                return false;
+            }
+            string texturesPath = Path.Combine(sourcePath, "Textures");
+            if (!Directory.Exists(texturesPath))
+            {
+                Log.Error($"Cannot find the Textures folder inside \"{sourcePath}\"");
+                return false;
+            }
+            string lobbyAnimatinPath = Path.Combine(sourcePath, "Lobby_Animation");
+            if (!Directory.Exists(lobbyAnimatinPath))
+            {
+                Log.Error($"Cannot find the Lobby_Animation folder inside \"{sourcePath}\"");
+                return false;
+            }
+            string physicsPath = Path.Combine(sourcePath, "Physics");
+            if (!Directory.Exists(physicsPath))
+            {
+                Log.Error($"Cannot find the Physics folder inside \"{sourcePath}\"");
+                return false;
             }
 
-            try
-            {
-                string codeName = new DirectoryInfo(CurrentSkinPath).Name;
-                SkinData loadedJson = LoadSkinConfig(Path.Combine(CurrentSkinPath, $"{codeName}_Settings.json"));
-
-                if (loadedJson != null)
-                {
-                    CurrentSkin = loadedJson;
-                    characterCIDTextBox.Text = CurrentSkin.CID;
-                }
-                else
-                {
-                    var result = GetPskData();
-                    if (!result.Success) { ConsoleWriteLineError(result.ErrorMsg); UpdateDropdowns(); return; }
-
-                    result = GetValidTextures();
-                    if (!result.Success) { ConsoleWriteLineError(result.ErrorMsg); UpdateDropdowns(); return; }
-                }
-                CurrentSkin.PropertyChanged += (s, e) => SaveSkinConfig();
-                UpdateDropdowns();
-            }
-            catch (Exception ex)
-            {
-                ConsoleWriteLineError(ex.ToString());
-            }
+            CurrentSkin.Path = currentSkinFolderPath;
+            CurrentSkin.SourcePath = sourcePath;
+            CurrentSkin.MeshesPath = meshesPath;
+            CurrentSkin.TexturesPath = texturesPath;
+            CurrentSkin.LobbyAnimationPath = lobbyAnimatinPath;
+            CurrentSkin.PhysicsPath = physicsPath;
+            return true;
         }
 
         private async void BrowseButton_Click(object sender, RoutedEventArgs e)
@@ -247,7 +280,7 @@ namespace UFMT
             }
             catch (Exception ex)
             {
-                ConsoleWriteLineError(ex.Message);
+                Log.Error(ex.Message);
             }
         }
 
@@ -255,13 +288,13 @@ namespace UFMT
         {
             if (string.IsNullOrEmpty(App.Settings.UeVersion))
             {
-                ConsoleWriteLineError($"No unreal engine selected! Make sure you selected the correct ue version in setting!");
+                Log.Error($"No unreal engine selected! Make sure you selected the correct ue version in setting!");
                 return;
             }
 
             if (string.IsNullOrEmpty(CurrentSkin.Gender))
             {
-                ConsoleWriteLineError($"The skin's gender is unspecified");
+                Log.Error($"The skin's gender is unspecified");
                 return;
             }
             RenderPreviewImage();
@@ -271,27 +304,27 @@ namespace UFMT
         {
             if (string.IsNullOrEmpty(App.Settings.UeVersion))
             {
-                ConsoleWriteLineError($"No unreal engine selected! Make sure you selected the correct ue version in setting!");
+                Log.Error($"No unreal engine selected! Make sure you selected the correct ue version in setting!");
                 return;
             }
             if (string.IsNullOrEmpty(CurrentSkin.Gender))
             {
-                ConsoleWriteLineError($"Skin's gender is unspecified!");
+                Log.Error($"Skin's gender is unspecified!");
                 return;
             }
             if (string.IsNullOrEmpty(CurrentSkin.Name))
             {
-                ConsoleWriteLineError($"Skin's name cannot be empty!");
+                Log.Error($"Skin's name cannot be empty!");
                 return;
             }
             if (string.IsNullOrEmpty(CurrentSkin.Description))
             {
-                ConsoleWriteLineError($"Skin's description cannot be empty!");
+                Log.Error($"Skin's description cannot be empty!");
                 return;
             }
             if (string.IsNullOrEmpty(CurrentSkin.CID))
             {
-                ConsoleWriteLineError($"Skin's CID cannot be empty!");
+                Log.Error($"Skin's CID cannot be empty!");
                 return;
             }
             try
@@ -300,7 +333,7 @@ namespace UFMT
             }
             catch (Exception ex)
             {
-                ConsoleWriteLineError(ex.Message);
+                Log.Error(ex.Message);
             }
         }
 
@@ -311,12 +344,12 @@ namespace UFMT
 
             if (SkinsPathBox.Text == null || SkinsPathBox.Text == "")
             {
-                ConsoleWriteLineError("The skins path cannot be empty!");
+                Log.Error("The skins path cannot be empty!");
                 return;
             }
             else if (!Directory.Exists(SkinsPathBox.Text))
             {
-                ConsoleWriteLineError($"\"{SkinsPathBox.Text}\" doesn't exist!");
+                Log.Error($"\"{SkinsPathBox.Text}\" doesn't exist!");
                 return;
             }
 
@@ -338,18 +371,18 @@ namespace UFMT
             bool invalidCodename = false;
             if (SkinsPathBox.Text == null || SkinsPathBox.Text == "")
             {
-                ConsoleWriteLineError("The skins path cannot be empty!");
+                Log.Error("The skins path cannot be empty!");
                 return;
             }
             else if (!Directory.Exists(SkinsPathBox.Text))
             {
-                ConsoleWriteLineError($"\"{SkinsPathBox.Text}\" doesn't exist!");
+                Log.Error($"\"{SkinsPathBox.Text}\" doesn't exist!");
                 return;
             }
 
             if (CodenameFolderCreateTextBox.Text.Length > 30)
             {
-                ConsoleWriteLineError("The codename cannot be longer than 30 characters!");
+                Log.Error("The codename cannot be longer than 30 characters!");
                 return;
             }
 
@@ -357,7 +390,7 @@ namespace UFMT
             {
                 if (!ValidCodenameCharacters.Contains(c.ToString().ToLower()))
                 {
-                    ConsoleWriteLineError("The codename can only contain alphabetical characters, " +
+                    Log.Error("The codename can only contain alphabetical characters, " +
                     "numbers and _");
                     invalidCodename = true;
                     return;
@@ -365,7 +398,7 @@ namespace UFMT
             }
 
             Directory.CreateDirectory(Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text));
-            ConsoleWriteLineSuccess($"Successfully created {CodenameFolderCreateTextBox.Text} folder at " +
+            Log.Success($"Successfully created {CodenameFolderCreateTextBox.Text} folder at " +
             $"{SkinsPathBox.Text}");
             
             string[] cpTypes = {"Body", "Head", "Faceacc", "Hat" };
@@ -376,19 +409,19 @@ namespace UFMT
                 {
                     Directory.CreateDirectory(Path.Combine
                     (SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", cpTypeFolder, cpType));
-                    ConsoleWriteLineSuccess($"Successfully created {cpType} folder at " +
+                    Log.Success($"Successfully created {cpType} folder at " +
                     $"{Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", cpTypeFolder)}");
                 }
             }
 
             Directory.CreateDirectory(Path.Combine
             (SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Textures"));
-            ConsoleWriteLineSuccess($"Successfully created Textures folder at " +
+            Log.Success($"Successfully created Textures folder at " +
             $"{Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source")}");
 
             Directory.CreateDirectory(Path.Combine
             (SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Lobby_Animation"));
-            ConsoleWriteLineSuccess($"Successfully created Lobby_Animation folder at " +
+            Log.Success($"Successfully created Lobby_Animation folder at " +
             $"{Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source")}");
 
             args.Cancel = false;
@@ -607,40 +640,12 @@ namespace UFMT
                     else { IsUpdatingFromCode = true; AllSwizzleCheckBoxValue = false; IsUpdatingFromCode = false; };
                 }
                 DynamicExpanderList.LayoutUpdated += OnLayoutUpdated;
-                ConsoleWriteLineSuccess("Updated the dropdowns!");
+                Log.Success("Updated the dropdowns!");
             }
             catch (Exception ex)
             {
-                ConsoleWriteLineError(ex.ToString());
+                Log.Error(ex.ToString());
             }
-        }
-
-        public void ConsoleWriteLineError(string message)
-        {
-            Console.ForegroundColor = ConsoleColor.DarkRed;
-            Console.WriteLine(message);
-            Console.ForegroundColor = ConsoleColor.White;
-        }
-
-        public static void ConsoleWriteLineSuccess(string message)
-        {
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine(message);
-            Console.ForegroundColor = ConsoleColor.White;
-        }
-
-        public static void ConsoleWriteLineWarning(string message)
-        {
-            Console.ForegroundColor = ConsoleColor.DarkYellow;
-            Console.WriteLine(message);
-            Console.ForegroundColor = ConsoleColor.White;
-        }
-
-        public static void ConsoleWriteLineTest(string message)
-        {
-            Console.ForegroundColor = ConsoleColor.Magenta;
-            Console.WriteLine(message);
-            Console.ForegroundColor = ConsoleColor.White;
         }
 
         public void LoadContent()
@@ -685,8 +690,8 @@ namespace UFMT
                 uexpFileBase64 = CurrentFnVersion.HatCpUexpBase64
             };
 
-            if (string.IsNullOrEmpty(App.Settings.UeProjectPath)) { ConsoleWriteLineError("Unreal Engine Project path is empty!"); return; }
-            if (!Path.Exists(App.Settings.UeProjectPath)) { ConsoleWriteLineError($"{App.Settings.UeProjectPath} doesn't exist!"); return; }
+            if (string.IsNullOrEmpty(App.Settings.UeProjectPath)) { Log.Error("Unreal Engine Project path is empty!"); return; }
+            if (!Path.Exists(App.Settings.UeProjectPath)) { Log.Error($"{App.Settings.UeProjectPath} doesn't exist!"); return; }
 
             CookedAssetsPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath),
             "Saved", "Cooked", "WindowsNoEditor", new DirectoryInfo(Path.GetDirectoryName(App.Settings.UeProjectPath)).Name, "Content");
@@ -695,121 +700,6 @@ namespace UFMT
             if (!Path.Exists(pluginsPath)) ZipFile.ExtractToDirectory(PhysicsImporterPath, pluginsPath);
 
             CurrentSkinPathBox_TextChanged("NoDelay", null);
-        }
-
-        private (bool Success, string ErrorMsg) GetPskData()
-        {
-            if (string.IsNullOrEmpty(CurrentSkinPath)) return (false, "CurrentSkinPath is empty!");
-            List<string> pskPaths = new();
-            List<string> alreadyUsedMaterials = new List<string>();
-            List<CharacterPart> allCharacterParts = new() { Body, Head, FaceAcc, Hat };
-            CurrentSkin.CodeName = new DirectoryInfo(CurrentSkinPath).Name;
-            CurrentSkin.CID = $"CID_{CurrentSkin.CodeName}";
-            characterCIDTextBox.Text = CurrentSkin.CID;
-            CurrentSkin.TexturesPath = Path.Combine(CurrentSkin.SourcePath, "Textures");
-            CurrentSkin.LobbyAnimationPath = Path.Combine(CurrentSkin.SourcePath, "Lobby_Animation");
-            CurrentSkin.PhysicsPath = Path.Combine(CurrentSkin.SourcePath, "Physics");
-
-            foreach (string meshFolder in Directory.GetDirectories(CurrentSkin.MeshesPath))
-            {
-                string[] pskFiles = Directory.GetFiles(meshFolder, "*.psk");
-                if (pskFiles.Length == 1)
-                {
-                    Console.WriteLine($"{Path.GetFileName(pskFiles[0])} is a {Path.GetFileName(meshFolder)} CharactePart Type!");
-                    pskPaths.Add(pskFiles[0]);
-                }
-                else if (pskFiles.Length > 1)
-                {
-                    ConsoleWriteLineError($"{meshFolder} contains more than 1 .psk files! Cannot get the correct {Path.GetFileName(meshFolder)} " +
-                    $"Character Part Type!");
-                }
-            }
-
-            foreach (string pskPath in pskPaths)
-            {
-                CharacterPart currentCp = allCharacterParts.FirstOrDefault(cp => cp.Type ==
-                Path.GetFileName(Path.GetDirectoryName(pskPath)).ToLower());
-                List<string> currentPskMaterials = new();
-
-                using var r = new BinaryReader(File.OpenRead(pskPath));
-
-                while (r.BaseStream.Position < r.BaseStream.Length)
-                {
-                    string id = Encoding.ASCII.GetString(r.ReadBytes(24)).Trim();
-                    int sz = r.ReadInt32();
-                    int ct = r.ReadInt32();
-                    if (id.Contains("MATT0000"))
-                    {
-                        for (int i = 0; i < ct; i++)
-                        {
-                            string mat = Encoding.ASCII.GetString(r.ReadBytes(64)).Trim('\0').Trim();
-                            currentPskMaterials.Add(mat);
-                            r.BaseStream.Seek(sz - 64, SeekOrigin.Current);
-                        }
-                    }
-                    else
-                    {
-                        r.BaseStream.Seek((long)sz * ct, SeekOrigin.Current);
-                    }
-                }
-                foreach (string mat in currentPskMaterials)
-                {
-                    if (!alreadyUsedMaterials.Contains(mat))
-                    {
-                        CurrentSkin.Materials.Add(new Material()
-                        {
-                            Name = mat,
-                            ParentPage = this,
-                            Cp = currentCp,
-                            Swizzle = allSwizzleCheckBox.IsChecked ?? false
-                        });
-                        alreadyUsedMaterials.Add(mat);
-                    }
-                }
-                currentCp.PskPath = pskPath;
-
-                List<string> jsonFiles = Directory.GetFiles(Path.Combine(CurrentSkin.PhysicsPath, currentCp.Type[0].ToString().ToUpper() + currentCp.Type.Substring(1)), "*.json").ToList();
-                jsonFiles.ForEach(json => { currentCp.PhysicsAssetJsonPaths.Add(json); Console.WriteLine
-                ($"Added {Path.GetFileNameWithoutExtension(json)} to {Path.GetFileNameWithoutExtension(pskPath)}"); });
-                CurrentSkin.CharacterParts.Add(currentCp);
-                ConsoleWriteLineSuccess($"{Path.GetFileName(pskPath)} is a {currentCp.Type} character part type!");
-            }
-
-            if (string.IsNullOrEmpty(Body.PskPath))
-            {
-                return (false, $"Cannot find a body .psk file in {CurrentSkin.SourcePath}\nThe character must have at least a body and a head!");
-            }
-            if (string.IsNullOrEmpty(Head.PskPath))
-            {
-                return (false, $"Cannot find a head .psk file in {CurrentSkin.SourcePath}\nThe character must have at least a body and a head!");
-            }
-
-            try
-            {
-                string[] lobbyAnimationFiles = Directory.GetFiles(CurrentSkin.LobbyAnimationPath, "*.psa");
-                if (lobbyAnimationFiles.Length > 1)
-                    return (false, $"Multiple .psa files in {CurrentSkin.LobbyAnimationPath}!\nMake sure there is only 1 .psa lobby animation!");
-                if (lobbyAnimationFiles.Length != 0)
-                {
-                    CurrentSkin.LobbyAnimationPsa = Path.GetFileNameWithoutExtension(lobbyAnimationFiles[0]);
-                    ConsoleWriteLineSuccess($"The lobby animation is {CurrentSkin.LobbyAnimationPsa}.psa");
-                }
-
-                string[] lobbyAnimationJsonFiles = Directory.GetFiles(CurrentSkin.LobbyAnimationPath, "*.json");
-                if (lobbyAnimationFiles.Length > 1)
-                    return (false, $"Multiple .json files in {CurrentSkin.LobbyAnimationPath}!\nMake sure there is only 1 .json lobby animation!");
-                if (lobbyAnimationJsonFiles.Length != 0)
-                {
-                    CurrentSkin.LobbyAnimationJson = Path.GetFileNameWithoutExtension(lobbyAnimationJsonFiles[0]);
-                    ConsoleWriteLineSuccess($"The lobby animation is {CurrentSkin.LobbyAnimationJson}.json");
-                }
-            }
-            catch (DirectoryNotFoundException)
-            {
-                return (true, string.Empty);
-            }
-
-            return (true, string.Empty);
         }
 
         private void ResetCpData()
@@ -842,7 +732,7 @@ namespace UFMT
                         blender.WaitForExit();
                     });
 
-                    ConsoleWriteLineSuccess($"Succesfully converted " +
+                    Log.Success($"Succesfully converted " +
                     $"{Path.Combine(CurrentSkin.SourcePath, Path.GetFileName(cp.PskPath))}" +
                     $" to {Path.Combine(CurrentSkin.SourcePath, "Fbx", exportName)}.fbx!");
                 }
@@ -856,7 +746,7 @@ namespace UFMT
                         blender.WaitForExit();
                     });
 
-                    ConsoleWriteLineSuccess($"Succesfully combined shape keys for {cp.FbxPath}");
+                    Log.Success($"Succesfully combined shape keys for {cp.FbxPath}");
                 }
             }
             ConvertPsaToFbx();
@@ -903,12 +793,12 @@ namespace UFMT
                     File.Delete(metaPath);
                 }
             });
-            ConsoleWriteLineSuccess($"Successfully converted the Lobby .psa animation to .fbx!");
+            Log.Success($"Successfully converted the Lobby .psa animation to .fbx!");
             try
             {
                 LaunchUnrealScript();
             }
-            catch (Exception ex) { ConsoleWriteLineError(ex.ToString()); }
+            catch (Exception ex) { Log.Error(ex.ToString()); }
         }
 
         public (bool Success, string ErrorMsg) GetValidTextures()
@@ -925,7 +815,7 @@ namespace UFMT
 
             if (!Directory.Exists(CurrentSkin.TexturesPath))
             {
-                ConsoleWriteLineWarning($"{CurrentSkin.SourcePath}" +
+                Log.Warning($"{CurrentSkin.SourcePath}" +
                 $" doesn't exist, the skin won't have any textures.");
                 return (true, string.Empty);
             }
@@ -945,7 +835,7 @@ namespace UFMT
 
             if (CurrentSkin.Textures.Count == 0)
             {
-                ConsoleWriteLineWarning($"No .png files found inside {CurrentSkin.TexturesPath}, " +
+                Log.Warning($"No .png files found inside {CurrentSkin.TexturesPath}, " +
                 $"the skin won't have any textures.");
                 return (true, string.Empty);
             }
@@ -969,13 +859,13 @@ namespace UFMT
             if (string.IsNullOrEmpty(CurrentSkin.LargeIcon) && !string.IsNullOrEmpty(CurrentSkin.SmallIcon))
             {
                 CurrentSkin.LargeIcon = CurrentSkin.SmallIcon;
-                ConsoleWriteLineWarning("Cannot find the large icon, the small icon will be used for " +
+                Log.Warning("Cannot find the large icon, the small icon will be used for " +
                 "large icon as well.");
             }
             else if (!string.IsNullOrEmpty(CurrentSkin.LargeIcon) && string.IsNullOrEmpty(CurrentSkin.SmallIcon))
             {
                 CurrentSkin.SmallIcon = CurrentSkin.LargeIcon;
-                ConsoleWriteLineWarning("Cannot find the small icon, the large icon will be used for " +
+                Log.Warning("Cannot find the small icon, the large icon will be used for " +
                 " small icon as well.");
             }
 
@@ -1135,7 +1025,7 @@ namespace UFMT
                     Textures = texturePaths,
                     Swizzle = swizzleMaterials,
                     Materials = materials,
-                    RenderPath = Path.Combine(CurrentSkinPath, "Source", $"{CurrentSkin.CodeName}.png"),
+                    RenderPath = Path.Combine(CurrentSkin.Path, "Source", $"{CurrentSkin.CodeName}.png"),
                     LobbyAnimPath = lobbyAnimPath,
                     HeadPsk = CurrentSkin.CharacterParts.FirstOrDefault(cp => cp.Type == "head").PskPath
                 };
@@ -1155,7 +1045,7 @@ namespace UFMT
                     Process blender = Process.Start(App.Settings.BlenderPath, arguments);
                     blender.WaitForExit();
                 });
-                ConsoleWriteLineSuccess("Successfully Rendered the preview image!");
+                Log.Success("Successfully Rendered the preview image!");
 
                 await Task.Delay(10);
 
@@ -1196,7 +1086,7 @@ namespace UFMT
             }
             catch (Exception ex)
             {
-                ConsoleWriteLineError(ex.Message);
+                Log.Error(ex.Message);
             }
 
         }
@@ -1344,11 +1234,11 @@ namespace UFMT
                 CreateAssetRegistry();
                 CreateCharacterAssets();
                 U4Pak.Pack(OutputFnGamePath, Path.Combine(Path.GetDirectoryName(OutputFnGamePath), $"z_{CurrentSkin.CodeName}.pak"));
-                ConsoleWriteLineSuccess("\nYour custom skin is ready! Check the output folder");
+                Log.Success("\nYour custom skin is ready! Check the output folder");
             }
             catch (Exception ex)
             {
-                ConsoleWriteLineError(ex.ToString());
+                Log.Error(ex.ToString());
             }
         }
 
@@ -1431,11 +1321,11 @@ namespace UFMT
                 }
                 else
                 {
-                    ConsoleWriteLineWarning($"no uasset files found inside {customSkinFolder}");
+                    Log.Warning($"no uasset files found inside {customSkinFolder}");
                 }
             }
 
-            string oldOutputPath = Path.Combine(CurrentSkinPath, "Output", "FortniteGame");
+            string oldOutputPath = Path.Combine(CurrentSkin.Path, "Output", "FortniteGame");
             if (Directory.Exists(oldOutputPath)) Directory.Delete(oldOutputPath, true);
 
             if (!Directory.Exists(OutputFnGamePath))
@@ -1491,7 +1381,7 @@ namespace UFMT
                 File.Copy(file, Path.Combine(outputBaseHeadPath, Path.GetFileName(file)), true);
             }
 
-            ConsoleWriteLineSuccess($"Copied files from {cookedCharacterDirectory} to {contentFolderPath}");
+            Log.Success($"Copied files from {cookedCharacterDirectory} to {contentFolderPath}");
             if (!Path.Exists(characterPartsPath)) Directory.CreateDirectory(characterPartsPath);
 
             if (CurrentSkin.Gender == "Female")
@@ -1558,7 +1448,7 @@ namespace UFMT
 
                 Console.WriteLine(uassetPath);
                 currentCp.Write(uassetPath);
-                ConsoleWriteLineSuccess($"Successfully edited CP_{cp.Type}_{CurrentSkin.CodeName}.uasset and " +
+                Log.Success($"Successfully edited CP_{cp.Type}_{CurrentSkin.CodeName}.uasset and " +
                 $"CP_{cp.Type}_{CurrentSkin.CodeName}.uexp");
             }
 
@@ -1582,7 +1472,7 @@ namespace UFMT
                 Convert.FromBase64String(materialUassetBase64));
                 File.WriteAllBytes(Path.Combine(uexpMaterialPath),
                 Convert.FromBase64String(materialUexpBase64));
-                ConsoleWriteLineSuccess($"Created material instance {material.Name}");
+                Log.Success($"Created material instance {material.Name}");
                 Console.WriteLine($"Editing {material.Name}");
 
                 var currentMi = new UAsset(uassetMaterialPath, CurrentUeVersion.UassetApiEngineVer);
@@ -1621,7 +1511,7 @@ namespace UFMT
                 }
 
                 currentMi.Write(uassetMaterialPath);
-                ConsoleWriteLineSuccess($"Successfully edited {material.Name}.uasset and {material.Name}.uexp");
+                Log.Success($"Successfully edited {material.Name}.uasset and {material.Name}.uexp");
             }
 
             //HS creation
@@ -1685,7 +1575,7 @@ namespace UFMT
             hsExport0.ObjectName.Value.Value = $"HS_{CurrentSkin.CodeName}";
 
             currentHs.Write(Path.Combine(contentFolderPath, $"HS_{CurrentSkin.CodeName}.uasset"));
-            ConsoleWriteLineSuccess($"Successfuly edited HS_{CurrentSkin.CodeName}.uasset and HS_{CurrentSkin.CodeName}.uexp");
+            Log.Success($"Successfuly edited HS_{CurrentSkin.CodeName}.uasset and HS_{CurrentSkin.CodeName}.uexp");
 
             //HID creation
             Console.WriteLine("Editing HID...");
@@ -1720,7 +1610,7 @@ namespace UFMT
             $"/Game/CustomSkins/{CurrentSkin.CodeName}/Animations/{CurrentSkin.CodeName}_Idle_Montage.{CurrentSkin.CodeName}_Idle_Montage";
 
             currentHid.Write(hidUassetPath);
-            ConsoleWriteLineSuccess($"Successfuly edited HID_{CurrentSkin.CodeName}.uasset and HID_{CurrentSkin.CodeName}.uexp");
+            Log.Success($"Successfuly edited HID_{CurrentSkin.CodeName}.uasset and HID_{CurrentSkin.CodeName}.uexp");
 
             //CID creation
             Console.WriteLine($"Editing {CurrentSkin.CID}.uasset");
@@ -1780,7 +1670,7 @@ namespace UFMT
             Console.WriteLine($"Changed the Series in {CurrentSkin.CID} to {CurrentSkin.Series}");
 
             currentCid.Write(cidUassetPath);
-            ConsoleWriteLineSuccess($"Successfuly edited {CurrentSkin.CID}.uasset");
+            Log.Success($"Successfuly edited {CurrentSkin.CID}.uasset");
 
             //Idle Montage creation
             if (string.IsNullOrEmpty(CurrentSkin.LobbyAnimationPsa)) return;
@@ -1815,7 +1705,7 @@ namespace UFMT
             if (string.IsNullOrEmpty(CurrentSkin.LobbyAnimationJson)) idleAnimationExport0.Data.RemoveAt(5); // Remove DisableFaceOverride if no .json is provided
                                                                                                              // since there is no way to get the idle pose's facial animations
             currentIdleAnimation.Write(idleAnimationUassetPath);
-            ConsoleWriteLineSuccess($"Successfuly edited {CurrentSkin.CodeName}_Idle_Montage.uasset");
+            Log.Success($"Successfuly edited {CurrentSkin.CodeName}_Idle_Montage.uasset");
         }
 
         private void SwizzleTextures(string texturePath)
@@ -1871,7 +1761,7 @@ namespace UFMT
                 if (CurrentFnVersion.ManuallySwizzleMaterials)
                 {
                     CurrentSkin.TexturesPath = loadedSkin.TexturesPath;
-                    ConsoleWriteLineTest($"loaded skin textures path is {CurrentSkin.TexturesPath}");
+                    Log.Test($"loaded skin textures path is {CurrentSkin.TexturesPath}");
                     List<string> specularTextures = Directory.GetFiles(CurrentSkin.TexturesPath, "*_S.png").ToList();
                     specularTextures.Add(Path.Combine(CurrentSkin.TexturesPath, "Default_Specular.png"));
                     var swizzledFolder = Directory.CreateDirectory(Path.Combine(CurrentSkin.TexturesPath, "Swizzled"));
@@ -1881,7 +1771,7 @@ namespace UFMT
             }
             catch (Exception ex)
             {
-                ConsoleWriteLineError(ex.ToString());
+                Log.Error(ex.ToString());
             }
 
             return loadedSkin;
@@ -1889,14 +1779,16 @@ namespace UFMT
 
         public void SaveSkinConfig()
         {
-            if (CurrentSkin == null || string.IsNullOrEmpty(CurrentSkinPath)) return;
+            if (CurrentSkin == null || string.IsNullOrEmpty(CurrentSkin.Path)) return;
 
-            string jsonPath = Path.Combine(CurrentSkinPath, $"{CurrentSkin.CodeName}_Settings.json");
+            string jsonPath = Path.Combine(CurrentSkin.Path, $"{CurrentSkin.CodeName}_Settings.json");
             var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
             string jsonString = System.Text.Json.JsonSerializer.Serialize(CurrentSkin, options);
 
             File.WriteAllText(jsonPath, jsonString);
-        }
+        } // TODO: This method should only load the data that doesn't have JsonIgnore, right now it loads everything from the .json 
+                                        // as a new SkinData object, so everything that had JsonIgnore has the default value assigned in the class, so to avoid 
+                                        // getting null objects, reassigning the variables that had JsonIgnore is mandatory at the moment.
     }
 
     public class CharacterPart
@@ -2009,6 +1901,8 @@ namespace UFMT
         [System.Text.Json.Serialization.JsonIgnore]
         public string OutputContentPath { get; set; } = string.Empty;
         public ObservableCollection<Material> Materials { get; set; } = new();
+        [System.Text.Json.Serialization.JsonIgnore]
+        public string Path = string.Empty;
         public string SourcePath { get; set; } = string.Empty;
         public string MeshesPath { get; set; } = string.Empty;
         public string TexturesPath { get; set; } = string.Empty;

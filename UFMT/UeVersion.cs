@@ -55,17 +55,17 @@ namespace UFMT
                     byte[] uasset = File.ReadAllBytes(uassetPath);
                     byte[] uexp = File.ReadAllBytes(uexpPath);
 
-                    SkinsPage.ConsoleWriteLineTest($"Currently doing {meshPath}");
+                    Log.Test($"Currently doing {meshPath}");
 
                     List<int> insertions = FindInsertions(uexp);
 
                     if (insertions.Count == 0)
                     {
-                        SkinsPage.ConsoleWriteLineWarning("The cooked mesh may already be correct or was not cooked by UE 4.26.2.");
+                        Log.Warning("The cooked mesh may already be correct or was not cooked by UE 4.26.2.");
                         continue;
                     }
 
-                    insertions.ForEach(ins => SkinsPage.ConsoleWriteLineTest($"ins is {ins}"));
+                    insertions.ForEach(ins => Log.Test($"ins is {ins}"));
                     byte[] fixedUexp = RemoveBytes(uexp, insertions);
 
                     byte[] fixedUasset = (byte[])uasset.Clone();
@@ -73,7 +73,7 @@ namespace UFMT
 
                     if (!ok)
                     {
-                        SkinsPage.ConsoleWriteLineWarning("\nWARNING: A header field was not found/patched. Output may be invalid.");
+                        Log.Warning("\nWARNING: A header field was not found/patched. Output may be invalid.");
                     }
 
                     File.WriteAllBytes(uassetPath, fixedUasset);
@@ -388,7 +388,7 @@ namespace UFMT
                     var candidates = FindByteStreamCandidates(uexp);
                     if (candidates.Count == 0)
                     {
-                        SkinsPage.ConsoleWriteLineWarning("Could not find the correct offset in .uexp, the file might already be patched or invalid");
+                        Log.Warning("Could not find the correct offset in .uexp, the file might already be patched or invalid");
                         return;
                     }
 
@@ -410,7 +410,7 @@ namespace UFMT
 
                     if (matchesA.Count != 1 || matchesB.Count != 1)
                     {
-                        SkinsPage.ConsoleWriteLineWarning("Could not find the correct offsets in .uasset, the file might already be patched or invalid");
+                        Log.Warning("Could not find the correct offsets in .uasset, the file might already be patched or invalid");
                         return;
                     }
 

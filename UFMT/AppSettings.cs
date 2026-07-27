@@ -7,10 +7,7 @@ using System.Diagnostics;
 
 public static class AppSettings
 {
-    private static readonly string FolderPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "UFMT"
-    );
+    internal static readonly string FolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"UFMT");
 
     private static readonly string FilePath = Path.Combine(FolderPath, "settings.json");
     private static Dictionary<string, object> _settingsCache = new();
