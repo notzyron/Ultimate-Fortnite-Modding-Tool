@@ -45,7 +45,6 @@ namespace UFMT
                                 });
                             }
                             alreadyUsedMatNames.Add(matName);
-                            //Adds all the materials the psk has to currentPskMaterials
                             r.BaseStream.Seek(sz - 64, SeekOrigin.Current);
                         }
                     }

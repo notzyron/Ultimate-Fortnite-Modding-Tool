@@ -78,13 +78,6 @@ namespace UFMT
         {"Marvel Series", "MarvelSeries"}, {"Shadow Series", "ShadowSeries"},  {"Slurp Series", "SlurpSeries"},  
         {"Test Series", "FakeToken_FDS_Series"}, {"Anual Pass Series", "2020AnnualPassSeries"}};
         private static string OutputFnGamePath = string.Empty;
-        private static Dictionary<string, int[]> DefaultTexturesColors = new() //The colors are in ARGB
-        {
-            {"Default_Diffuse", [255, 228, 228, 228]},
-            {"Default_Mask", [255, 252, 172, 0]},
-            {"Default_Normal", [255, 124, 130, 254]},
-            {"Default_Specular", [255, 0, 0, 0]},
-        };
         private bool IsUpdatingFromCode = false;
         private bool IsLoadingDropdowns = false;
         CharacterPart Body;
@@ -803,31 +796,8 @@ namespace UFMT
 
         public (bool Success, string ErrorMsg) GetValidTextures()
         {
-            List<KeyValuePair<string, int[]>> missingDefaultTextures = DefaultTexturesColors.Where
-            (tex => !Path.Exists(Path.Combine(CurrentSkin.TexturesPath, $"{tex.Key}.png"))).ToList();
-
-            foreach (KeyValuePair<string, int[]> missingDefTex in missingDefaultTextures)
-            {
-                CreateDefaultTexture(Path.Combine(CurrentSkin.TexturesPath, $"{missingDefTex.Key}.png"),
-                Color.FromArgb(missingDefTex.Value[0], missingDefTex.Value[1], missingDefTex.Value[2], missingDefTex.Value[3]));
-                Console.WriteLine($"Created a default {missingDefTex.Key} texture");
-            }
-
-            if (!Directory.Exists(CurrentSkin.TexturesPath))
-            {
-                Log.Warning($"{CurrentSkin.SourcePath}" +
-                $" doesn't exist, the skin won't have any textures.");
-                return (true, string.Empty);
-            }
-
-            if (CurrentFnVersion.ManuallySwizzleMaterials)
-            {
-                List<string> specularTextures = Directory.GetFiles(CurrentSkin.TexturesPath, "*_S.png").ToList();
-                specularTextures.Add(Path.Combine(CurrentSkin.TexturesPath, "Default_Specular.png"));
-                var swizzledFolder = Directory.CreateDirectory(Path.Combine(CurrentSkin.TexturesPath, "Swizzled"));
-                swizzledFolder.Attributes |= System.IO.FileAttributes.Hidden;
-                Parallel.ForEach(specularTextures, t => SwizzleTextures(t));
-            }
+            DefaultTextureSetup.CreateDefaultTextures(DefaultTextureSetup.FindMissingDefaultTextures(CurrentSkin.TexturesPath), CurrentSkin.TexturesPath);
+            if (CurrentFnVersion.ManuallySwizzleMaterials) TextureSwizzler.SwizzleSpecularTextures(CurrentSkin.TexturesPath);
 
             Console.WriteLine($"Searching for valid textures inside {CurrentSkin.TexturesPath}");
 
@@ -1239,15 +1209,6 @@ namespace UFMT
             catch (Exception ex)
             {
                 Log.Error(ex.ToString());
-            }
-        }
-
-        private void CreateDefaultTexture(string outputPath, Color color)
-        {
-            using (Bitmap bmp = new Bitmap(1, 1))
-            {
-                bmp.SetPixel(0, 0, color);
-                bmp.Save(outputPath, ImageFormat.Png);
             }
         }
 
@@ -1708,38 +1669,6 @@ namespace UFMT
             Log.Success($"Successfuly edited {CurrentSkin.CodeName}_Idle_Montage.uasset");
         }
 
-        private void SwizzleTextures(string texturePath)
-        {
-            using Bitmap bmp = new Bitmap(texturePath);
-            var rect = new Rectangle(0, 0, bmp.Width, bmp.Height);
-            var bmpData = bmp.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadWrite, bmp.PixelFormat);
-
-            unsafe
-            {
-                byte* ptr = (byte*)bmpData.Scan0;
-                int bytesPerPixel = System.Drawing.Image.GetPixelFormatSize(bmp.PixelFormat) / 8;
-                int totalBytes = bmpData.Stride * bmp.Height;
-
-                for (int i = 0; i < totalBytes; i += bytesPerPixel)
-                {
-                    byte blue = ptr[i];
-                    ptr[i] = ptr[i + 1];
-                    ptr[i + 1] = blue;
-                }
-            }
-
-            bmp.UnlockBits(bmpData);
-            bmp.Save(Path.Combine(CurrentSkin.TexturesPath, "Swizzled", Path.GetFileName(texturePath)));
-            Console.WriteLine($"Swizzled {texturePath}");
-        }
-
-        private float sRGBToLinearRGB(float val)
-        {
-            val /= 255f;
-            if (val <= 0.04045f) return val / 12.92f;
-            else return MathF.Pow((val + 0.055f) / 1.055f, 2.4f);
-        }
-
         private SkinData LoadSkinConfig(string jsonPath)
         {
             string filePath = jsonPath;
@@ -1758,16 +1687,7 @@ namespace UFMT
                     mat.Cp = loadedSkin.CharacterParts.FirstOrDefault(cp => cp.Type == mat.Cp?.Type);
                 }
 
-                if (CurrentFnVersion.ManuallySwizzleMaterials)
-                {
-                    CurrentSkin.TexturesPath = loadedSkin.TexturesPath;
-                    Log.Test($"loaded skin textures path is {CurrentSkin.TexturesPath}");
-                    List<string> specularTextures = Directory.GetFiles(CurrentSkin.TexturesPath, "*_S.png").ToList();
-                    specularTextures.Add(Path.Combine(CurrentSkin.TexturesPath, "Default_Specular.png"));
-                    var swizzledFolder = Directory.CreateDirectory(Path.Combine(CurrentSkin.TexturesPath, "Swizzled"));
-                    swizzledFolder.Attributes |= System.IO.FileAttributes.Hidden;
-                    Parallel.ForEach(specularTextures, t => SwizzleTextures(t));
-                }
+                if (CurrentFnVersion.ManuallySwizzleMaterials) TextureSwizzler.SwizzleSpecularTextures(CurrentSkin.TexturesPath, TextureCategorizer.GetTexturesBySuffix(CurrentSkin.TexturesPath, "_S"));
             }
             catch (Exception ex)
             {

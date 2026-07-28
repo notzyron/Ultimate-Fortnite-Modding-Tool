@@ -31,12 +31,12 @@ namespace UFMT
                 }
 
 
-            } // Add the pskFile to pskPaths, only if there's 1 psk file in each folder inside the Meshes folder 
+            }
 
             foreach (string pskPath in pskPaths)
             {
                 string pskCpType = Path.GetFileName(Path.GetDirectoryName(pskPath));
-                CharacterPart currentPskCp = allCharacterParts.FirstOrDefault(cp => cp.Type == pskCpType.ToLower()); // Set the Character Part type for pskPath by checking what's the name of it's parent folder, 
+                CharacterPart currentPskCp = allCharacterParts.FirstOrDefault(cp => cp.Type == pskCpType.ToLower());
                 currentPskCp.PskPath = pskPath;
 
 
@@ -92,7 +92,6 @@ namespace UFMT
                 jsonName = Path.GetFileNameWithoutExtension(lobbyAnimationJsonFiles[0]);
                 Log.Success($"The lobby animation is {jsonName}.json");
             }
-            //Getting .psa and .json of the lobby animation path? compeletly unrelated to getting psk data again.
 
             return (true, psaName, jsonName);
         }
