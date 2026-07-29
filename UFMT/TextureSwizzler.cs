@@ -13,7 +13,7 @@ namespace UFMT
     {
         internal static void SwizzleSpecularTextures(string texturesPath)
         {
-            List<string> texturePaths = TextureCategorizer.GetTexturesBySuffix(texturesPath, "_S");
+            List<string> texturePaths = TextureCategorizer.GetTexturesBySuffix(texturesPath, "_S").Select(tex => Path.Combine(texturesPath, $"{tex}.png")).ToList();
             texturePaths.Add(Path.Combine(texturesPath, "Default_Specular.png"));
             var swizzledFolder = Directory.CreateDirectory(Path.Combine(texturesPath, "Swizzled"));
             swizzledFolder.Attributes |= System.IO.FileAttributes.Hidden;

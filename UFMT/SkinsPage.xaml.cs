@@ -190,8 +190,7 @@ namespace UFMT
                 if (materials == null) return;
                 CurrentSkin.Materials = new ObservableCollection<Material>(materials);
 
-                var result = GetValidTextures();
-                if (!result.Success) { Log.Error(result.ErrorMsg); UpdateDropdowns(); return; }
+                if (!GetValidTextures()) { UpdateDropdowns(); return; }
             }
             CurrentSkin.PropertyChanged += (s, e) => SaveSkinConfig();
             UpdateDropdowns();
@@ -416,6 +415,10 @@ namespace UFMT
             (SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Lobby_Animation"));
             Log.Success($"Successfully created Lobby_Animation folder at " +
             $"{Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source")}");
+
+            Directory.CreateDirectory(Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Fbx"));
+            Directory.CreateDirectory(Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Fbx", "Body"));
+            Directory.CreateDirectory(Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Fbx", "Head"));
 
             args.Cancel = false;
         }
@@ -718,16 +721,25 @@ namespace UFMT
                 cp.FbxPath = Path.Combine(exportFbxPath, exportName);
                 if (!File.Exists(Path.Combine(exportFbxPath, $"{exportName}.fbx")))
                 {
-                    await Task.Run(() =>
+                    string[] fbxFiles = Directory.GetFiles(exportFbxPath, "*.fbx");
+                    if (fbxFiles.Length > 1) Log.Error($"More than 1 fbx files found in {exportFbxPath}, make sure there is only 1 mesh per character part!");
+                    else if (fbxFiles.Length == 1)
                     {
-                        Process blender = Process.Start(App.Settings.BlenderPath, $"-b --python \"{PskConvertScript}\" -- \"{cp.PskPath}\" " +
-                    $"\"{Path.Combine(exportFbxPath, $"{exportName}.fbx")}\"");
-                        blender.WaitForExit();
-                    });
+                        File.Move(fbxFiles[0], Path.Combine(exportFbxPath, $"{exportName}.fbx"));
+                    }
+                    else
+                    {
+                        await Task.Run(() =>
+                        {
+                            Process blender = Process.Start(App.Settings.BlenderPath, $"-b --python \"{PskConvertScript}\" -- \"{cp.PskPath}\" " +
+                        $"\"{Path.Combine(exportFbxPath, $"{exportName}.fbx")}\"");
+                            blender.WaitForExit();
+                        });
 
-                    Log.Success($"Succesfully converted " +
-                    $"{Path.Combine(CurrentSkin.SourcePath, Path.GetFileName(cp.PskPath))}" +
-                    $" to {Path.Combine(CurrentSkin.SourcePath, "Fbx", exportName)}.fbx!");
+                        Log.Success($"Succesfully converted " +
+                        $"{Path.Combine(CurrentSkin.SourcePath, Path.GetFileName(cp.PskPath))}" +
+                        $" to {Path.Combine(CurrentSkin.SourcePath, "Fbx", exportName)}.fbx!");
+                    }
                 }
 
                 if (cp.Type == "head")
@@ -794,176 +806,38 @@ namespace UFMT
             catch (Exception ex) { Log.Error(ex.ToString()); }
         }
 
-        public (bool Success, string ErrorMsg) GetValidTextures()
+        public bool GetValidTextures()
         {
             DefaultTextureSetup.CreateDefaultTextures(DefaultTextureSetup.FindMissingDefaultTextures(CurrentSkin.TexturesPath), CurrentSkin.TexturesPath);
             if (CurrentFnVersion.ManuallySwizzleMaterials) TextureSwizzler.SwizzleSpecularTextures(CurrentSkin.TexturesPath);
 
-            Console.WriteLine($"Searching for valid textures inside {CurrentSkin.TexturesPath}");
+            (string largeIcon, string smallIcon) = TextureCategorizer.GetIconTextures(CurrentSkin.TexturesPath);
+            CurrentSkin.SmallIcon = smallIcon;
+            CurrentSkin.LargeIcon = largeIcon;
 
-            CurrentSkin.Textures = Directory.GetFiles(CurrentSkin.TexturesPath, "*.png").ToList().Select(tex => Path.GetFileNameWithoutExtension(tex)).ToList();
+            CurrentSkin.Textures = TextureCategorizer.GetAllTextures(CurrentSkin.TexturesPath);
 
-            if (CurrentSkin.Textures.Count == 0)
+            List<string> validMatTextures = TextureCategorizer.GetTexturesByMultipleSuffix(CurrentSkin.TexturesPath, ["_D", "_M", "_N", "_S"]);
+
+            foreach (string texture in validMatTextures)
             {
-                Log.Warning($"No .png files found inside {CurrentSkin.TexturesPath}, " +
-                $"the skin won't have any textures.");
-                return (true, string.Empty);
+                string textureKeyword = MaterialTextureAssigner.GetTextureKeyword(texture, CurrentSkin.CodeName);
+                MaterialTextureAssigner.ApplyTextureToMatchingMaterials(texture, textureKeyword, CurrentSkin.Materials, CurrentSkin.CodeName);
             }
 
-            List<string> texturesLower = CurrentSkin.Textures.Select(tex => tex.ToLower()).ToList();
-
-            string largeIcon = CurrentSkin.Textures.FirstOrDefault(tex =>
-            (tex.ToLower().Contains("t_soldier") || tex.ToLower().Contains("t-soldier")) && 
-            (tex.ToLower().EndsWith("_l") || tex.ToLower().EndsWith("-l")));
-
-            string smallIcon = CurrentSkin.Textures.FirstOrDefault(tex =>
-            (tex.ToLower().Contains("t_soldier") || tex.ToLower().Contains("t-soldier")) &&
-            (!tex.ToLower().EndsWith("_l") && !tex.ToLower().EndsWith("-l")));
-
-            List<string> validMatTextures = CurrentSkin.Textures.Where(tex => tex.EndsWith("_D") || tex.EndsWith("_M") ||
-            tex.EndsWith("_N") || tex.EndsWith("_S")).ToList();
-
-            if (largeIcon != null) CurrentSkin.LargeIcon = largeIcon;
-            if (smallIcon != null) CurrentSkin.SmallIcon = smallIcon;
-
-            if (string.IsNullOrEmpty(CurrentSkin.LargeIcon) && !string.IsNullOrEmpty(CurrentSkin.SmallIcon))
+            List<Material> materialsWithMissingTextures = MaterialTextureAssigner.GetMaterialsWithMissingTextures(CurrentSkin.Materials);
+            if (materialsWithMissingTextures.Count == 0) return true;
+            foreach (string texture in validMatTextures)
             {
-                CurrentSkin.LargeIcon = CurrentSkin.SmallIcon;
-                Log.Warning("Cannot find the large icon, the small icon will be used for " +
-                "large icon as well.");
-            }
-            else if (!string.IsNullOrEmpty(CurrentSkin.LargeIcon) && string.IsNullOrEmpty(CurrentSkin.SmallIcon))
-            {
-                CurrentSkin.SmallIcon = CurrentSkin.LargeIcon;
-                Log.Warning("Cannot find the small icon, the large icon will be used for " +
-                " small icon as well.");
+                string textureFallbackKeyword = MaterialTextureAssigner.GetFallbackKeyword(texture);
+                MaterialTextureAssigner.ApplyTextureToMaterialByFallback(texture, textureFallbackKeyword, materialsWithMissingTextures);
             }
 
-            foreach (string tex in validMatTextures) FindTexturesMaterial(tex, false);
+            materialsWithMissingTextures = MaterialTextureAssigner.GetMaterialsWithMissingTextures(CurrentSkin.Materials);
+            if (materialsWithMissingTextures.Count == 0) return true;
+            MaterialTextureAssigner.GuessMaterialsTextures(materialsWithMissingTextures, CurrentSkin.Materials);
 
-            if (!CurrentSkin.Materials.Any(mat => validMatTextures.Contains(mat.SelectedDiffuse) || validMatTextures.Contains(mat.SelectedMask) ||
-            validMatTextures.Contains(mat.SelectedNormal) || validMatTextures.Contains(mat.SelectedSpecular))) validMatTextures.ForEach(t => FindTexturesMaterial(t, true));
-
-            List<Material> materialsWithMissingTextures = CurrentSkin.Materials.Where(mat =>
-            mat.SelectedDiffuse == "Default_Diffuse" && mat.SelectedMask == "Default_Mask" &&
-            mat.SelectedNormal == "Default_Normal" && mat.SelectedSpecular == "Default_Specular").ToList();
-
-            materialsWithMissingTextures.ForEach(mat => GuessMaterialsTextures(mat));
-
-            return (true, string.Empty);
-        }
-
-        private void FindTexturesMaterial(string texture, bool useFallbackKeywords)
-        {
-            int textureIndex = 0;
-            string findFallbackKeyword(string input, string keyword)
-            {
-                string name = input.ToLower();
-                int currentIndex = 0;
-                int firstIndex = -1;
-                int lastIndex = -1;
-                int keywordIndex = 0;
-                for (int i = 0; i < name.Length; i++)
-                {
-                    if (name[i] == keyword[keywordIndex])
-                    {
-                        if (keywordIndex == 0) firstIndex = i;
-                        keywordIndex++;
-                    }
-                    else
-                    {
-                        firstIndex = -1;
-                        keywordIndex = 0;
-                    }
-                    if (keywordIndex == keyword.Length)
-                    {
-                        lastIndex = i;
-                        if ((firstIndex == 0 || name[firstIndex - 1] == '_') && (lastIndex == name.Length-1 || name[lastIndex + 1] == '_'))
-                        {
-                            return keyword;
-                        }
-                        else
-                        {
-                            firstIndex = -1;
-                            lastIndex = -1;
-                            keywordIndex = 0;
-                        }
-                    }
-                }
-                return null;
-            }
-            void applyTexture(Material material, string texture)
-            {
-                if (texture.EndsWith("_D")) material.SelectedDiffuse = texture;
-                if (texture.EndsWith("_M")) material.SelectedMask = texture;
-                if (texture.EndsWith("_N")) material.SelectedNormal = texture;
-                if (texture.EndsWith("_S")) material.SelectedSpecular = texture;
-            }
-
-            if (useFallbackKeywords)
-            {
-                List<string> fallbackKeywords = new() { "body", "head", "faceacc", "eyes", "hair" };
-                Dictionary<string, string> fallBackKeywordPairs = new() { {"head", "eyes" }, { "faceacc", "hair" }};
-                string textureKeyword = fallbackKeywords.FirstOrDefault(keyword => findFallbackKeyword(texture, keyword) != null);
-                if (textureKeyword == null) return;
-
-                foreach (Material mat in CurrentSkin.Materials)
-                {
-                    string matName = mat.Name;
-                    string matFallBackKeyword = fallbackKeywords.FirstOrDefault(keyword => findFallbackKeyword(matName, keyword) != null);
-                    if (matFallBackKeyword != null && (matFallBackKeyword == textureKeyword || fallBackKeywordPairs.GetValueOrDefault(matFallBackKeyword) == textureKeyword))
-                    {
-                        applyTexture(mat, texture);
-                        return;
-                    }
-                }
-                return;
-            }
-            else
-            {
-                string textureKeyword = texture.Substring(0, texture.Length - 2).Replace(CurrentSkin.CodeName, "").ToLower();
-                string previousSearchElement = textureKeyword + "|";
-
-                while (previousSearchElement != textureKeyword)
-                {
-                    previousSearchElement = textureKeyword;
-                    textureKeyword =
-                    textureKeyword.StartsWith("t_") ? textureKeyword.Remove(0, 2) : textureKeyword;
-                    textureKeyword = textureKeyword.StartsWith($"{CurrentSkin.CodeName.ToLower()}_") ?
-                    textureKeyword.Remove(0, CurrentSkin.CodeName.Length + 1) : textureKeyword;
-                    textureKeyword = textureKeyword.StartsWith($"f_med_") ||
-                    textureKeyword.StartsWith("m_med_") ?
-                    textureKeyword.Remove(0, 6) : textureKeyword;
-                }
-                foreach (string splitName in Regex.Split(CurrentSkin.CodeName, @"(?<!^)(?=[A-Z])"))
-                {
-                    textureKeyword = textureKeyword.Replace(splitName.ToLower(), "");
-                }
-
-                foreach (Material material in CurrentSkin.Materials)
-                {
-                    string matForSearching = material.Name.Replace(CurrentSkin.CodeName, "").ToLower();
-                    if (matForSearching.EndsWith(textureKeyword))
-                    {
-                        applyTexture(material, texture);
-                        return;
-                    }
-                }
-            }
-        }
-
-        private void GuessMaterialsTextures(Material mat)
-        {
-            Material workingMat = CurrentSkin.Materials.FirstOrDefault
-            (m => m.SelectedDiffuse != "Default_Diffuse" && m.SelectedMask != "Default_Mask" && m.SelectedNormal != "Default_Normal" && 
-            m.SelectedSpecular != "Default_Specular" && m.Cp == mat.Cp);
-            //Get the first material that is the same character part type and has all the textures correctly assigned
-            if (workingMat == null) return;
-
-            mat.SelectedDiffuse = workingMat.SelectedDiffuse;
-            mat.SelectedMask = workingMat.SelectedMask;
-            mat.SelectedNormal = workingMat.SelectedNormal;
-            mat.SelectedSpecular = workingMat.SelectedSpecular;
+            return true;
         }
 
         private async void RenderPreviewImage()
@@ -1687,7 +1561,7 @@ namespace UFMT
                     mat.Cp = loadedSkin.CharacterParts.FirstOrDefault(cp => cp.Type == mat.Cp?.Type);
                 }
 
-                if (CurrentFnVersion.ManuallySwizzleMaterials) TextureSwizzler.SwizzleSpecularTextures(CurrentSkin.TexturesPath, TextureCategorizer.GetTexturesBySuffix(CurrentSkin.TexturesPath, "_S"));
+                if (CurrentFnVersion.ManuallySwizzleMaterials) TextureSwizzler.SwizzleSpecularTextures(CurrentSkin.TexturesPath);
             }
             catch (Exception ex)
             {
