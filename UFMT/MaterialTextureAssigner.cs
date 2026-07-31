@@ -15,7 +15,29 @@ namespace UFMT
         private static List<string> fallbackKeywords = new() { "body", "head", "faceacc", "eyes", "hair" };
         private static Dictionary<string, string> fallBackKeywordPairs = new() { { "head", "eyes" }, { "faceacc", "hair" } };
 
-        internal static string GetTextureKeyword(string textureName, string skinCodename)
+        internal static void AssignTexturesToAllMaterials(string texturesPath, string skinCodename, ObservableCollection<Material> materials)
+        {
+            List<string> validMaterialTextures = TextureCategorizer.GetTexturesByMultipleSuffix(texturesPath, ["_D", "_M", "_N", "_S"]);
+            foreach (string texture in validMaterialTextures)
+            {
+                string textureKeyword = MaterialTextureAssigner.GetTextureKeyword(texture, skinCodename);
+                MaterialTextureAssigner.ApplyTextureToMatchingMaterials(texture, textureKeyword, materials, skinCodename);
+            }
+
+            List<Material> materialsWithMissingTextures = MaterialTextureAssigner.GetMaterialsWithMissingTextures(materials);
+            if (materialsWithMissingTextures.Count == 0) return;
+            foreach (string texture in validMaterialTextures)
+            {
+                string textureFallbackKeyword = MaterialTextureAssigner.GetFallbackKeyword(texture);
+                MaterialTextureAssigner.ApplyTextureToMaterialByFallback(texture, textureFallbackKeyword, materialsWithMissingTextures);
+            }
+
+            materialsWithMissingTextures = MaterialTextureAssigner.GetMaterialsWithMissingTextures(materials);
+            if (materialsWithMissingTextures.Count == 0) return;
+            MaterialTextureAssigner.GuessMaterialsTextures(materialsWithMissingTextures, materials);
+        }
+
+        private static string GetTextureKeyword(string textureName, string skinCodename)
         {
             string textureKeyword;
             textureKeyword = RemoveTextureSuffix(textureName);
@@ -25,17 +47,17 @@ namespace UFMT
             return textureKeyword;
         }
 
-        internal static string GetFallbackKeyword(string name)
+        private static string GetFallbackKeyword(string name)
         {
             foreach (string keyword in fallbackKeywords)
             {
-                name = name.ToLower();
+                name = RemoveTextureSuffix(name).ToLower();
                 if (name.StartsWith($"{keyword}_") || name.EndsWith($"_{keyword}") || name.Contains($"_{keyword}_")) return keyword;
             }
             return null;
         }
 
-        internal static void ApplyTextureToMaterialByFallback(string texture, string textureFallbackKeyword, List<Material> materials)
+        private static void ApplyTextureToMaterialByFallback(string texture, string textureFallbackKeyword, List<Material> materials)
         {
             if (textureFallbackKeyword == null) return;
             foreach (Material mat in materials)
@@ -56,7 +78,10 @@ namespace UFMT
 
         private static string RemoveTextureSuffix(string textureName)
         {
-            textureName = textureName.Substring(0, textureName.Length - 2);
+            if (textureName.EndsWith("_D") || textureName.EndsWith("_M") || textureName.EndsWith("_N") || textureName.EndsWith("_S")) 
+            {
+                textureName = textureName.Substring(0, textureName.Length - 2);
+            } 
             return textureName;
         }
 
@@ -73,7 +98,7 @@ namespace UFMT
             return textureName;
         }
 
-        internal static void ApplyTextureToMatchingMaterials(string texture, string textureKeyword, ObservableCollection<Material> materials, string skinCodename)
+        private static void ApplyTextureToMatchingMaterials(string texture, string textureKeyword, ObservableCollection<Material> materials, string skinCodename)
         {
             foreach (Material mat in materials)
             {
@@ -88,13 +113,13 @@ namespace UFMT
             }
         }
 
-        internal static List<Material> GetMaterialsWithMissingTextures(ObservableCollection<Material> materials)
+        private static List<Material> GetMaterialsWithMissingTextures(ObservableCollection<Material> materials)
         {
             return materials.Where(mat => mat.SelectedDiffuse == "Default_Diffuse" && mat.SelectedMask == "Default_Mask"
             && mat.SelectedNormal == "Default_Normal" && mat.SelectedSpecular == "Default_Specular").ToList();
         }
 
-        internal static void GuessMaterialsTextures(List<Material> materialsWithMissingTextures, ObservableCollection<Material> allMaterials)
+        private static void GuessMaterialsTextures(List<Material> materialsWithMissingTextures, ObservableCollection<Material> allMaterials)
         {
             foreach (Material missingTextureMat in materialsWithMissingTextures)
             {

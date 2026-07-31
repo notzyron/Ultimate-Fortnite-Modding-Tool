@@ -61,9 +61,6 @@ namespace UFMT
     {
         public static FnVersion CurrentFnVersion = FnVersionsData.FnVersions.GetValueOrDefault(App.Settings.FnVersion);
         public static UeVersion CurrentUeVersion = UeVersionsData.UeVersions.GetValueOrDefault(App.Settings.UeVersion);
-        private static string PskConvertScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_ConvertPsk.py");
-        private static string PsaConvertScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_ConvertPsa.py");
-        private static string CombineShapeKeysScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_CombineShapeKeys.py");
         private static string RenderScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_RenderPreviewCh1.py");
         private static string PhysicsImporterPath;
         private static string CookedAssetsPath;
@@ -161,7 +158,6 @@ namespace UFMT
             OutputFnGamePath = Path.Combine(CurrentSkin.Path, "Output", App.Settings.FnVersion, "FortniteGame");
             CurrentSkin.CodeName = new DirectoryInfo(CurrentSkin.Path).Name;
             CurrentSkin.CID = $"CID_{CurrentSkin.CodeName}";
-            characterCIDTextBox.Text = CurrentSkin.CID;
 
 
             SkinData loadedJson = LoadSkinConfig(Path.Combine(CurrentSkin.Path, $"{CurrentSkin.CodeName}_Settings.json"));
@@ -169,7 +165,6 @@ namespace UFMT
             if (loadedJson != null)
             {
                 CurrentSkin = loadedJson;
-                characterCIDTextBox.Text = CurrentSkin.CID;
                 CurrentSkin.Path = CurrentSkinPathBox.Text;
             }
             else
@@ -179,7 +174,7 @@ namespace UFMT
                 if (characterParts == null) return;
                 CurrentSkin.CharacterParts = characterParts;
 
-                (bool isValid, string lobbyAnimationPsa, string lobbyAnimationJson) = SkinFolderScanner.FindLobbyAnimationFiles(CurrentSkin.LobbyAnimationPath);
+                (bool isValid, string lobbyAnimationPsa, string lobbyAnimationJson) = SkinFolderScanner.FindLobbyAnimationFiles(CurrentSkin.LobbyAnimationFolderPath);
                 if (!isValid) return;
                 CurrentSkin.LobbyAnimationPsa = lobbyAnimationPsa;
                 CurrentSkin.LobbyAnimationJson = lobbyAnimationJson;
@@ -190,8 +185,14 @@ namespace UFMT
                 if (materials == null) return;
                 CurrentSkin.Materials = new ObservableCollection<Material>(materials);
 
-                if (!GetValidTextures()) { UpdateDropdowns(); return; }
+                DefaultTextureSetup.CreateDefaultTextures(DefaultTextureSetup.FindMissingDefaultTextures(CurrentSkin.TexturesPath), CurrentSkin.TexturesPath);
+                if (CurrentFnVersion.ManuallySwizzleMaterials) TextureSwizzler.SwizzleSpecularTextures(CurrentSkin.TexturesPath);
+                (CurrentSkin.LargeIcon, CurrentSkin.SmallIcon) = TextureCategorizer.GetIconTextures(CurrentSkin.TexturesPath);
+                CurrentSkin.Textures = TextureCategorizer.GetAllTextures(CurrentSkin.TexturesPath);
+                MaterialTextureAssigner.AssignTexturesToAllMaterials(CurrentSkin.TexturesPath, CurrentSkin.CodeName, CurrentSkin.Materials);
             }
+
+            characterCIDTextBox.Text = CurrentSkin.CID;
             CurrentSkin.PropertyChanged += (s, e) => SaveSkinConfig();
             UpdateDropdowns();
         }
@@ -226,8 +227,8 @@ namespace UFMT
                 Log.Error($"Cannot find the Textures folder inside \"{sourcePath}\"");
                 return false;
             }
-            string lobbyAnimatinPath = Path.Combine(sourcePath, "Lobby_Animation");
-            if (!Directory.Exists(lobbyAnimatinPath))
+            string lobbyAnimationFolderPath = Path.Combine(sourcePath, "Lobby_Animation");
+            if (!Directory.Exists(lobbyAnimationFolderPath))
             {
                 Log.Error($"Cannot find the Lobby_Animation folder inside \"{sourcePath}\"");
                 return false;
@@ -243,7 +244,7 @@ namespace UFMT
             CurrentSkin.SourcePath = sourcePath;
             CurrentSkin.MeshesPath = meshesPath;
             CurrentSkin.TexturesPath = texturesPath;
-            CurrentSkin.LobbyAnimationPath = lobbyAnimatinPath;
+            CurrentSkin.LobbyAnimationFolderPath = lobbyAnimationFolderPath;
             CurrentSkin.PhysicsPath = physicsPath;
             return true;
         }
@@ -294,39 +295,15 @@ namespace UFMT
 
         private async void ExportButton_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(App.Settings.UeVersion))
-            {
-                Log.Error($"No unreal engine selected! Make sure you selected the correct ue version in setting!");
-                return;
-            }
-            if (string.IsNullOrEmpty(CurrentSkin.Gender))
-            {
-                Log.Error($"Skin's gender is unspecified!");
-                return;
-            }
-            if (string.IsNullOrEmpty(CurrentSkin.Name))
-            {
-                Log.Error($"Skin's name cannot be empty!");
-                return;
-            }
-            if (string.IsNullOrEmpty(CurrentSkin.Description))
-            {
-                Log.Error($"Skin's description cannot be empty!");
-                return;
-            }
-            if (string.IsNullOrEmpty(CurrentSkin.CID))
-            {
-                Log.Error($"Skin's CID cannot be empty!");
-                return;
-            }
-            try
-            {
-                ConvertPskToFbx();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Message);
-            }
+            if (!SkinValidator.ValidateBeforeExport(App.Settings.UeVersion, CurrentSkin.Gender, CurrentSkin.Name, CurrentSkin.Description, CurrentSkin.CID)) return;
+            if (!await FbxConverter.ConvertPskToFbx(CurrentSkin.CharacterParts, CurrentSkin.SourcePath, CurrentSkin.CodeName)) return;
+
+            var (isAnimValid, lobbyAnimationFbx, lobbyAnimationLength) = 
+            await FbxConverter.ConvertPsaToFbx(CurrentSkin.SourcePath, CurrentSkin.CodeName, CurrentSkin.LobbyAnimationFolderPath, CurrentSkin.LobbyAnimationPsa);
+            if (!isAnimValid) return;
+            CurrentSkin.LobbyAnimationFbx = lobbyAnimationFbx;
+            CurrentSkin.LobbyAnimationLength = lobbyAnimationLength;
+            LaunchUnrealScript();
         }
 
         private async void CreateSkinFolder_Click
@@ -704,142 +681,6 @@ namespace UFMT
             UpdateDropdowns();
         }
 
-        public async void ConvertPskToFbx()
-        {
-            Console.WriteLine("Converting .psk files to .fbx");
-
-            foreach (CharacterPart cp in CurrentSkin.CharacterParts)
-            {
-                string exportFbxPath = Path.Combine(CurrentSkin.SourcePath, "Fbx", cp.Type[0].ToString().ToUpper() + cp.Type.Substring(1));
-                if (!Directory.Exists(exportFbxPath))
-                {
-                    Directory.CreateDirectory(exportFbxPath);
-                    Console.WriteLine($"Created {exportFbxPath}");
-                }
-                string exportName = $"{CurrentSkin.CodeName}_{cp.Type}";
-
-                cp.FbxPath = Path.Combine(exportFbxPath, exportName);
-                if (!File.Exists(Path.Combine(exportFbxPath, $"{exportName}.fbx")))
-                {
-                    string[] fbxFiles = Directory.GetFiles(exportFbxPath, "*.fbx");
-                    if (fbxFiles.Length > 1) Log.Error($"More than 1 fbx files found in {exportFbxPath}, make sure there is only 1 mesh per character part!");
-                    else if (fbxFiles.Length == 1)
-                    {
-                        File.Move(fbxFiles[0], Path.Combine(exportFbxPath, $"{exportName}.fbx"));
-                    }
-                    else
-                    {
-                        await Task.Run(() =>
-                        {
-                            Process blender = Process.Start(App.Settings.BlenderPath, $"-b --python \"{PskConvertScript}\" -- \"{cp.PskPath}\" " +
-                        $"\"{Path.Combine(exportFbxPath, $"{exportName}.fbx")}\"");
-                            blender.WaitForExit();
-                        });
-
-                        Log.Success($"Succesfully converted " +
-                        $"{Path.Combine(CurrentSkin.SourcePath, Path.GetFileName(cp.PskPath))}" +
-                        $" to {Path.Combine(CurrentSkin.SourcePath, "Fbx", exportName)}.fbx!");
-                    }
-                }
-
-                if (cp.Type == "head")
-                {
-                    await Task.Run(() =>
-                    {
-                        Process blender = Process.Start(App.Settings.BlenderPath, $"-b --python \"{CombineShapeKeysScript}\" -- \"{cp.PskPath}\" " +
-                    $"\"{Path.Combine(exportFbxPath, $"{exportName}.fbx")}\"");
-                        blender.WaitForExit();
-                    });
-
-                    Log.Success($"Succesfully combined shape keys for {cp.FbxPath}");
-                }
-            }
-            ConvertPsaToFbx();
-        }
-
-        public async void ConvertPsaToFbx()
-        {
-            Console.WriteLine("Converting .psa Lobby animation to .fbx");
-            await Task.Run(() =>
-            {
-                string blendFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "proper_fn_skeleton.blend");
-                string exportFbxPath = Path.Combine(CurrentSkin.SourcePath, "Fbx", "Lobby_Animation");
-                if (!Directory.Exists(exportFbxPath)) Directory.CreateDirectory(exportFbxPath);
-                string exportName = $"{CurrentSkin.CodeName}_Lobby_Animation";
-                CurrentSkin.LobbyAnimationFbx = exportName;
-                string psaPath = Path.Combine(CurrentSkin.LobbyAnimationPath, $"{CurrentSkin.LobbyAnimationPsa}.psa");
-                string fbxFullPath = Path.Combine(exportFbxPath, $"{exportName}.fbx");
-                string arguments = $"-b \"{blendFilePath}\" --python \"{PsaConvertScript}\" -- \"{psaPath}\" \"{fbxFullPath}\"";
-
-                ProcessStartInfo psi = new ProcessStartInfo(App.Settings.BlenderPath, arguments)
-                {
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                using (Process blender = Process.Start(psi))
-                {
-                    var stdoutTask = Task.Run(() => blender.StandardOutput.ReadToEnd());
-                    var stderrTask = Task.Run(() => blender.StandardError.ReadToEnd());
-                    blender.WaitForExit();
-                    Task.WhenAll(stdoutTask, stderrTask).Wait();
-                }
-
-                string metaPath = fbxFullPath + ".meta";
-                if (File.Exists(metaPath))
-                {
-                    string content = File.ReadAllText(metaPath).Trim();
-                    if (int.TryParse(content, out int animLength))
-                    {
-                        CurrentSkin.LobbyAnimationLength = (float)animLength/30; //Divide the animation length by 30 since it's in 30fps
-                    }
-                    File.Delete(metaPath);
-                }
-            });
-            Log.Success($"Successfully converted the Lobby .psa animation to .fbx!");
-            try
-            {
-                LaunchUnrealScript();
-            }
-            catch (Exception ex) { Log.Error(ex.ToString()); }
-        }
-
-        public bool GetValidTextures()
-        {
-            DefaultTextureSetup.CreateDefaultTextures(DefaultTextureSetup.FindMissingDefaultTextures(CurrentSkin.TexturesPath), CurrentSkin.TexturesPath);
-            if (CurrentFnVersion.ManuallySwizzleMaterials) TextureSwizzler.SwizzleSpecularTextures(CurrentSkin.TexturesPath);
-
-            (string largeIcon, string smallIcon) = TextureCategorizer.GetIconTextures(CurrentSkin.TexturesPath);
-            CurrentSkin.SmallIcon = smallIcon;
-            CurrentSkin.LargeIcon = largeIcon;
-
-            CurrentSkin.Textures = TextureCategorizer.GetAllTextures(CurrentSkin.TexturesPath);
-
-            List<string> validMatTextures = TextureCategorizer.GetTexturesByMultipleSuffix(CurrentSkin.TexturesPath, ["_D", "_M", "_N", "_S"]);
-
-            foreach (string texture in validMatTextures)
-            {
-                string textureKeyword = MaterialTextureAssigner.GetTextureKeyword(texture, CurrentSkin.CodeName);
-                MaterialTextureAssigner.ApplyTextureToMatchingMaterials(texture, textureKeyword, CurrentSkin.Materials, CurrentSkin.CodeName);
-            }
-
-            List<Material> materialsWithMissingTextures = MaterialTextureAssigner.GetMaterialsWithMissingTextures(CurrentSkin.Materials);
-            if (materialsWithMissingTextures.Count == 0) return true;
-            foreach (string texture in validMatTextures)
-            {
-                string textureFallbackKeyword = MaterialTextureAssigner.GetFallbackKeyword(texture);
-                MaterialTextureAssigner.ApplyTextureToMaterialByFallback(texture, textureFallbackKeyword, materialsWithMissingTextures);
-            }
-
-            materialsWithMissingTextures = MaterialTextureAssigner.GetMaterialsWithMissingTextures(CurrentSkin.Materials);
-            if (materialsWithMissingTextures.Count == 0) return true;
-            MaterialTextureAssigner.GuessMaterialsTextures(materialsWithMissingTextures, CurrentSkin.Materials);
-
-            return true;
-        }
-
         private async void RenderPreviewImage()
         {
             try
@@ -850,7 +691,7 @@ namespace UFMT
                 List<bool> swizzleMaterials = new();
                 string lobbyAnimPath = CurrentSkin.Gender == "Male" ? MaleLobbyAnimPath : FemaleLobbyAnimPath;
                 lobbyAnimPath = CurrentSkin.LobbyAnimationPsa == string.Empty ? lobbyAnimPath :
-                Path.Combine(CurrentSkin.LobbyAnimationPath, $"{CurrentSkin.LobbyAnimationPsa}.psa");
+                Path.Combine(CurrentSkin.LobbyAnimationFolderPath, $"{CurrentSkin.LobbyAnimationPsa}.psa");
 
                 foreach (Material mat in CurrentSkin.Materials)
                 {
@@ -1569,20 +1410,23 @@ namespace UFMT
             }
 
             return loadedSkin;
-        }
+        } // TODO: This method should only load the data that doesn't have JsonIgnore, right now it loads everything from the .json 
+                                                            // as a new SkinData object, so everything that had JsonIgnore has the default value assigned in the class, so to avoid 
+                                                            // getting null objects, reassigning the variables that had JsonIgnore is mandatory at the moment.
 
         public void SaveSkinConfig()
         {
+            Log.Test("SaveSkinConfig method enabled!");
+            Log.Test($"Is current skin null? {CurrentSkin == null}, what is the CurrentSkin's path? \"{CurrentSkin.Path}\"");
             if (CurrentSkin == null || string.IsNullOrEmpty(CurrentSkin.Path)) return;
 
             string jsonPath = Path.Combine(CurrentSkin.Path, $"{CurrentSkin.CodeName}_Settings.json");
             var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
             string jsonString = System.Text.Json.JsonSerializer.Serialize(CurrentSkin, options);
+            Log.Test("Saved skin config!");
 
             File.WriteAllText(jsonPath, jsonString);
-        } // TODO: This method should only load the data that doesn't have JsonIgnore, right now it loads everything from the .json 
-                                        // as a new SkinData object, so everything that had JsonIgnore has the default value assigned in the class, so to avoid 
-                                        // getting null objects, reassigning the variables that had JsonIgnore is mandatory at the moment.
+        } 
     }
 
     public class CharacterPart
@@ -1701,7 +1545,7 @@ namespace UFMT
         public string MeshesPath { get; set; } = string.Empty;
         public string TexturesPath { get; set; } = string.Empty;
         public string PhysicsPath { get; set; } = string.Empty;
-        public string LobbyAnimationPath { get; set; } = string.Empty;
+        public string LobbyAnimationFolderPath { get; set; } = string.Empty;
         public float LobbyAnimationLength { get; set; } = 0;
         public List<CharacterPart> CharacterParts { get; set; } = new();
         public List<string> Textures { get; set; } = new();
