@@ -102,6 +102,7 @@ namespace UFMT
                 }
 
                 string metaPath = fbxFilePath + ".meta";
+                Log.Test($"Does the meta file exist? {File.Exists(metaPath)}. The file path is {metaPath}");
                 if (File.Exists(metaPath))
                 {
                     string content = File.ReadAllText(metaPath).Trim();
@@ -111,8 +112,10 @@ namespace UFMT
                     }
                     File.Delete(metaPath);
                 }
+                Log.Test($"The animation length in the loop is {animationLength}");
             });
             Log.Success($"Successfully converted the Lobby .psa animation to .fbx!");
+            Log.Test($"The final animation length is {animationLength}");
             return (true, lobbyAnimationFbx, animationLength);
         }
 

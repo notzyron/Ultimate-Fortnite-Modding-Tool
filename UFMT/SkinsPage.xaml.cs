@@ -166,6 +166,7 @@ namespace UFMT
             {
                 CurrentSkin = loadedJson;
                 CurrentSkin.Path = CurrentSkinPathBox.Text;
+                CurrentSkin.LobbyAnimationFolderPath = Path.Combine(CurrentSkin.SourcePath, "Lobby_Animation");
             }
             else
             {
