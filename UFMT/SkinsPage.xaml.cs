@@ -321,7 +321,7 @@ namespace UFMT
             (cookedCodeNamePath, "Animations", $"{CurrentSkin.CodeName}_Lobby_Animation.uasset"), CurrentSkin.CharacterParts.Select
             (cp => Path.Combine(cookedCodeNamePath, "Meshes", $"{Path.GetFileNameWithoutExtension(cp.FbxPath)}.uasset")).ToArray());
 
-            CreateAssetRegistry();
+            AssetRegistryBuilder.CreateAssetRegistry(CookedAssetsPath, CurrentUeVersion.CidJsonBase64, CurrentUeVersion.AssetRegistryBinBase64, CurrentSkin.Path, OutputFnGamePath);
             CreateCharacterAssets();
             U4Pak.Pack(OutputFnGamePath, Path.Combine(Path.GetDirectoryName(OutputFnGamePath), $"z_{CurrentSkin.CodeName}.pak"));
             Log.Success("\nYour custom skin is ready! Check the output folder");
@@ -688,7 +688,7 @@ namespace UFMT
             if (!Path.Exists(App.Settings.UeProjectPath)) { Log.Error($"{App.Settings.UeProjectPath} doesn't exist!"); return; }
 
             CookedAssetsPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath),
-            "Saved", "Cooked", "WindowsNoEditor", new DirectoryInfo(Path.GetDirectoryName(App.Settings.UeProjectPath)).Name, "Content");
+            "Saved", "Cooked", "WindowsNoEditor", Path.GetFileNameWithoutExtension(App.Settings.UeProjectPath), "Content");
 
             string pluginsPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), "Plugins", "PhysicsImporter");
             if (!Path.Exists(pluginsPath)) ZipFile.ExtractToDirectory(PhysicsImporterPath, pluginsPath);
@@ -795,66 +795,6 @@ namespace UFMT
                 Log.Error(ex.Message);
             }
 
-        }
-
-        private void CreateAssetRegistry()
-        {
-            Console.WriteLine("Creating the CID.json for the AssetRegistry.bin");
-            if (!Path.Exists(CookedAssetsPath))
-            {
-                CookedAssetsPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath),
-                "Saved", "Cooked", "WindowsNoEditor", Path.GetFileNameWithoutExtension(App.Settings.UeProjectPath), "Content");
-            }
-            //Just in case the user has the project folder named differently than the .uproject
-
-            string[] customSkinFolders = Directory.GetDirectories(Path.Combine(CookedAssetsPath, "CustomSkins"));
-            List<string> cookedFakeCids = new();
-            List<string> jsonCids = new();
-
-            foreach (string customSkinFolder in customSkinFolders)
-            {
-                string[] cid = Directory.GetFiles(customSkinFolder, "*.uasset");
-                if (cid.Length > 0)
-                {
-                    string currentFoundCid = Path.GetFileNameWithoutExtension(cid[0]);
-
-                    string json = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(CurrentUeVersion.CidJsonBase64));
-                    var root = JObject.Parse(json);
-                    root["ObjectPath"] = root["ObjectPath"]!.Value<string>()!.Replace(
-                        "/Game/Athena/Items/Cosmetics/Characters/CID_Template.CID_Template",
-                        $"/Game/Athena/Items/Cosmetics/Characters/{currentFoundCid}.{currentFoundCid}");
-                    root["PackageName"] = root["PackageName"]!.Value<string>()!.Replace(
-                        "/Game/Athena/Items/Cosmetics/Characters/CID_Template",
-                        $"/Game/Athena/Items/Cosmetics/Characters/{currentFoundCid}");
-                    root["AssetName"] = root["PackageName"]!.Value<string>()!.Replace(
-                        "CID_Template", currentFoundCid);
-                    var tagAndValue = root["TagAndValue"]!.ToArray();
-                    foreach (var tag in tagAndValue)
-                    {
-                        if (tag["Item1"]!.Value<string>() == "PrimaryAssetName")
-                        {
-                            tag["Item2"] = currentFoundCid;
-                            break;
-                        }
-                    }
-                    jsonCids.Add(root.ToString(Formatting.Indented));
-                }
-                else
-                {
-                    Log.Warning($"no uasset files found inside {customSkinFolder}");
-                }
-            }
-
-            string oldOutputPath = Path.Combine(CurrentSkin.Path, "Output", "FortniteGame");
-            if (Directory.Exists(oldOutputPath)) Directory.Delete(oldOutputPath, true);
-
-            if (!Directory.Exists(OutputFnGamePath))
-            {
-                Directory.CreateDirectory(OutputFnGamePath);
-                Console.WriteLine($"Created {OutputFnGamePath}!");
-            }
-
-            AssetRegistryHelper.Inject(CurrentUeVersion.AssetRegistryBinBase64, jsonCids.ToArray(), Path.Combine(OutputFnGamePath, "AssetRegistry312398E80AB6209B22CAA2EBAB2DB35B.bin"));
         }
 
         private void CreateCharacterAssets()
