@@ -66,8 +66,6 @@ namespace UFMT
                 if (matFallbackKeyword == textureFallbackKeyword ||
                 (fallBackKeywordPairs.Keys.Contains(textureFallbackKeyword) && matFallbackKeyword == fallBackKeywordPairs.GetValueOrDefault(textureFallbackKeyword)))
                 {
-                    Log.Test($"is it the same? {matFallbackKeyword == textureFallbackKeyword}, do the pairs match? {matFallbackKeyword == fallBackKeywordPairs.GetValueOrDefault(textureFallbackKeyword)}");
-                    Log.Test($"Applying {texture} to {mat.Name}, the material fallback is {matFallbackKeyword}, the texture's fallback is {textureFallbackKeyword}");
                     if (texture.EndsWith("_D")) mat.SelectedDiffuse = texture;
                     else if (texture.EndsWith("_M")) mat.SelectedMask = texture;
                     else if (texture.EndsWith("_N")) mat.SelectedNormal = texture;

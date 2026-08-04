@@ -14,7 +14,6 @@ namespace UFMT
         {
             List<string> textures = Directory.GetFiles(texturesPath, "*.png").Select(tex => Path.GetFileNameWithoutExtension(tex)).Where(tex => tex.EndsWith(suffix)).ToList();
             if (textures.Count == 0) Log.Warning($"No textures found with the suffix \"{suffix}\"!");
-
             return textures;
         }
 

@@ -63,7 +63,7 @@ namespace UFMT
         public static UeVersion CurrentUeVersion = UeVersionsData.UeVersions.GetValueOrDefault(App.Settings.UeVersion);
         private static string RenderScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_RenderPreviewCh1.py");
         private static string PhysicsImporterPath;
-        private static string CookedAssetsPath;
+        private string CookedAssetsPath;
         private static string ValidCodenameCharacters = "abcdefghijklmnopqrstuvwxyz1234567890_";
         private static string MaleLobbyAnimPath = Path.Combine
         (AppDomain.CurrentDomain.BaseDirectory, "Assets", "LobbyAnimations", "Male_Commando_Idle_01.psa");
@@ -74,7 +74,7 @@ namespace UFMT
         {"Icon Series", "CreatorCollabSeries"}, {"DC Series", "DCUSeries"}, {"Frozen Series", "FrozenSeries" }, {"Lava Series", "LavaSeries"},
         {"Marvel Series", "MarvelSeries"}, {"Shadow Series", "ShadowSeries"},  {"Slurp Series", "SlurpSeries"},  
         {"Test Series", "FakeToken_FDS_Series"}, {"Anual Pass Series", "2020AnnualPassSeries"}};
-        private static string OutputFnGamePath = string.Empty;
+        private string OutputFnGamePath = string.Empty;
         private bool IsUpdatingFromCode = false;
         private bool IsLoadingDropdowns = false;
         CharacterPart Body;
@@ -304,7 +304,27 @@ namespace UFMT
             if (!isAnimValid) return;
             CurrentSkin.LobbyAnimationFbx = lobbyAnimationFbx;
             CurrentSkin.LobbyAnimationLength = lobbyAnimationLength;
-            LaunchUnrealScript();
+            string cookedCodeNamePath = Path.Combine(CookedAssetsPath, "CustomSkins", CurrentSkin.CodeName);
+
+            UnrealDependencySetup.CreateMissingFiles(CookedAssetsPath, CurrentSkin.CodeName, CurrentUeVersion.BaseHeadPath, CurrentUeVersion.FakeCIDBase64,
+            CurrentUeVersion.BaseMeshSkeletonBase64, CurrentUeVersion.BaseMeshBase64, CurrentUeVersion.BaseHeadBase64Strings, cookedCodeNamePath);
+
+            UnrealExportData unrealData = UnrealExportDataCollector.CollectData(CurrentSkin.SmallIcon, CurrentSkin.LargeIcon, CurrentSkin.Materials, CurrentSkin.TexturesPath,
+            CurrentFnVersion.ManuallySwizzleMaterials, CurrentSkin.SourcePath, CurrentSkin.LobbyAnimationFbx, CurrentSkin.LobbyAnimationJson, CurrentSkin.CharacterParts,
+            CurrentSkin.Gender, CurrentSkin.CodeName, CurrentSkin.CID);
+
+
+            await UnrealProcessRunner.LaunchUnreal(unrealData);
+            await UnrealProcessRunner.CookFiles();
+
+            CurrentUeVersion.FixRequiredFiles(Path.Combine
+            (cookedCodeNamePath, "Animations", $"{CurrentSkin.CodeName}_Lobby_Animation.uasset"), CurrentSkin.CharacterParts.Select
+            (cp => Path.Combine(cookedCodeNamePath, "Meshes", $"{Path.GetFileNameWithoutExtension(cp.FbxPath)}.uasset")).ToArray());
+
+            CreateAssetRegistry();
+            CreateCharacterAssets();
+            U4Pak.Pack(OutputFnGamePath, Path.Combine(Path.GetDirectoryName(OutputFnGamePath), $"z_{CurrentSkin.CodeName}.pak"));
+            Log.Success("\nYour custom skin is ready! Check the output folder");
         }
 
         private async void CreateSkinFolder_Click
@@ -777,186 +797,9 @@ namespace UFMT
 
         }
 
-        private async void LaunchUnrealScript()
-        {
-            try
-            {
-                List<string> meshNames = new();
-                List<string> diffuseTexturePaths = new();
-                List<string> maskTexturePaths = new();
-                List<string> normalTexturePaths = new();
-                List<string> specularTexturePaths = new();
-                List<string> iconTexturePaths = new();
-
-                if (CurrentSkin.SmallIcon != "")
-                {
-                    iconTexturePaths.Add(Path.Combine(CurrentSkin.SourcePath, "Textures", $"{CurrentSkin.SmallIcon}.png"));
-                    iconTexturePaths.Add(Path.Combine(CurrentSkin.SourcePath, "Textures", $"{CurrentSkin.LargeIcon}.png"));
-                }
-                else iconTexturePaths = [CurrentSkin.SmallIcon, CurrentSkin.LargeIcon];
-                string fakeCIDTemplatePath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), "Content",
-                "CID_Template.uasset");
-                string BaseMeshSkeletonPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), "Content",
-                "Characters", "Player", "Male", "Male_Avg_Base", "Fortnite_M_Avg_Player_Skeleton.uasset");
-                string BaseMeshPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), "Content",
-                "Characters", "Player", "Male", "Male_Avg_Base", "Fortnite_M_Avg_Player.uasset");
-                string cookedCodeNamePath = Path.Combine(CookedAssetsPath, "CustomSkins", CurrentSkin.CodeName);
-                string baseHeadPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), CurrentUeVersion.BaseHeadPath);
-
-                if (!File.Exists(fakeCIDTemplatePath))
-                {
-                    File.WriteAllBytes(fakeCIDTemplatePath, Convert.FromBase64String(CurrentUeVersion.FakeCIDBase64));
-                }
-                if (!File.Exists(BaseMeshSkeletonPath))
-                {
-                    Directory.CreateDirectory(Path.GetDirectoryName(BaseMeshSkeletonPath));
-                    File.WriteAllBytes(BaseMeshSkeletonPath, Convert.FromBase64String(CurrentUeVersion.BaseMeshSkeletonBase64));
-                }
-                if (!File.Exists(BaseMeshPath))
-                {
-                    File.WriteAllBytes(BaseMeshPath, Convert.FromBase64String(CurrentUeVersion.BaseMeshBase64));
-                }
-                if (Directory.Exists(cookedCodeNamePath))
-                {
-                    Directory.Delete(cookedCodeNamePath, true);
-                }
-                if (!Directory.Exists(baseHeadPath))
-                {
-                    Directory.CreateDirectory(baseHeadPath);
-                }
-
-                foreach (var (fileName, base64String) in CurrentUeVersion.BaseHeadBase64Strings)
-                {
-                    string filePath = Path.Combine(baseHeadPath, $"{fileName}.uasset");
-                    if (!File.Exists(filePath))
-                    {
-                        Console.WriteLine($"{fileName}.uasset is missing, creating the file...");
-                        File.WriteAllBytes(filePath, Convert.FromBase64String(base64String));
-                    }
-                }
-
-                Console.WriteLine("Launching unreal engine...");
-
-                foreach (Material mat in CurrentSkin.Materials)
-                {
-                    diffuseTexturePaths.Add(Path.Combine(CurrentSkin.TexturesPath, $"{mat.SelectedDiffuse}.png"));
-                    maskTexturePaths.Add(Path.Combine(CurrentSkin.TexturesPath, $"{mat.SelectedMask}.png"));
-                    normalTexturePaths.Add(Path.Combine(CurrentSkin.TexturesPath, $"{mat.SelectedNormal}.png"));
-
-                    if (CurrentFnVersion.ManuallySwizzleMaterials && mat.Swizzle)
-                    {
-                        specularTexturePaths.Add(Path.Combine(CurrentSkin.TexturesPath, "Swizzled", $"{mat.SelectedSpecular}.png"));
-                    }
-                    else
-                    {
-                        specularTexturePaths.Add(Path.Combine(CurrentSkin.TexturesPath, $"{mat.SelectedSpecular}.png"));
-                    }
-                }
-                Path.Combine(CurrentSkin.SourcePath, "Fbx", $"{CurrentSkin.LobbyAnimationFbx}.fbx");
-                var unrealData = new UnrealExportData()
-                {
-                    FbxPaths = CurrentSkin.CharacterParts.Select(cp => $"{cp.FbxPath}.fbx").ToList(),
-                    PhysicsMeshNames = CurrentSkin.CharacterParts.Where(cp => cp.PhysicsAssetJsonPaths.Count > 0).ToList().Select(cp => Path.GetFileNameWithoutExtension(cp.FbxPath)).ToList(),
-                    PhysicsAssetsPaths = CurrentSkin.CharacterParts.Select(cp => cp.PhysicsAssetJsonPaths).ToList(),
-                    DiffuseTextures = diffuseTexturePaths,
-                    MaskTextures = maskTexturePaths,
-                    NormalTextures = normalTexturePaths,
-                    SpecularTextures = specularTexturePaths,
-                    IconTextures = iconTexturePaths,
-                    Materials = CurrentSkin.Materials.Select(mat => mat.Name).ToList(),
-                    CodeName = CurrentSkin.CodeName,
-                    MeshNames = CurrentSkin.CharacterParts.Select(cp => Path.GetFileNameWithoutExtension(cp.FbxPath)).ToList(),
-                    CID = CurrentSkin.CID,
-                    LobbyAnimationFbxPath = CurrentSkin.LobbyAnimationPsa == string.Empty ? string.Empty :
-                    Path.Combine(CurrentSkin.SourcePath, "Fbx", "Lobby_Animation", $"{CurrentSkin.LobbyAnimationFbx}.fbx"),
-                    RetargetSource = CurrentSkin.Gender == "Male" ? "MPR_SK_M_MALE_Base_Skeleton" : "SK_M_Female_Base_Skeleton",
-                    LobbyAnimationJsonPath = string.IsNullOrEmpty(CurrentSkin.LobbyAnimationJson) ? string.Empty :
-                    Path.Combine(CurrentSkin.SourcePath, "Lobby_Animation", $"{CurrentSkin.LobbyAnimationJson}.json"),
-                    HeadMeshName = Path.GetFileNameWithoutExtension(CurrentSkin.CharacterParts.FirstOrDefault(cp => cp.Type == "head").FbxPath),
-                    CurrentFnVersion = App.Settings.FnVersion,
-                };
-
-                string jsonString = System.Text.Json.JsonSerializer.Serialize(unrealData, AppJsonContext.Default.UnrealExportData);
-                string tempJsonPath = Path.Combine(Path.GetTempPath(), "ue_import_data.json");
-                File.WriteAllText(tempJsonPath, jsonString, new System.Text.UTF8Encoding(false));
-
-                string scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", CurrentUeVersion.PythonScriptName).Replace("\\", "/");
-
-                string arguments = $"\"{App.Settings.UeProjectPath}\" -run=PythonScriptCommandlet -script=\"{scriptPath}\" -NullRHI -NoWindow -Silent";
-
-                Console.WriteLine($"Launching UE with args: {arguments}");
-
-                ProcessStartInfo startInfo = new ProcessStartInfo
-                {
-                    FileName = App.Settings.UeExecutablePath,
-                    Arguments = arguments,
-                    UseShellExecute = false, //This must be false for EnvironmentVariables to work
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = false
-                };
-
-                startInfo.EnvironmentVariables["UFMT_JSON_PATH"] = tempJsonPath;
-                using (Process process = new Process { StartInfo = startInfo })
-                {
-                    process.Start();
-                    Task<string> stdoutTask = process.StandardOutput.ReadToEndAsync();
-                    Task<string> stderrTask = process.StandardError.ReadToEndAsync();
-                    await Task.WhenAll(stdoutTask, stderrTask);
-                    await process.WaitForExitAsync();
-                    Console.WriteLine(stdoutTask.Result);
-                }
-
-                Console.WriteLine("Done!");
-                Console.WriteLine("Cooking the newly created assets...");
-                await CookProject();
-                Console.WriteLine("Done!");
-
-                CurrentUeVersion.FixRequiredFiles(Path.Combine
-                (cookedCodeNamePath, "Animations", $"{CurrentSkin.CodeName}_Lobby_Animation.uasset"), CurrentSkin.CharacterParts.Select
-                (cp => Path.Combine(cookedCodeNamePath, "Meshes", $"{Path.GetFileNameWithoutExtension(cp.FbxPath)}.uasset")).ToArray());
-
-                Console.WriteLine("Creating the CID.json for the AssetRegistry.bin");
-                CreateAssetRegistry();
-                CreateCharacterAssets();
-                U4Pak.Pack(OutputFnGamePath, Path.Combine(Path.GetDirectoryName(OutputFnGamePath), $"z_{CurrentSkin.CodeName}.pak"));
-                Log.Success("\nYour custom skin is ready! Check the output folder");
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.ToString());
-            }
-        }
-
-        private async Task CookProject()
-        {
-            string arguments = $"\"{App.Settings.UeProjectPath}\" -run=Cook -TargetPlatform=WindowsNoEditor -unversioned -iterate -NullRHI -NoWindow -Silent";
-
-            ProcessStartInfo startInfo = new ProcessStartInfo
-            {
-                FileName = App.Settings.UeExecutablePath,
-                Arguments = arguments,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = false
-            };
-
-            using (Process process = new Process { StartInfo = startInfo })
-            {
-                process.Start();
-                Task<string> stdoutTask = process.StandardOutput.ReadToEndAsync();
-                Task<string> stderrTask = process.StandardError.ReadToEndAsync();
-                await Task.WhenAll(stdoutTask, stderrTask);
-                await process.WaitForExitAsync();
-                Console.WriteLine(stdoutTask.Result);
-            }
-
-            Console.WriteLine("Cook done!");
-        }
-
         private void CreateAssetRegistry()
         {
+            Console.WriteLine("Creating the CID.json for the AssetRegistry.bin");
             if (!Path.Exists(CookedAssetsPath))
             {
                 CookedAssetsPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath),
@@ -1417,14 +1260,11 @@ namespace UFMT
 
         public void SaveSkinConfig()
         {
-            Log.Test("SaveSkinConfig method enabled!");
-            Log.Test($"Is current skin null? {CurrentSkin == null}, what is the CurrentSkin's path? \"{CurrentSkin.Path}\"");
             if (CurrentSkin == null || string.IsNullOrEmpty(CurrentSkin.Path)) return;
 
             string jsonPath = Path.Combine(CurrentSkin.Path, $"{CurrentSkin.CodeName}_Settings.json");
             var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
             string jsonString = System.Text.Json.JsonSerializer.Serialize(CurrentSkin, options);
-            Log.Test("Saved skin config!");
 
             File.WriteAllText(jsonPath, jsonString);
         } 
@@ -1798,28 +1638,8 @@ namespace UFMT
         public string HeadPsk { get; set; }
     }
 
-    public class UnrealExportData
-    {
-        public List<string> FbxPaths { get; set; }
-        public List<string> PhysicsMeshNames { get; set; }
-        public List<List<string>> PhysicsAssetsPaths { get; set; }
-        public List<string> DiffuseTextures { get; set; }
-        public List<string> MaskTextures { get; set; }
-        public List<string> NormalTextures { get; set; }
-        public List<string> SpecularTextures { get; set; }
-        public List<string> IconTextures { get; set; }
-        public List<string> Materials { get; set; }
-        public string CodeName { get; set; }
-        public List<string> MeshNames { get; set; }
-        public string CID { get; set; } = string.Empty;
-        public string LobbyAnimationFbxPath { get; set; } = string.Empty;
-        public string LobbyAnimationJsonPath { get; set; } = string.Empty;
-        public string RetargetSource { get; set; }
-        public string HeadMeshName { get; set; }
-        public string CurrentFnVersion { get; set; }
-    }
-
     [JsonSerializable(typeof(BlenderExportData))]
+
     [JsonSerializable(typeof(UnrealExportData))]
     internal partial class AppJsonContext : JsonSerializerContext { }
 }
