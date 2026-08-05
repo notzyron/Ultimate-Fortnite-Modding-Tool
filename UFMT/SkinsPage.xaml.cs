@@ -70,10 +70,6 @@ namespace UFMT
         private static string FemaleLobbyAnimPath = Path.Combine
         (AppDomain.CurrentDomain.BaseDirectory, "Assets", "LobbyAnimations", "Female_Commando_Idle_01.psa");
         private CancellationTokenSource _currentSkinPathDebounce;
-        public Dictionary<string, string> SeriesCodenames = new(){ {"Dark Series", "CUBESeries"}, { "Star Wars Series", "ColumbusSeries" },
-        {"Icon Series", "CreatorCollabSeries"}, {"DC Series", "DCUSeries"}, {"Frozen Series", "FrozenSeries" }, {"Lava Series", "LavaSeries"},
-        {"Marvel Series", "MarvelSeries"}, {"Shadow Series", "ShadowSeries"},  {"Slurp Series", "SlurpSeries"},  
-        {"Test Series", "FakeToken_FDS_Series"}, {"Anual Pass Series", "2020AnnualPassSeries"}};
         private string OutputFnGamePath = string.Empty;
         private bool IsUpdatingFromCode = false;
         private bool IsLoadingDropdowns = false;
@@ -156,11 +152,11 @@ namespace UFMT
             if (!CheckCurrentSkinPathValidation(CurrentSkinPathBox.Text)) return;
 
             OutputFnGamePath = Path.Combine(CurrentSkin.Path, "Output", App.Settings.FnVersion, "FortniteGame");
-            CurrentSkin.CodeName = new DirectoryInfo(CurrentSkin.Path).Name;
-            CurrentSkin.CID = $"CID_{CurrentSkin.CodeName}";
+            CurrentSkin.Codename = new DirectoryInfo(CurrentSkin.Path).Name;
+            CurrentSkin.CID = $"CID_{CurrentSkin.Codename}";
 
 
-            SkinData loadedJson = LoadSkinConfig(Path.Combine(CurrentSkin.Path, $"{CurrentSkin.CodeName}_Settings.json"));
+            SkinData loadedJson = LoadSkinConfig(Path.Combine(CurrentSkin.Path, $"{CurrentSkin.Codename}_Settings.json"));
 
             if (loadedJson != null)
             {
@@ -190,7 +186,7 @@ namespace UFMT
                 if (CurrentFnVersion.ManuallySwizzleMaterials) TextureSwizzler.SwizzleSpecularTextures(CurrentSkin.TexturesPath);
                 (CurrentSkin.LargeIcon, CurrentSkin.SmallIcon) = TextureCategorizer.GetIconTextures(CurrentSkin.TexturesPath);
                 CurrentSkin.Textures = TextureCategorizer.GetAllTextures(CurrentSkin.TexturesPath);
-                MaterialTextureAssigner.AssignTexturesToAllMaterials(CurrentSkin.TexturesPath, CurrentSkin.CodeName, CurrentSkin.Materials);
+                MaterialTextureAssigner.AssignTexturesToAllMaterials(CurrentSkin.TexturesPath, CurrentSkin.Codename, CurrentSkin.Materials);
             }
 
             characterCIDTextBox.Text = CurrentSkin.CID;
@@ -297,33 +293,48 @@ namespace UFMT
         private async void ExportButton_Click(object sender, RoutedEventArgs e)
         {
             if (!SkinValidator.ValidateBeforeExport(App.Settings.UeVersion, CurrentSkin.Gender, CurrentSkin.Name, CurrentSkin.Description, CurrentSkin.CID)) return;
-            if (!await FbxConverter.ConvertPskToFbx(CurrentSkin.CharacterParts, CurrentSkin.SourcePath, CurrentSkin.CodeName)) return;
+            if (!await FbxConverter.ConvertPskToFbx(CurrentSkin.CharacterParts, CurrentSkin.SourcePath, CurrentSkin.Codename)) return;
 
             var (isAnimValid, lobbyAnimationFbx, lobbyAnimationLength) = 
-            await FbxConverter.ConvertPsaToFbx(CurrentSkin.SourcePath, CurrentSkin.CodeName, CurrentSkin.LobbyAnimationFolderPath, CurrentSkin.LobbyAnimationPsa);
+            await FbxConverter.ConvertPsaToFbx(CurrentSkin.SourcePath, CurrentSkin.Codename, CurrentSkin.LobbyAnimationFolderPath, CurrentSkin.LobbyAnimationPsa);
             if (!isAnimValid) return;
             CurrentSkin.LobbyAnimationFbx = lobbyAnimationFbx;
             CurrentSkin.LobbyAnimationLength = lobbyAnimationLength;
-            string cookedCodeNamePath = Path.Combine(CookedAssetsPath, "CustomSkins", CurrentSkin.CodeName);
+            string cookedCodenamePath = Path.Combine(CookedAssetsPath, "CustomSkins", CurrentSkin.Codename);
 
-            UnrealDependencySetup.CreateMissingFiles(CookedAssetsPath, CurrentSkin.CodeName, CurrentUeVersion.BaseHeadPath, CurrentUeVersion.FakeCIDBase64,
-            CurrentUeVersion.BaseMeshSkeletonBase64, CurrentUeVersion.BaseMeshBase64, CurrentUeVersion.BaseHeadBase64Strings, cookedCodeNamePath);
+            UnrealDependencySetup.CreateMissingFiles(CookedAssetsPath, CurrentSkin.Codename, CurrentUeVersion.BaseHeadPath, CurrentUeVersion.FakeCIDBase64,
+            CurrentUeVersion.BaseMeshSkeletonBase64, CurrentUeVersion.BaseMeshBase64, CurrentUeVersion.BaseHeadBase64Strings, cookedCodenamePath);
 
             UnrealExportData unrealData = UnrealExportDataCollector.CollectData(CurrentSkin.SmallIcon, CurrentSkin.LargeIcon, CurrentSkin.Materials, CurrentSkin.TexturesPath,
             CurrentFnVersion.ManuallySwizzleMaterials, CurrentSkin.SourcePath, CurrentSkin.LobbyAnimationFbx, CurrentSkin.LobbyAnimationJson, CurrentSkin.CharacterParts,
-            CurrentSkin.Gender, CurrentSkin.CodeName, CurrentSkin.CID);
+            CurrentSkin.Gender, CurrentSkin.Codename, CurrentSkin.CID);
 
 
             await UnrealProcessRunner.LaunchUnreal(unrealData);
             await UnrealProcessRunner.CookFiles();
 
             CurrentUeVersion.FixRequiredFiles(Path.Combine
-            (cookedCodeNamePath, "Animations", $"{CurrentSkin.CodeName}_Lobby_Animation.uasset"), CurrentSkin.CharacterParts.Select
-            (cp => Path.Combine(cookedCodeNamePath, "Meshes", $"{Path.GetFileNameWithoutExtension(cp.FbxPath)}.uasset")).ToArray());
+            (cookedCodenamePath, "Animations", $"{CurrentSkin.Codename}_Lobby_Animation.uasset"), CurrentSkin.CharacterParts.Select
+            (cp => Path.Combine(cookedCodenamePath, "Meshes", $"{Path.GetFileNameWithoutExtension(cp.FbxPath)}.uasset")).ToArray());
 
             AssetRegistryBuilder.CreateAssetRegistry(CookedAssetsPath, CurrentUeVersion.CidJsonBase64, CurrentUeVersion.AssetRegistryBinBase64, CurrentSkin.Path, OutputFnGamePath);
-            CreateCharacterAssets();
-            U4Pak.Pack(OutputFnGamePath, Path.Combine(Path.GetDirectoryName(OutputFnGamePath), $"z_{CurrentSkin.CodeName}.pak"));
+           
+            DirectoryInfo cookedCharacterDirectory = new DirectoryInfo(Path.Combine(CookedAssetsPath, "CustomSkins", CurrentSkin.Codename));
+            string contentFolderPath = Path.Combine(OutputFnGamePath, "Content", "CustomSkins", CurrentSkin.Codename);
+
+            SkinAssetCreator.CopyFilesFromUe(contentFolderPath, cookedCharacterDirectory, CookedAssetsPath, OutputFnGamePath, CurrentUeVersion.BaseHeadPath, CurrentUeVersion.ReplaceCookedBaseHead, 
+            CurrentUeVersion.CookedBaseHeadBase64Strings, App.Settings.FnVersion);
+            SkinAssetCreator.CreateCharacterParts(contentFolderPath, CurrentSkin.Gender, CurrentSkin.Codename, CurrentSkin.CharacterParts, App.Settings.FnVersion, 
+            CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+            SkinAssetCreator.CreateMaterials(contentFolderPath, CurrentSkin.Codename, CurrentSkin.Materials, CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+            SkinAssetCreator.CreateHeroSpecialization(contentFolderPath, CurrentSkin.Codename, CurrentSkin.CharacterParts, CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+            SkinAssetCreator.CreateLobbyAnimationMontage(contentFolderPath, CurrentSkin.Codename, CurrentSkin.LobbyAnimationPsa, CurrentSkin.LobbyAnimationJson,
+            CurrentSkin.LobbyAnimationLength, CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+            SkinAssetCreator.CreateHero(contentFolderPath, CurrentSkin.Codename, CurrentSkin.Gender, CurrentSkin.SmallIcon, CurrentSkin.LargeIcon, CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+            SkinAssetCreator.CreateCharacter(OutputFnGamePath, CurrentSkin.CID, CurrentSkin.Codename, CurrentSkin.Name, CurrentSkin.Description, CurrentSkin.Rarity,
+            CurrentSkin.Series, App.Settings.FnVersion, CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+
+            U4Pak.Pack(OutputFnGamePath, Path.Combine(Path.GetDirectoryName(OutputFnGamePath), $"z_{CurrentSkin.Codename}.pak"));
             Log.Success("\nYour custom skin is ready! Check the output folder");
         }
 
@@ -731,7 +742,7 @@ namespace UFMT
                     Textures = texturePaths,
                     Swizzle = swizzleMaterials,
                     Materials = materials,
-                    RenderPath = Path.Combine(CurrentSkin.Path, "Source", $"{CurrentSkin.CodeName}.png"),
+                    RenderPath = Path.Combine(CurrentSkin.Path, "Source", $"{CurrentSkin.Codename}.png"),
                     LobbyAnimPath = lobbyAnimPath,
                     HeadPsk = CurrentSkin.CharacterParts.FirstOrDefault(cp => cp.Type == "head").PskPath
                 };
@@ -756,11 +767,11 @@ namespace UFMT
                 await Task.Delay(10);
 
                 var bitmap = new BitmapImage { CreateOptions = BitmapCreateOptions.IgnoreImageCache };
-                using (var fileStream = System.IO.File.OpenRead(Path.Combine(CurrentSkin.SourcePath, $"{CurrentSkin.CodeName}.png")))
+                using (var fileStream = System.IO.File.OpenRead(Path.Combine(CurrentSkin.SourcePath, $"{CurrentSkin.Codename}.png")))
                 {
                     var inMemoryStream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
                     await System.IO.WindowsRuntimeStreamExtensions.AsStreamForWrite(inMemoryStream).WriteAsync(
-                        await System.IO.File.ReadAllBytesAsync(Path.Combine(CurrentSkin.SourcePath, $"{CurrentSkin.CodeName}.png"))
+                        await System.IO.File.ReadAllBytesAsync(Path.Combine(CurrentSkin.SourcePath, $"{CurrentSkin.Codename}.png"))
                     );
                     inMemoryStream.Seek(0);
 
@@ -797,377 +808,6 @@ namespace UFMT
 
         }
 
-        private void CreateCharacterAssets()
-        {
-
-            DirectoryInfo cookedCharacterDirectory = new DirectoryInfo(Path.Combine(CookedAssetsPath, "CustomSkins", CurrentSkin.CodeName));
-            string contentFolderPath = Path.Combine(OutputFnGamePath, "Content", "CustomSkins", CurrentSkin.CodeName);
-            string characterPartsPath = Path.Combine(contentFolderPath, "CharacterParts");
-            string materialsPath = Path.Combine(contentFolderPath, "Materials");
-            CharacterPart body = CurrentSkin.CharacterParts.FirstOrDefault(cp => cp.Type == "body");
-            CharacterPart head = CurrentSkin.CharacterParts.FirstOrDefault(cp => cp.Type == "head");
-            CharacterPart faceacc = CurrentSkin.CharacterParts.FirstOrDefault(cp => cp.Type == "faceacc");
-            CharacterPart hat = CurrentSkin.CharacterParts.FirstOrDefault(cp => cp.Type == "hat");
-            if (!Path.Exists(contentFolderPath)) Directory.CreateDirectory(contentFolderPath);
-
-            foreach (DirectoryInfo subFolder in cookedCharacterDirectory.GetDirectories("*", SearchOption.AllDirectories))
-            {
-                string targetSubDir = subFolder.FullName.Replace(cookedCharacterDirectory.FullName, contentFolderPath);
-                Directory.CreateDirectory(targetSubDir);
-
-                foreach (FileInfo file in subFolder.GetFiles())
-                {
-                    file.CopyTo(Path.Combine(targetSubDir, file.Name), true);
-                }
-            }
-
-            string cookedBaseHeadPath = Path.Combine(CookedAssetsPath, "Base", "Head", "Skeleton");
-            if (App.Settings.FnVersion == "9.41") cookedBaseHeadPath = Path.Combine(CookedAssetsPath, "Modding", "Base_Head"); // 9.41 uses a different location for base head
-
-            string outputBaseHeadPath = Path.Combine(OutputFnGamePath, CurrentUeVersion.BaseHeadPath);
-
-            if (!Directory.Exists(outputBaseHeadPath)) Directory.CreateDirectory(outputBaseHeadPath);
-
-            if (CurrentUeVersion.ReplaceCookedBaseHead)
-            {
-                foreach (var (fileName, base64String) in CurrentUeVersion.CookedBaseHeadBase64Strings)
-                {
-                    File.WriteAllBytes(Path.Combine(cookedBaseHeadPath, fileName), Convert.FromBase64String(base64String));
-                }
-            } // Replace the files inside cooked ue folders
-
-            foreach (string file in Directory.GetFiles(cookedBaseHeadPath))
-            {
-                File.Copy(file, Path.Combine(outputBaseHeadPath, Path.GetFileName(file)), true);
-            }
-
-            Log.Success($"Copied files from {cookedCharacterDirectory} to {contentFolderPath}");
-            if (!Path.Exists(characterPartsPath)) Directory.CreateDirectory(characterPartsPath);
-
-            if (CurrentSkin.Gender == "Female")
-            {
-                body.uassetFileBase64 = CurrentFnVersion.BodyCpFemaleUassetBase64;
-                body.uexpFileBase64 = CurrentFnVersion.BodyCpFemaleUexpBase64;
-                head.uassetFileBase64 = CurrentFnVersion.HeadCpFemaleUassetBase64;
-                head.uexpFileBase64 = CurrentFnVersion.HeadCpFemaleUexpBase64;
-                if (faceacc != null)
-                {
-                    faceacc.uassetFileBase64 = CurrentFnVersion.FaceAccCpFemaleUassetBase64;
-                    faceacc.uexpFileBase64 = CurrentFnVersion.FaceAccCpFemaleUexpBase64;
-                }
-            }
-            else if (CurrentSkin.Gender == "Male")
-            {
-                body.uassetFileBase64 = CurrentFnVersion.BodyCpMaleUassetBase64;
-                body.uexpFileBase64 = CurrentFnVersion.BodyCpMaleUexpBase64;
-                head.uassetFileBase64 = CurrentFnVersion.HeadCpMaleUassetBase64;
-                head.uexpFileBase64 = CurrentFnVersion.HeadCpMaleUexpBase64;
-                if (faceacc != null)
-                {
-                    faceacc.uassetFileBase64 = CurrentFnVersion.FaceAccCpMaleUassetBase64;
-                    faceacc.uexpFileBase64 = CurrentFnVersion.FaceAccCpMaleUexpBase64;
-                }
-            }
-
-            //Character part creation
-            foreach (CharacterPart cp in CurrentSkin.CharacterParts)
-            {
-                Console.WriteLine($"Currently editing the {cp.Type} of the skin");
-                string uassetPath = Path.Combine(characterPartsPath,
-                $"CP_{cp.Type}_{CurrentSkin.CodeName}.uasset");
-                string uexpPath = Path.Combine(characterPartsPath,
-                $"CP_{cp.Type}_{CurrentSkin.CodeName}.uexp");
-
-                File.WriteAllBytes(uassetPath, Convert.FromBase64String(cp.uassetFileBase64));
-                File.WriteAllBytes(uexpPath, Convert.FromBase64String(cp.uexpFileBase64));
-
-                var currentCp = new UAsset(uassetPath, CurrentUeVersion.UassetApiEngineVer);
-                var cpExport0 = (NormalExport)currentCp.Exports[0];
-                var cpExport1 = (NormalExport)currentCp.Exports[1];
-                cpExport1.ObjectName.Value.Value = $"CP_{cp.Type}_{CurrentSkin.CodeName}";
-                if (cp.Type != "hat")
-                {
-                    string animBpPath;
-                    if (cp.Type == "head")
-                    {
-                        if (App.Settings.FnVersion == "9.41") animBpPath = "/Game/Modding/Base_Head/Base_Head_Modding_AnimBP.Base_Head_Modding_AnimBP_C";
-                        else animBpPath = "/Game/Base/Head/Skeleton/Base_Head_AnimBP.Base_Head_AnimBP_C";
-                    }
-                    else animBpPath = $"/Game/CustomSkins/{CurrentSkin.CodeName}/Meshes/{CurrentSkin.CodeName}_{cp.Type}_AnimBP.{CurrentSkin.CodeName}_{cp.Type}_AnimBP_C";
-
-                    var animBpData = (SoftObjectPropertyData)cpExport0["AnimClass"];
-                    animBpData.Value.AssetPath.AssetName.Value.Value = animBpPath;
-
-                    Console.WriteLine($"Changed the Animation Blueprint in CP_{cp.Type}_{CurrentSkin.CodeName} to {animBpPath}");
-                }
-                var mesh = (SoftObjectPropertyData)cpExport1["SkeletalMesh"];
-                mesh.Value.AssetPath.AssetName.Value.Value = $"/Game/CustomSkins/{CurrentSkin.CodeName}/Meshes/" +
-                $"{CurrentSkin.CodeName}_{cp.Type}.{CurrentSkin.CodeName}_{cp.Type}";
-                Console.WriteLine($"Changed the Mesh in CP_{cp.Type}_{CurrentSkin.CodeName} to /Game/CustomSkins/{CurrentSkin.CodeName}/Meshes/" +
-                $"{CurrentSkin.CodeName}_{cp.Type}.{CurrentSkin.CodeName}_{cp.Type}");
-
-                Console.WriteLine(uassetPath);
-                currentCp.Write(uassetPath);
-                Log.Success($"Successfully edited CP_{cp.Type}_{CurrentSkin.CodeName}.uasset and " +
-                $"CP_{cp.Type}_{CurrentSkin.CodeName}.uexp");
-            }
-
-            //Material creation
-            foreach (Material material in CurrentSkin.Materials)
-            {
-                string uassetMaterialPath = Path.Combine(materialsPath, $"{material.Name}.uasset");
-                string uexpMaterialPath = Path.Combine(materialsPath, $"{material.Name}.uexp");
-                string materialUassetBase64;
-                string materialUexpBase64;
-
-                materialUassetBase64 = CurrentFnVersion.MiNoSwizzleUassetBase64;
-                materialUexpBase64 = CurrentFnVersion.MiNoSwizzleUexpBase64;
-                if (!CurrentFnVersion.ManuallySwizzleMaterials && material.Swizzle)
-                {
-                    materialUassetBase64 = CurrentFnVersion.MiSwizzleUassetBase64;
-                    materialUexpBase64 = CurrentFnVersion.MiSwizzleUexpBase64;
-                }
-
-                File.WriteAllBytes(Path.Combine(uassetMaterialPath),
-                Convert.FromBase64String(materialUassetBase64));
-                File.WriteAllBytes(Path.Combine(uexpMaterialPath),
-                Convert.FromBase64String(materialUexpBase64));
-                Log.Success($"Created material instance {material.Name}");
-                Console.WriteLine($"Editing {material.Name}");
-
-                var currentMi = new UAsset(uassetMaterialPath, CurrentUeVersion.UassetApiEngineVer);
-                var miImportData = currentMi.Imports;
-                var miExportData = currentMi.Exports;
-                var miExport0 = (NormalExport)currentMi.Exports[0];
-                string fnTexturesPath = $"/Game/CustomSkins/{CurrentSkin.CodeName}/Textures/";
-                miImportData[CurrentFnVersion.DiffusePathIndex].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedDiffuse);
-                Console.WriteLine($"Changed the diffuse texture path in {material.Name} to {Path.Combine(fnTexturesPath, material.SelectedDiffuse)}");
-                miImportData[CurrentFnVersion.DiffusePathIndex + 1].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedMask);
-                Console.WriteLine($"Changed the mask texture path in {material.Name} to {Path.Combine(fnTexturesPath, material.SelectedMask)}");
-                miImportData[CurrentFnVersion.DiffusePathIndex + 2].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedNormal);
-                Console.WriteLine($"Changed the normal texture path in {material.Name} to {Path.Combine(fnTexturesPath, material.SelectedNormal)}");
-                miImportData[CurrentFnVersion.DiffusePathIndex + 3].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedSpecular);
-                Console.WriteLine($"Changed the specular texture path in {material.Name} to {Path.Combine(fnTexturesPath, material.SelectedSpecular)}");
-                miImportData[CurrentFnVersion.DiffuseNameIndex].ObjectName.Value.Value = material.SelectedDiffuse;
-                Console.WriteLine($"Changed the diffuse texture in {material.Name} to {material.SelectedDiffuse}");
-                miImportData[CurrentFnVersion.DiffuseNameIndex + 1].ObjectName.Value.Value = material.SelectedMask;
-                Console.WriteLine($"Changed the mask texture in {material.Name} to {material.SelectedMask}");
-                miImportData[CurrentFnVersion.DiffuseNameIndex + 2].ObjectName.Value.Value = material.SelectedNormal;
-                Console.WriteLine($"Changed the normal texture in {material.Name} to {material.SelectedNormal}");
-                miImportData[CurrentFnVersion.DiffuseNameIndex + 3].ObjectName.Value.Value = material.SelectedSpecular;
-                Console.WriteLine($"Changed the specular texture in {material.Name} to {material.SelectedSpecular}");
-                miExportData[0].ObjectName.Value.Value = material.Name;
-
-                if (material.UseSkinBoostColor)
-                {
-                    var vectorParamaterValues = (ArrayPropertyData)miExport0["VectorParameterValues"];
-                    var vectorParamaterValues2 = (StructPropertyData)vectorParamaterValues.Value[0];
-                    var parameterValue = (StructPropertyData)vectorParamaterValues2.Value[1];
-                    var colors = (LinearColorPropertyData)parameterValue.Value[0];
-
-                    colors.Value = new FLinearColor(material.SbcRed, material.SbcGreen, material.SbcBlue, material.SbcAlpha);
-
-                    Console.WriteLine($"Changed the skin boost color and exponent to {colors.Value.ToString()} in {material}");
-                }
-
-                currentMi.Write(uassetMaterialPath);
-                Log.Success($"Successfully edited {material.Name}.uasset and {material.Name}.uexp");
-            }
-
-            //HS creation
-            string hsUassetBase64;
-            string hsUexpBase64;
-            if (!string.IsNullOrEmpty(faceacc?.PskPath))
-            {
-                hsUassetBase64 = CurrentFnVersion.HsBodyHeadFaceAccUassetBase64;
-                hsUexpBase64 = CurrentFnVersion.HsBodyHeadFaceAccUexpBase64;
-            }
-            else if (!string.IsNullOrEmpty(hat?.PskPath))
-            {
-                hsUassetBase64 = CurrentFnVersion.HsBodyHeadHatUassetBase64;
-                hsUexpBase64 = CurrentFnVersion.HsBodyHeadHatUexpBase64;
-            }
-            else
-            {
-                hsUassetBase64 = CurrentFnVersion.HsBodyHeadUassetBase64;
-                hsUexpBase64 = CurrentFnVersion.HsBodyHeadUexpBase64;
-            }
-
-            File.WriteAllBytes(Path.Combine(contentFolderPath, $"HS_{CurrentSkin.CodeName}.uasset"), Convert.FromBase64String(hsUassetBase64));
-            File.WriteAllBytes(Path.Combine(contentFolderPath, $"HS_{CurrentSkin.CodeName}.uexp"), Convert.FromBase64String(hsUexpBase64));
-
-            Console.WriteLine("Editing the HS");
-
-            var currentHs = new UAsset(Path.Combine(contentFolderPath, $"HS_{CurrentSkin.CodeName}.uasset"), CurrentUeVersion.UassetApiEngineVer);
-            var hsExport0 = (NormalExport)currentHs.Exports[0];
-            var characterPartsArray = (ArrayPropertyData)hsExport0["CharacterParts"];
-            var headCp = (SoftObjectPropertyData)characterPartsArray.Value[0];
-            var bodyCp = (SoftObjectPropertyData)characterPartsArray.Value[1];
-            headCp.Value.AssetPath.AssetName.Value.Value =
-            $"/Game/CustomSkins/{CurrentSkin.CodeName}/CharacterParts/CP_head_{CurrentSkin.CodeName}.CP_head_{CurrentSkin.CodeName}";
-            Console.WriteLine($"Changed the Head Character Part path in HS_{CurrentSkin.CodeName} to " +
-            $"/Game/CustomSkins/{CurrentSkin.CodeName}/CharacterParts/CP_head_{CurrentSkin.CodeName}.CP_head_{CurrentSkin.CodeName}");
-
-            bodyCp.Value.AssetPath.AssetName.Value.Value =
-            $"/Game/CustomSkins/{CurrentSkin.CodeName}/CharacterParts/CP_body_{CurrentSkin.CodeName}.CP_body_{CurrentSkin.CodeName}";
-            Console.WriteLine($"Changed the Body Character Part path in HS_{CurrentSkin.CodeName} to " +
-            $"/Game/CustomSkins/{CurrentSkin.CodeName}/CharacterParts/CP_body_{CurrentSkin.CodeName}.CP_body_{CurrentSkin.CodeName}");
-
-
-            if (!string.IsNullOrEmpty(faceacc?.PskPath))
-            {
-                var faceAccCp = (SoftObjectPropertyData)characterPartsArray.Value[2];
-                faceAccCp.Value.AssetPath.AssetName.Value.Value =
-                $"/Game/CustomSkins/{CurrentSkin.CodeName}/CharacterParts/CP_faceacc_{CurrentSkin.CodeName}.CP_faceacc_{CurrentSkin.CodeName}";
-                Console.WriteLine($"Changed the FaceAcc Character Part path in HS_{CurrentSkin.CodeName} to " +
-                $"/Game/CustomSkins/{CurrentSkin.CodeName}/CharacterParts/CP_faceacc_{CurrentSkin.CodeName}.CP_faceacc_{CurrentSkin.CodeName}");
-
-            }
-            else if (!string.IsNullOrEmpty(hat?.PskPath))
-            {
-                var hatCp = (SoftObjectPropertyData)characterPartsArray.Value[2];
-                hatCp.Value.AssetPath.AssetName.Value.Value =
-                $"/Game/CustomSkins/{CurrentSkin.CodeName}/CharacterParts/CP_hat_{CurrentSkin.CodeName}.CP_hat_{CurrentSkin.CodeName}";
-                Console.WriteLine($"Changed the Hat Character Part path in HS_{CurrentSkin.CodeName} to " +
-                $"/Game/CustomSkins/{CurrentSkin.CodeName}/CharacterParts/CP_hat_{CurrentSkin.CodeName}.CP_hat_{CurrentSkin.CodeName}");
-            }
-
-            hsExport0.ObjectName.Value.Value = $"HS_{CurrentSkin.CodeName}";
-
-            currentHs.Write(Path.Combine(contentFolderPath, $"HS_{CurrentSkin.CodeName}.uasset"));
-            Log.Success($"Successfuly edited HS_{CurrentSkin.CodeName}.uasset and HS_{CurrentSkin.CodeName}.uexp");
-
-            //HID creation
-            Console.WriteLine("Editing HID...");
-            string hidUassetPath = Path.Combine(contentFolderPath, $"HID_{CurrentSkin.CodeName}.uasset");
-            string hidUexpPath = Path.Combine(contentFolderPath, $"HID_{CurrentSkin.CodeName}.uexp");
-            File.WriteAllBytes(hidUassetPath, Convert.FromBase64String
-            (CurrentSkin.Gender == "Male" ? CurrentFnVersion.HidMaleUassetBase64 : CurrentFnVersion.HidFemaleUassetBase64));
-            File.WriteAllBytes(hidUexpPath, Convert.FromBase64String
-            (CurrentSkin.Gender == "Male" ? CurrentFnVersion.HidMaleUexpBase64 : CurrentFnVersion.HidFemaleUexpBase64));
-
-            var currentHid = new UAsset(hidUassetPath, CurrentUeVersion.UassetApiEngineVer);
-            var hidExport0 = (NormalExport)currentHid.Exports[0];
-            hidExport0.ObjectName.Value.Value = $"HID_{CurrentSkin.CodeName}";
-            var hidSmallIcon = (SoftObjectPropertyData)hidExport0["SmallPreviewImage"];
-            var hidLargeIcon = (SoftObjectPropertyData)hidExport0["LargePreviewImage"];
-            hidSmallIcon.Value.AssetPath.AssetName.Value.Value =
-            $"/Game/CustomSkins/{CurrentSkin.CodeName}/Textures/{CurrentSkin.SmallIcon}.{CurrentSkin.SmallIcon}";
-            Console.WriteLine($"Changed the Small Icon path in HID_{CurrentSkin.CodeName} to " +
-            $"/Game/CustomSkins/{CurrentSkin.CodeName}/Textures/{CurrentSkin.SmallIcon}.{CurrentSkin.SmallIcon}");
-            hidLargeIcon.Value.AssetPath.AssetName.Value.Value =
-            $"/Game/CustomSkins/{CurrentSkin.CodeName}/Textures/{CurrentSkin.LargeIcon}.{CurrentSkin.LargeIcon}";
-            Console.WriteLine($"Changed the Large Icon path in HID_{CurrentSkin.CodeName} to " +
-            $"/Game/CustomSkins/{CurrentSkin.CodeName}/Textures/{CurrentSkin.LargeIcon}.{CurrentSkin.LargeIcon}");
-            var hidSpecializationsArray = (ArrayPropertyData)hidExport0["Specializations"];
-            var hidSpecialization = (SoftObjectPropertyData)hidSpecializationsArray.Value[0];
-            hidSpecialization.Value.AssetPath.AssetName.Value.Value =
-            $"/Game/CustomSkins/{CurrentSkin.CodeName}/HS_{CurrentSkin.CodeName}.HS_{CurrentSkin.CodeName}";
-            Console.WriteLine($"Changed the Hero Specialization path in HID_{CurrentSkin.CodeName} to " +
-            $"/Game/CustomSkins/{CurrentSkin.CodeName}/HS_{CurrentSkin.CodeName}.HS_{CurrentSkin.CodeName}");
-            var idleMontage = (SoftObjectPropertyData)hidExport0["FrontendAnimMontageIdleOverride"];
-            idleMontage.Value.AssetPath.AssetName.Value.Value = 
-            $"/Game/CustomSkins/{CurrentSkin.CodeName}/Animations/{CurrentSkin.CodeName}_Idle_Montage.{CurrentSkin.CodeName}_Idle_Montage";
-
-            currentHid.Write(hidUassetPath);
-            Log.Success($"Successfuly edited HID_{CurrentSkin.CodeName}.uasset and HID_{CurrentSkin.CodeName}.uexp");
-
-            //CID creation
-            Console.WriteLine($"Editing {CurrentSkin.CID}.uasset");
-            string cidPath = Path.Combine(OutputFnGamePath, "Content", "Athena", "Items",
-            "Cosmetics", "Characters");
-            if (!Path.Exists(cidPath)) Directory.CreateDirectory(cidPath);
-            string cidUassetPath = Path.Combine(cidPath, $"{CurrentSkin.CID}.uasset");
-            string cidUexpPath = Path.Combine(cidPath, $"{CurrentSkin.CID}.uexp");
-            File.WriteAllBytes(cidUassetPath, Convert.FromBase64String(CurrentFnVersion.CidUassetBase64));
-            File.WriteAllBytes(cidUexpPath, Convert.FromBase64String(CurrentFnVersion.CidUexpBase64));
-
-            var currentCid = new UAsset(cidUassetPath, CurrentUeVersion.UassetApiEngineVer);
-            var cidExport0 = (NormalExport)currentCid.Exports[0];
-            var cidImport = currentCid.Imports;
-            cidImport[CurrentFnVersion.HidNameIndex].ObjectName.Value.Value = $"HID_{CurrentSkin.CodeName}";
-            Console.WriteLine($"Changed the Hero Id in {CurrentSkin.CID} to HID_{CurrentSkin.CodeName}");
-            cidImport[CurrentFnVersion.HidPathIndex].ObjectName.Value.Value = $"/Game/CustomSkins/{CurrentSkin.CodeName}/HID_{CurrentSkin.CodeName}";
-            Console.WriteLine($"Changed the Hero Id path in {CurrentSkin.CID} to " +
-            $"/Game/CustomSkins/{CurrentSkin.CodeName}/HID_{CurrentSkin.CodeName}");
-
-            cidExport0.ObjectName.Value.Value = CurrentSkin.CID;
-            var rarity = (EnumPropertyData)cidExport0["Rarity"];
-            rarity.Value.Value.Value = $"EFortRarity::{CurrentSkin.Rarity}";
-
-            if (CurrentSkin.Rarity == "Uncommon") cidExport0.Data.RemoveAt(1); //Removes the rarity property since no rarity is equal to uncommon in fn
-            else if (CurrentSkin.Rarity == "Unattainable (Impossible T7)") rarity.Value.Value.Value = $"EFortRarity::Unattainable";
-            if ((App.Settings.FnVersion == "8.51-9.10" || App.Settings.FnVersion == "9.41") && CurrentSkin.Rarity != "Uncommon")
-            {
-                string rarityCodename = "";
-                if (CurrentSkin.Rarity == "Common") rarityCodename = "Handmade";
-                else if (CurrentSkin.Rarity == "Rare") rarityCodename = "Sturdy";
-                else if (CurrentSkin.Rarity == "Epic") rarityCodename = "Quality";
-                else if (CurrentSkin.Rarity == "Legendary") rarityCodename = "Fine";
-                else if (CurrentSkin.Rarity == "Mythic") rarityCodename = "Elegant";
-                else if (CurrentSkin.Rarity == "Transcendent") rarityCodename = "Masterwork";
-                else if (CurrentSkin.Rarity == "Unattainable (Impossible T7)") rarityCodename = "Epic";
-                rarity.Value.Value.Value = $"EFortRarity::{rarityCodename}";
-            }
-
-            Console.WriteLine($"Changed the Rarity in {CurrentSkin.CID} to {CurrentSkin.Rarity}");
-            ((TextPropertyData)cidExport0["DisplayName"]).CultureInvariantString.Value = CurrentSkin.Name;
-            Console.WriteLine($"Changed the DisplayName in {CurrentSkin.CID} to {CurrentSkin.Name}");
-            ((TextPropertyData)cidExport0["Description"]).CultureInvariantString.Value = CurrentSkin.Description;
-            Console.WriteLine($"Changed the Description in {CurrentSkin.CID} to {CurrentSkin.Description}");
-            string displayNameKey = Guid.NewGuid().ToString("N").ToUpper(); //Generates a new key for the display name since multiple display names can't use the same key
-            string descriptionKey = Guid.NewGuid().ToString("N").ToUpper();
-            ((TextPropertyData)cidExport0["DisplayName"]).Value.Value = displayNameKey;
-            ((TextPropertyData)cidExport0["Description"]).Value.Value = descriptionKey;
-            cidExport0.Data.RemoveAt(CurrentSkin.Rarity == "Uncommon" ? 4 : 5); //Removes gameplay tags
-
-            if (CurrentSkin.Series == "None") cidExport0.Data.RemoveAt(CurrentSkin.Rarity == "Uncommon" ? 5 : 6);
-            else
-            {
-                cidImport[3].ObjectName.Value.Value = SeriesCodenames.GetValueOrDefault(CurrentSkin.Series);
-                cidImport[5].ObjectName.Value.Value = $"/Game/Athena/Items/Cosmetics/Series/{SeriesCodenames.GetValueOrDefault(CurrentSkin.Series)}";
-            }
-            Console.WriteLine($"Changed the Series in {CurrentSkin.CID} to {CurrentSkin.Series}");
-
-            currentCid.Write(cidUassetPath);
-            Log.Success($"Successfuly edited {CurrentSkin.CID}.uasset");
-
-            //Idle Montage creation
-            if (string.IsNullOrEmpty(CurrentSkin.LobbyAnimationPsa)) return;
-            string idleAnimationUassetPath = Path.Combine(contentFolderPath, "Animations", $"{CurrentSkin.CodeName}_Idle_Montage.uasset");
-            string idleAnimationUexpPath = Path.Combine(contentFolderPath, "Animations", $"{CurrentSkin.CodeName}_Idle_Montage.uexp");
-
-            File.WriteAllBytes(idleAnimationUassetPath, Convert.FromBase64String(CurrentFnVersion.IdleMontageUassetBase64));
-            File.WriteAllBytes(idleAnimationUexpPath, Convert.FromBase64String(CurrentFnVersion.IdleMontageUexpBase64));
-
-            var currentIdleAnimation = new UAsset(idleAnimationUassetPath, CurrentUeVersion.UassetApiEngineVer);
-            Console.WriteLine($"Editing {CurrentSkin.CodeName}_Idle_Montage.uasset");
-
-            var idleAnimationImport = currentIdleAnimation.Imports;
-            var idleAnimationExport0 = (NormalExport)currentIdleAnimation.Exports[0];
-
-            idleAnimationExport0.ObjectName.Value.Value = $"{CurrentSkin.CodeName}_Idle_Montage";
-            idleAnimationImport[1].ObjectName.Value.Value = $"{CurrentSkin.CodeName}_Lobby_Animation";
-            idleAnimationImport[1].ObjectName.Number = 0;
-            Console.WriteLine($"Changed the animation name in {CurrentSkin.CodeName}_Idle_Montage to {CurrentSkin.CodeName}_Lobby_Animation");
-            idleAnimationImport[3].ObjectName.Value.Value = $"/Game/CustomSkins/{CurrentSkin.CodeName}/Animations/{CurrentSkin.CodeName}_Lobby_Animation";
-            idleAnimationImport[3].ObjectName.Number = 0;
-            Console.WriteLine($"Changed the animation path in {CurrentSkin.CodeName}_Idle_Montage to /Game/CustomSkins/{CurrentSkin.CodeName}/Animations/{CurrentSkin.CodeName}_Lobby_Animation");
-
-            var slotAnimTracks = (ArrayPropertyData)idleAnimationExport0["SlotAnimTracks"];
-            var slotAnimTracks2 = (StructPropertyData)slotAnimTracks.Value[0];
-            var AnimTrack = (StructPropertyData)slotAnimTracks2.Value[1];
-            var AnimSegments = (ArrayPropertyData)AnimTrack.Value[0];
-            var AnimSegments2 = (StructPropertyData)AnimSegments.Value[0];
-            var AnimEndTime = (FloatPropertyData)AnimSegments2.Value[3];
-            AnimEndTime.Value = (float)Math.Round(CurrentSkin.LobbyAnimationLength, 5);
-            Console.WriteLine($"Changed the animation length in {CurrentSkin.CodeName}_Idle_Montage to {Math.Round(CurrentSkin.LobbyAnimationLength, 5)}");
-            if (string.IsNullOrEmpty(CurrentSkin.LobbyAnimationJson)) idleAnimationExport0.Data.RemoveAt(5); // Remove DisableFaceOverride if no .json is provided
-                                                                                                             // since there is no way to get the idle pose's facial animations
-            currentIdleAnimation.Write(idleAnimationUassetPath);
-            Log.Success($"Successfuly edited {CurrentSkin.CodeName}_Idle_Montage.uasset");
-        }
-
         private SkinData LoadSkinConfig(string jsonPath)
         {
             string filePath = jsonPath;
@@ -1197,12 +837,11 @@ namespace UFMT
         } // TODO: This method should only load the data that doesn't have JsonIgnore, right now it loads everything from the .json 
                                                             // as a new SkinData object, so everything that had JsonIgnore has the default value assigned in the class, so to avoid 
                                                             // getting null objects, reassigning the variables that had JsonIgnore is mandatory at the moment.
-
         public void SaveSkinConfig()
         {
             if (CurrentSkin == null || string.IsNullOrEmpty(CurrentSkin.Path)) return;
 
-            string jsonPath = Path.Combine(CurrentSkin.Path, $"{CurrentSkin.CodeName}_Settings.json");
+            string jsonPath = Path.Combine(CurrentSkin.Path, $"{CurrentSkin.Codename}_Settings.json");
             var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
             string jsonString = System.Text.Json.JsonSerializer.Serialize(CurrentSkin, options);
 
@@ -1226,7 +865,7 @@ namespace UFMT
 
     public class SkinData : INotifyPropertyChanged
     {
-        public string CodeName { get; set; } = string.Empty;
+        public string Codename { get; set; } = string.Empty;
         private string _name = string.Empty;
         public string Name
         {

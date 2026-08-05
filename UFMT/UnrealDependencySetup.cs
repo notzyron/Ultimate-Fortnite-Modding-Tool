@@ -7,7 +7,7 @@ namespace UFMT
     internal static class UnrealDependencySetup
     {
         internal static void CreateMissingFiles(string cookedAssetsPath, string codename, string ueBaseHeadPath, string fakeCidBase64, string baseMeshSkeletonBase64, 
-        string baseMeshBase64, Dictionary<string, string> baseHeadBase64strings, string cookedCodeNamePath)
+        string baseMeshBase64, Dictionary<string, string> baseHeadBase64strings, string cookedCodenamePath)
         {
             string fakeCIDTemplatePath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), "Content",
             "CID_Template.uasset");
@@ -30,9 +30,9 @@ namespace UFMT
             {
                 File.WriteAllBytes(BaseMeshPath, Convert.FromBase64String(baseMeshBase64));
             }
-            if (Directory.Exists(cookedCodeNamePath))
+            if (Directory.Exists(cookedCodenamePath))
             {
-                Directory.Delete(cookedCodeNamePath, true);
+                Directory.Delete(cookedCodenamePath, true);
             }
             if (!Directory.Exists(baseHeadPath))
             {

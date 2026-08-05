@@ -524,7 +524,7 @@ namespace UFMT
             BaseHeadPath = @"Content\Base\Head\Skeleton",
             UassetApiEngineVer = EngineVersion.VER_UE4_24,
             ReplaceCookedBaseHead = false,
-        }; //Currently doesn't work, I might work on it in the future
+        }; //Currently doesn't work, I might work on it in the future, but there will be no physics assets support due to incompatible Animation blueprints
         public static Dictionary<string, UeVersion> UeVersions = new() { { "UE_4.25", Ue4_25 } , { "UE_4.26", Ue4_26 },
             { "UE_4.26_FnGameProj14.30", Ue4_26_Modded_14_30 }, { "UE_4.22", Ue4_22 },{ "UE_4.23_FnGameProj8.51", Ue4_23_Modded_8_51},
             { "UE_4.23_FnGameProj9.10", Ue4_23_Modded_9_10}, { "UE_4.23_FnGameProj9.41", Ue4_23_Modded_9_41},

@@ -48,7 +48,7 @@ namespace UFMT
                 SpecularTextures = specularTexturePaths,
                 IconTextures = iconTexturePaths,
                 Materials = materials.Select(mat => mat.Name).ToList(),
-                CodeName = codename,
+                Codename = codename,
                 MeshNames = characterParts.Select(cp => Path.GetFileNameWithoutExtension(cp.FbxPath)).ToList(),
                 CID = CID,
                 LobbyAnimationFbxPath = Path.Exists(lobbyAnimationFbxFilePath) ? lobbyAnimationFbxFilePath : string.Empty,

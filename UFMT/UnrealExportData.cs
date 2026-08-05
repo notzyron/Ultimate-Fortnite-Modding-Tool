@@ -17,7 +17,7 @@ namespace UFMT
         public List<string> SpecularTextures { get; set; }
         public List<string> IconTextures { get; set; }
         public List<string> Materials { get; set; }
-        public string CodeName { get; set; }
+        public string Codename { get; set; }
         public List<string> MeshNames { get; set; }
         public string CID { get; set; } = string.Empty;
         public string LobbyAnimationFbxPath { get; set; } = string.Empty;
