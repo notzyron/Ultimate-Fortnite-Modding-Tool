@@ -136,26 +136,26 @@ namespace UFMT
 
             if (gender == "Female")
             {
-                body.uassetFileBase64 = fnVer.BodyCpFemaleUassetBase64;
-                body.uexpFileBase64 = fnVer.BodyCpFemaleUexpBase64;
-                head.uassetFileBase64 = fnVer.HeadCpFemaleUassetBase64;
-                head.uexpFileBase64 = fnVer.HeadCpFemaleUexpBase64;
+                body.UassetFileBase64 = fnVer.BodyCpFemaleUassetBase64;
+                body.UexpFileBase64 = fnVer.BodyCpFemaleUexpBase64;
+                head.UassetFileBase64 = fnVer.HeadCpFemaleUassetBase64;
+                head.UexpFileBase64 = fnVer.HeadCpFemaleUexpBase64;
                 if (faceacc != null)
                 {
-                    faceacc.uassetFileBase64 = fnVer.FaceAccCpFemaleUassetBase64;
-                    faceacc.uexpFileBase64 = fnVer.FaceAccCpFemaleUexpBase64;
+                    faceacc.UassetFileBase64 = fnVer.FaceAccCpFemaleUassetBase64;
+                    faceacc.UexpFileBase64 = fnVer.FaceAccCpFemaleUexpBase64;
                 }
             }
             else if (gender == "Male")
             {
-                body.uassetFileBase64 = fnVer.BodyCpMaleUassetBase64;
-                body.uexpFileBase64 = fnVer.BodyCpMaleUexpBase64;
-                head.uassetFileBase64 = fnVer.HeadCpMaleUassetBase64;
-                head.uexpFileBase64 = fnVer.HeadCpMaleUexpBase64;
+                body.UassetFileBase64 = fnVer.BodyCpMaleUassetBase64;
+                body.UexpFileBase64 = fnVer.BodyCpMaleUexpBase64;
+                head.UassetFileBase64 = fnVer.HeadCpMaleUassetBase64;
+                head.UexpFileBase64 = fnVer.HeadCpMaleUexpBase64;
                 if (faceacc != null)
                 {
-                    faceacc.uassetFileBase64 = fnVer.FaceAccCpMaleUassetBase64;
-                    faceacc.uexpFileBase64 = fnVer.FaceAccCpMaleUexpBase64;
+                    faceacc.UassetFileBase64 = fnVer.FaceAccCpMaleUassetBase64;
+                    faceacc.UexpFileBase64 = fnVer.FaceAccCpMaleUexpBase64;
                 }
             }
 
@@ -167,8 +167,8 @@ namespace UFMT
                 string uexpPath = Path.Combine(characterPartsPath,
                 $"CP_{cp.Type}_{codename}.uexp");
 
-                File.WriteAllBytes(uassetPath, Convert.FromBase64String(cp.uassetFileBase64));
-                File.WriteAllBytes(uexpPath, Convert.FromBase64String(cp.uexpFileBase64));
+                File.WriteAllBytes(uassetPath, Convert.FromBase64String(cp.UassetFileBase64));
+                File.WriteAllBytes(uexpPath, Convert.FromBase64String(cp.UexpFileBase64));
 
                 var currentCp = new UAsset(uassetPath, uassetApiEngineVersion);
                 var cpExport0 = (NormalExport)currentCp.Exports[0];

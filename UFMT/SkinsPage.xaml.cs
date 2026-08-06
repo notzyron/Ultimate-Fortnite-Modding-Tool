@@ -61,14 +61,9 @@ namespace UFMT
     {
         public static FnVersion CurrentFnVersion = FnVersionsData.FnVersions.GetValueOrDefault(App.Settings.FnVersion);
         public static UeVersion CurrentUeVersion = UeVersionsData.UeVersions.GetValueOrDefault(App.Settings.UeVersion);
-        private static string RenderScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_RenderPreviewCh1.py");
         private static string PhysicsImporterPath;
         private string CookedAssetsPath;
         private static string ValidCodenameCharacters = "abcdefghijklmnopqrstuvwxyz1234567890_";
-        private static string MaleLobbyAnimPath = Path.Combine
-        (AppDomain.CurrentDomain.BaseDirectory, "Assets", "LobbyAnimations", "Male_Commando_Idle_01.psa");
-        private static string FemaleLobbyAnimPath = Path.Combine
-        (AppDomain.CurrentDomain.BaseDirectory, "Assets", "LobbyAnimations", "Female_Commando_Idle_01.psa");
         private CancellationTokenSource _currentSkinPathDebounce;
         private string OutputFnGamePath = string.Empty;
         private bool IsUpdatingFromCode = false;
@@ -287,7 +282,16 @@ namespace UFMT
                 Log.Error($"The skin's gender is unspecified");
                 return;
             }
-            RenderPreviewImage();
+            try
+            {
+                await BlenderPreviewRenderer.RenderSkinPreviewImage(CurrentSkin.CharacterParts, CurrentSkin.Gender, CurrentSkin.LobbyAnimationFolderPath, CurrentSkin.LobbyAnimationPsa,
+                CurrentSkin.Materials, CurrentSkin.Path, CurrentSkin.Codename, CurrentSkin.TexturesPath, App.Settings.FnVersion);
+                await UpdateSkinPreviewImage(CurrentSkin.SourcePath, CurrentSkin.Codename, CurrentSkin.LargeIcon);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message);
+            }
         }
 
         private async void ExportButton_Click(object sender, RoutedEventArgs e)
@@ -649,7 +653,7 @@ namespace UFMT
             }
             catch (Exception ex)
             {
-                Log.Error(ex.ToString());
+                Log.Error(ex.Message);
             }
         }
 
@@ -661,38 +665,36 @@ namespace UFMT
             {
                 Ch1PreviewViewBox.Visibility = Visibility.Visible;
                 Ch2PreviewViewBox.Visibility = Visibility.Collapsed;
-                RenderScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_RenderPreviewCh1.py");
             }
             else
             {
                 Ch1PreviewViewBox.Visibility = Visibility.Collapsed;
                 Ch2PreviewViewBox.Visibility = Visibility.Visible;
-                RenderScript = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "Blender_RenderPreviewCh2.py");
             }
             PhysicsImporterPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", CurrentUeVersion.PhysicsImporterName);
             Body = new CharacterPart
             {
                 Type = "body",
-                uassetFileBase64 = CurrentFnVersion.BodyCpMaleUassetBase64,
-                uexpFileBase64 = CurrentFnVersion.BodyCpMaleUexpBase64
+                UassetFileBase64 = CurrentFnVersion.BodyCpMaleUassetBase64,
+                UexpFileBase64 = CurrentFnVersion.BodyCpMaleUexpBase64
             };
             Head = new CharacterPart
             {
                 Type = "head",
-                uassetFileBase64 = CurrentFnVersion.HeadCpMaleUassetBase64,
-                uexpFileBase64 = CurrentFnVersion.HeadCpMaleUexpBase64
+                UassetFileBase64 = CurrentFnVersion.HeadCpMaleUassetBase64,
+                UexpFileBase64 = CurrentFnVersion.HeadCpMaleUexpBase64
             };
             FaceAcc = new CharacterPart
             {
                 Type = "faceacc",
-                uassetFileBase64 = CurrentFnVersion.FaceAccCpMaleUassetBase64,
-                uexpFileBase64 = CurrentFnVersion.FaceAccCpMaleUexpBase64
+                UassetFileBase64 = CurrentFnVersion.FaceAccCpMaleUassetBase64,
+                UexpFileBase64 = CurrentFnVersion.FaceAccCpMaleUexpBase64
             };
             Hat = new CharacterPart
             {
                 Type = "hat",
-                uassetFileBase64 = CurrentFnVersion.HatCpUassetBase64,
-                uexpFileBase64 = CurrentFnVersion.HatCpUexpBase64
+                UassetFileBase64 = CurrentFnVersion.HatCpUassetBase64,
+                UexpFileBase64 = CurrentFnVersion.HatCpUexpBase64
             };
 
             if (string.IsNullOrEmpty(App.Settings.UeProjectPath)) { Log.Error("Unreal Engine Project path is empty!"); return; }
@@ -707,105 +709,49 @@ namespace UFMT
             CurrentSkinPathBox_TextChanged("NoDelay", null);
         }
 
+        private async Task UpdateSkinPreviewImage(string sourcePath, string codename, string largeIcon)
+        {
+            var bitmap = new BitmapImage { CreateOptions = BitmapCreateOptions.IgnoreImageCache };
+            using (var fileStream = File.OpenRead(Path.Combine(sourcePath, $"{codename}.png")))
+            {
+                var inMemoryStream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+                await WindowsRuntimeStreamExtensions.AsStreamForWrite(inMemoryStream).WriteAsync(
+                    await File.ReadAllBytesAsync(Path.Combine(sourcePath, $"{codename}.png"))
+                );
+                inMemoryStream.Seek(0);
+
+                await bitmap.SetSourceAsync(inMemoryStream);
+                characterPreview.Source = bitmap;
+                characterPreviewCh1.Source = bitmap;
+            }
+
+            if (!string.IsNullOrEmpty(largeIcon))
+            {
+                var iconBitmap = new BitmapImage { CreateOptions = BitmapCreateOptions.IgnoreImageCache };
+                string iconPath = Path.Combine(sourcePath, "Textures", $"{largeIcon}.png");
+
+                var inMemoryStream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+                byte[] fileBytes = await File.ReadAllBytesAsync(iconPath);
+                using (var dataWriter = new Windows.Storage.Streams.DataWriter(inMemoryStream))
+                {
+                    dataWriter.WriteBytes(fileBytes);
+                    await dataWriter.StoreAsync();
+                    await dataWriter.FlushAsync();
+                    dataWriter.DetachStream();
+                }
+                inMemoryStream.Seek(0);
+
+                await iconBitmap.SetSourceAsync(inMemoryStream);
+                iconPreview.Source = iconBitmap;
+                iconPreviewCh1.Source = iconBitmap;
+            }
+            Console.WriteLine("Successfully updated the preview image!");
+        }
+
         private void ResetCpData()
         {
             CurrentSkin = new SkinData();
             UpdateDropdowns();
-        }
-
-        private async void RenderPreviewImage()
-        {
-            try
-            {
-                string[] pskPaths = CurrentSkin.CharacterParts.Select(cp => cp.PskPath).ToArray();
-                List<string> materials = new();
-                List<string> texturePaths = new();
-                List<bool> swizzleMaterials = new();
-                string lobbyAnimPath = CurrentSkin.Gender == "Male" ? MaleLobbyAnimPath : FemaleLobbyAnimPath;
-                lobbyAnimPath = CurrentSkin.LobbyAnimationPsa == string.Empty ? lobbyAnimPath :
-                Path.Combine(CurrentSkin.LobbyAnimationFolderPath, $"{CurrentSkin.LobbyAnimationPsa}.psa");
-
-                foreach (Material mat in CurrentSkin.Materials)
-                {
-                    materials.Add(mat.Name);
-                    texturePaths.Add(Path.Combine(CurrentSkin.TexturesPath, $"{mat.SelectedDiffuse}.png"));
-                    texturePaths.Add(Path.Combine(CurrentSkin.TexturesPath, $"{mat.SelectedMask}.png"));
-                    texturePaths.Add(Path.Combine(CurrentSkin.TexturesPath, $"{mat.SelectedNormal}.png"));
-                    texturePaths.Add(Path.Combine(CurrentSkin.TexturesPath, $"{mat.SelectedSpecular}.png"));
-
-                    swizzleMaterials.Add(mat.Swizzle);
-                }
-
-                var exportData = new BlenderExportData
-                {
-                    Psks = pskPaths,
-                    Textures = texturePaths,
-                    Swizzle = swizzleMaterials,
-                    Materials = materials,
-                    RenderPath = Path.Combine(CurrentSkin.Path, "Source", $"{CurrentSkin.Codename}.png"),
-                    LobbyAnimPath = lobbyAnimPath,
-                    HeadPsk = CurrentSkin.CharacterParts.FirstOrDefault(cp => cp.Type == "head").PskPath
-                };
-
-                string jsonString = System.Text.Json.JsonSerializer.Serialize(exportData, AppJsonContext.Default.BlenderExportData);
-
-                // Base64 to prevent spaces or quotes 
-                var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(jsonString);
-                string base64Json = System.Convert.ToBase64String(plainTextBytes);
-
-                string arguments = $"-b --python \"{RenderScript}\" -- {base64Json}";
-
-                Console.WriteLine("Rendering the preview...");
-
-                await Task.Run(() =>
-                {
-                    Process blender = Process.Start(App.Settings.BlenderPath, arguments);
-                    blender.WaitForExit();
-                });
-                Log.Success("Successfully Rendered the preview image!");
-
-                await Task.Delay(10);
-
-                var bitmap = new BitmapImage { CreateOptions = BitmapCreateOptions.IgnoreImageCache };
-                using (var fileStream = System.IO.File.OpenRead(Path.Combine(CurrentSkin.SourcePath, $"{CurrentSkin.Codename}.png")))
-                {
-                    var inMemoryStream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
-                    await System.IO.WindowsRuntimeStreamExtensions.AsStreamForWrite(inMemoryStream).WriteAsync(
-                        await System.IO.File.ReadAllBytesAsync(Path.Combine(CurrentSkin.SourcePath, $"{CurrentSkin.Codename}.png"))
-                    );
-                    inMemoryStream.Seek(0);
-
-                    await bitmap.SetSourceAsync(inMemoryStream);
-                    characterPreview.Source = bitmap;
-                    characterPreviewCh1.Source = bitmap;
-                }
-
-                if (!string.IsNullOrEmpty(CurrentSkin.LargeIcon))
-                {
-                    var iconBitmap = new BitmapImage { CreateOptions = BitmapCreateOptions.IgnoreImageCache };
-                    string iconPath = Path.Combine(CurrentSkin.SourcePath, "Textures", $"{CurrentSkin.LargeIcon}.png");
-
-                    var inMemoryStream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
-                    byte[] fileBytes = await System.IO.File.ReadAllBytesAsync(iconPath);
-                    using (var dataWriter = new Windows.Storage.Streams.DataWriter(inMemoryStream))
-                    {
-                        dataWriter.WriteBytes(fileBytes);
-                        await dataWriter.StoreAsync();
-                        await dataWriter.FlushAsync();
-                        dataWriter.DetachStream();
-                    }
-                    inMemoryStream.Seek(0);
-
-                    await iconBitmap.SetSourceAsync(inMemoryStream);
-                    iconPreview.Source = iconBitmap;
-                    iconPreviewCh1.Source = iconBitmap;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Message);
-            }
-
         }
 
         private SkinData LoadSkinConfig(string jsonPath)
@@ -815,6 +761,17 @@ namespace UFMT
             if (!File.Exists(filePath)) return null;
 
             string jsonString = File.ReadAllText(filePath);
+
+            var node = System.Text.Json.Nodes.JsonNode.Parse(jsonString)?.AsObject();
+            // Change legacy "CodeName" to new "Codename"
+            if (node != null && node.ContainsKey("CodeName") && !node.ContainsKey("Codename"))
+            {
+                var value = node["CodeName"];
+                node.Remove("CodeName");
+                node["Codename"] = value;
+                jsonString = node.ToJsonString();
+            }
+
             SkinData loadedSkin = System.Text.Json.JsonSerializer.Deserialize<SkinData>(jsonString);
 
             try
@@ -830,7 +787,7 @@ namespace UFMT
             }
             catch (Exception ex)
             {
-                Log.Error(ex.ToString());
+                Log.Error(ex.Message);
             }
 
             return loadedSkin;
@@ -847,20 +804,6 @@ namespace UFMT
 
             File.WriteAllText(jsonPath, jsonString);
         } 
-    }
-
-    public class CharacterPart
-    {
-        public string Type { get; set; }
-        public string PskPath { get; set; } = string.Empty;
-        [System.Text.Json.Serialization.JsonIgnore]
-        public string FbxPath { get; set; } = string.Empty;
-        public List<string> PhysicsAssetJsonPaths { get; set; } = new();
-
-        [System.Text.Json.Serialization.JsonIgnore]
-        public string uassetFileBase64 { get; set; } = string.Empty;
-        [System.Text.Json.Serialization.JsonIgnore]
-        public string uexpFileBase64 { get; set; } = string.Empty;
     }
 
     public class SkinData : INotifyPropertyChanged
@@ -1206,19 +1149,7 @@ namespace UFMT
         }
     }
 
-    public class BlenderExportData
-    {
-        public string[] Psks { get; set; }
-        public List<string> Textures { get; set; }
-        public List<bool> Swizzle { get; set; }
-        public List<string> Materials { get; set; }
-        public string RenderPath { get; set; }
-        public string LobbyAnimPath { get; set; }
-        public string HeadPsk { get; set; }
-    }
-
     [JsonSerializable(typeof(BlenderExportData))]
-
     [JsonSerializable(typeof(UnrealExportData))]
     internal partial class AppJsonContext : JsonSerializerContext { }
 }
