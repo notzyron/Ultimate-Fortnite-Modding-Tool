@@ -6,8 +6,7 @@ namespace UFMT
 {
     internal static class UnrealDependencySetup
     {
-        internal static void CreateMissingFiles(string cookedAssetsPath, string codename, string ueBaseHeadPath, string fakeCidBase64, string baseMeshSkeletonBase64, 
-        string baseMeshBase64, Dictionary<string, string> baseHeadBase64strings, string cookedCodenamePath)
+        internal static void CreateMissingFiles(string cookedAssetsPath, string codename, string ueBaseHeadPath, string cookedCodenamePath, string UeVersionNumber, string[] baseHeadFileNames)
         {
             string fakeCIDTemplatePath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), "Content",
             "CID_Template.uasset");
@@ -17,18 +16,15 @@ namespace UFMT
             "Characters", "Player", "Male", "Male_Avg_Base", "Fortnite_M_Avg_Player.uasset");
             string baseHeadPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), ueBaseHeadPath);
 
-            if (!File.Exists(fakeCIDTemplatePath))
-            {
-                File.WriteAllBytes(fakeCIDTemplatePath, Convert.FromBase64String(fakeCidBase64));
-            }
+            if (!File.Exists(fakeCIDTemplatePath)) File.WriteAllBytes(fakeCIDTemplatePath, TemplateLoader.GetEmbeddedFile(UeVersionNumber, "RawUeAssets", "FakeCID.uasset"));
             if (!File.Exists(BaseMeshSkeletonPath))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(BaseMeshSkeletonPath));
-                File.WriteAllBytes(BaseMeshSkeletonPath, Convert.FromBase64String(baseMeshSkeletonBase64));
+                File.WriteAllBytes(BaseMeshSkeletonPath, TemplateLoader.GetEmbeddedFile(UeVersionNumber, "RawUeAssets", "BaseMeshSkeleton.uasset"));
             }
             if (!File.Exists(BaseMeshPath))
             {
-                File.WriteAllBytes(BaseMeshPath, Convert.FromBase64String(baseMeshBase64));
+                File.WriteAllBytes(BaseMeshPath, TemplateLoader.GetEmbeddedFile(UeVersionNumber, "RawUeAssets", "BaseMesh.uasset"));
             }
             if (Directory.Exists(cookedCodenamePath))
             {
@@ -39,14 +35,10 @@ namespace UFMT
                 Directory.CreateDirectory(baseHeadPath);
             }
 
-            foreach (var (fileName, base64String) in baseHeadBase64strings)
+            foreach (string fileName in baseHeadFileNames)
             {
-                string filePath = Path.Combine(baseHeadPath, $"{fileName}.uasset");
-                if (!File.Exists(filePath))
-                {
-                    Console.WriteLine($"{fileName}.uasset is missing, creating the file...");
-                    File.WriteAllBytes(filePath, Convert.FromBase64String(base64String));
-                }
+                string filePath = Path.Combine(baseHeadPath, $"{fileName}");
+                File.WriteAllBytes(filePath, TemplateLoader.GetEmbeddedFile(UeVersionNumber, "RawUeAssets", fileName));
             }
         }
     }

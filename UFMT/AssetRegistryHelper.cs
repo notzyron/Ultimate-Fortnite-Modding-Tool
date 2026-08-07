@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using UAssetAPI;
+using UAssetAPI.PropertyTypes.Objects;
 
 // Adapted from QueenIO - https://github.com/Code-Vein-Tool-Hub/QueenIO
 
@@ -1148,10 +1149,10 @@ namespace UFMT
         {
             // Based on AssetRegistryInjector by Code-Vein-Tool-Hub, but with modifications to make it work
             // https://github.com/Code-Vein-Tool-Hub/AssetRegistryTool
-            public static void Inject(string binBase64, string[] files, string outputPath)
+            public static void Inject(byte[] assetRegistryInBytes, string[] files, string outputPath)
             {
                 AssetRegistry assetRegistry = new AssetRegistry();
-                assetRegistry.Read(Convert.FromBase64String(binBase64));
+                assetRegistry.Read(assetRegistryInBytes);
 
                 foreach (string file in files)
                 {

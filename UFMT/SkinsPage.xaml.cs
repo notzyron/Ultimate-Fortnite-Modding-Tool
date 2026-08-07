@@ -306,8 +306,8 @@ namespace UFMT
             CurrentSkin.LobbyAnimationLength = lobbyAnimationLength;
             string cookedCodenamePath = Path.Combine(CookedAssetsPath, "CustomSkins", CurrentSkin.Codename);
 
-            UnrealDependencySetup.CreateMissingFiles(CookedAssetsPath, CurrentSkin.Codename, CurrentUeVersion.BaseHeadPath, CurrentUeVersion.FakeCIDBase64,
-            CurrentUeVersion.BaseMeshSkeletonBase64, CurrentUeVersion.BaseMeshBase64, CurrentUeVersion.BaseHeadBase64Strings, cookedCodenamePath);
+            UnrealDependencySetup.CreateMissingFiles(CookedAssetsPath, CurrentSkin.Codename, CurrentUeVersion.BaseHeadPath, cookedCodenamePath, CurrentUeVersion.Name, 
+            CurrentUeVersion.BaseHeadFileNames);
 
             UnrealExportData unrealData = UnrealExportDataCollector.CollectData(CurrentSkin.SmallIcon, CurrentSkin.LargeIcon, CurrentSkin.Materials, CurrentSkin.TexturesPath,
             CurrentFnVersion.ManuallySwizzleMaterials, CurrentSkin.SourcePath, CurrentSkin.LobbyAnimationFbx, CurrentSkin.LobbyAnimationJson, CurrentSkin.CharacterParts,
@@ -321,22 +321,27 @@ namespace UFMT
             (cookedCodenamePath, "Animations", $"{CurrentSkin.Codename}_Lobby_Animation.uasset"), CurrentSkin.CharacterParts.Select
             (cp => Path.Combine(cookedCodenamePath, "Meshes", $"{Path.GetFileNameWithoutExtension(cp.FbxPath)}.uasset")).ToArray());
 
-            AssetRegistryBuilder.CreateAssetRegistry(CookedAssetsPath, CurrentUeVersion.CidJsonBase64, CurrentUeVersion.AssetRegistryBinBase64, CurrentSkin.Path, OutputFnGamePath);
+            AssetRegistryBuilder.CreateAssetRegistry(CookedAssetsPath, CurrentUeVersion.Name, CurrentSkin.Path, OutputFnGamePath);
            
             DirectoryInfo cookedCharacterDirectory = new DirectoryInfo(Path.Combine(CookedAssetsPath, "CustomSkins", CurrentSkin.Codename));
             string contentFolderPath = Path.Combine(OutputFnGamePath, "Content", "CustomSkins", CurrentSkin.Codename);
 
             SkinAssetCreator.CopyFilesFromUe(contentFolderPath, cookedCharacterDirectory, CookedAssetsPath, OutputFnGamePath, CurrentUeVersion.BaseHeadPath, CurrentUeVersion.ReplaceCookedBaseHead, 
-            CurrentUeVersion.CookedBaseHeadBase64Strings, App.Settings.FnVersion);
-            SkinAssetCreator.CreateCharacterParts(contentFolderPath, CurrentSkin.Gender, CurrentSkin.Codename, CurrentSkin.CharacterParts, App.Settings.FnVersion, 
-            CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+            App.Settings.FnVersion, CurrentUeVersion.Name, CurrentUeVersion.BaseHeadFileNames);
+
+            SkinAssetCreator.CreateCharacterParts(contentFolderPath, CurrentSkin.Gender, CurrentSkin.Codename, CurrentSkin.CharacterParts, CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+
             SkinAssetCreator.CreateMaterials(contentFolderPath, CurrentSkin.Codename, CurrentSkin.Materials, CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+
             SkinAssetCreator.CreateHeroSpecialization(contentFolderPath, CurrentSkin.Codename, CurrentSkin.CharacterParts, CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+
             SkinAssetCreator.CreateLobbyAnimationMontage(contentFolderPath, CurrentSkin.Codename, CurrentSkin.LobbyAnimationPsa, CurrentSkin.LobbyAnimationJson,
             CurrentSkin.LobbyAnimationLength, CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+
             SkinAssetCreator.CreateHero(contentFolderPath, CurrentSkin.Codename, CurrentSkin.Gender, CurrentSkin.SmallIcon, CurrentSkin.LargeIcon, CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+
             SkinAssetCreator.CreateCharacter(OutputFnGamePath, CurrentSkin.CID, CurrentSkin.Codename, CurrentSkin.Name, CurrentSkin.Description, CurrentSkin.Rarity,
-            CurrentSkin.Series, App.Settings.FnVersion, CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+            CurrentSkin.Series, CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
 
             U4Pak.Pack(OutputFnGamePath, Path.Combine(Path.GetDirectoryName(OutputFnGamePath), $"z_{CurrentSkin.Codename}.pak"));
             Log.Success("\nYour custom skin is ready! Check the output folder");
@@ -671,30 +676,22 @@ namespace UFMT
                 Ch1PreviewViewBox.Visibility = Visibility.Collapsed;
                 Ch2PreviewViewBox.Visibility = Visibility.Visible;
             }
-            PhysicsImporterPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", CurrentUeVersion.PhysicsImporterName);
+            PhysicsImporterPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", $"PhysicsImporter_{CurrentUeVersion.Name}.zip");
             Body = new CharacterPart
             {
                 Type = "body",
-                UassetFileBase64 = CurrentFnVersion.BodyCpMaleUassetBase64,
-                UexpFileBase64 = CurrentFnVersion.BodyCpMaleUexpBase64
             };
             Head = new CharacterPart
             {
                 Type = "head",
-                UassetFileBase64 = CurrentFnVersion.HeadCpMaleUassetBase64,
-                UexpFileBase64 = CurrentFnVersion.HeadCpMaleUexpBase64
             };
             FaceAcc = new CharacterPart
             {
                 Type = "faceacc",
-                UassetFileBase64 = CurrentFnVersion.FaceAccCpMaleUassetBase64,
-                UexpFileBase64 = CurrentFnVersion.FaceAccCpMaleUexpBase64
             };
             Hat = new CharacterPart
             {
                 Type = "hat",
-                UassetFileBase64 = CurrentFnVersion.HatCpUassetBase64,
-                UexpFileBase64 = CurrentFnVersion.HatCpUexpBase64
             };
 
             if (string.IsNullOrEmpty(App.Settings.UeProjectPath)) { Log.Error("Unreal Engine Project path is empty!"); return; }
@@ -705,6 +702,14 @@ namespace UFMT
 
             string pluginsPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), "Plugins", "PhysicsImporter");
             if (!Path.Exists(pluginsPath)) ZipFile.ExtractToDirectory(PhysicsImporterPath, pluginsPath);
+
+            if (CurrentUeVersion.ReplaceDefaultEngineIni)
+            {
+                string defaultEngineIniPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath),
+                "Config", "DefaultEngine.ini");
+                byte[] defaultEngineIniInBytes = TemplateLoader.GetEmbeddedFile(CurrentUeVersion.Name, "RawUeAssets", "DefaultEngine.ini");
+                if (defaultEngineIniInBytes != null) File.WriteAllBytes(defaultEngineIniPath, defaultEngineIniInBytes);
+            }
 
             CurrentSkinPathBox_TextChanged("NoDelay", null);
         }

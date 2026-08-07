@@ -11,8 +11,8 @@ namespace UFMT
         public List<string> PhysicsAssetJsonPaths { get; set; } = new();
 
         [System.Text.Json.Serialization.JsonIgnore]
-        public string UassetFileBase64 { get; set; } = string.Empty;
+        public byte[] UassetFile { get; set; } = { };
         [System.Text.Json.Serialization.JsonIgnore]
-        public string UexpFileBase64 { get; set; } = string.Empty;
+        public byte[] UexpFile { get; set; } = { };
     }
 }

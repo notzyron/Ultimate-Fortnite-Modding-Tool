@@ -1,0 +1,37 @@
+{
+  "ObjectPath": "/Game/Athena/Items/Cosmetics/Characters/CID_Template.CID_Template",
+  "PackagePath": "/Game/Athena/Items/Cosmetics/Characters",
+  "AssetClass": "AthenaCharacterItemDefinition",
+  "PackageName": "/Game/Athena/Items/Cosmetics/Characters/CID_Template",
+  "AssetName": "CID_Template",
+  "TagAndValue": [
+    {
+      "Item1": "PrimaryAssetType",
+      "Item2": "AthenaCharacter"
+    },
+    {
+      "Item1": "PrimaryAssetName",
+      "Item2": "CID_Template"
+    },
+    {
+      "Item1": "DisplayName",
+      "Item2": "NSLOCTEXT(\"[A792A773466487E6C3E7F6888E0CDA84]\", \"516C47174F58E37902411FA608A7C70C\", \"Polo Prodigy\")"
+    },
+    {
+      "Item1": "ItemType",
+      "Item2": "WorldItem"
+    },
+    {
+      "Item1": "NativeClass",
+      "Item2": "Class'/Script/FortniteGame.AthenaCharacterItemDefinition'"
+    },
+    {
+      "Item1": "bNeverPersisted",
+      "Item2": "False"
+    }
+  ],
+  "ChunkIDs": [
+    0
+  ],
+  "PackageTags": 262144
+}

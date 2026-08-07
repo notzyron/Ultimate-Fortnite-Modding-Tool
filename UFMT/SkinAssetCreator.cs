@@ -1,15 +1,16 @@
-﻿using System;
+﻿using Microsoft.UI.Xaml;
+using Microsoft.VisualBasic;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
 using UAssetAPI;
 using UAssetAPI.ExportTypes;
 using UAssetAPI.PropertyTypes.Objects;
 using UAssetAPI.PropertyTypes.Structs;
 using UAssetAPI.UnrealTypes;
-using System.Linq;
-using System.Collections.ObjectModel;
-using System.Security.Cryptography;
-using Microsoft.UI.Xaml;
 
 namespace UFMT
 {
@@ -21,7 +22,7 @@ namespace UFMT
         {"Test Series", "FakeToken_FDS_Series"}, {"Anual Pass Series", "2020AnnualPassSeries"}};
 
         internal static void CopyFilesFromUe(string contentFolderPath, DirectoryInfo cookedCharacterDirectory, string cookedAssetsPath, string outputFnGamePath, 
-        string baseHeadPath, bool replaceCookedBaseHead, Dictionary<string, string> cookedBaseHeadBase64Strings, string fortniteVersion)
+        string baseHeadPath, bool replaceCookedBaseHead, string fnVerNumber, string ueVersionName, string[] baseHeadFileNames)
         {
             if (!Path.Exists(contentFolderPath)) Directory.CreateDirectory(contentFolderPath);
             foreach (DirectoryInfo subFolder in cookedCharacterDirectory.GetDirectories("*", SearchOption.AllDirectories))
@@ -36,7 +37,7 @@ namespace UFMT
             }
 
             string cookedBaseHeadPath = Path.Combine(cookedAssetsPath, "Base", "Head", "Skeleton");
-            if (fortniteVersion == "9.41") cookedBaseHeadPath = Path.Combine(cookedAssetsPath, "Modding", "Base_Head"); // 9.41 uses a different location for base head
+            if (fnVerNumber == "9.41") cookedBaseHeadPath = Path.Combine(cookedAssetsPath, "Modding", "Base_Head"); // 9.41 uses a different location for base head
 
             string outputBaseHeadPath = Path.Combine(outputFnGamePath, baseHeadPath);
 
@@ -44,9 +45,11 @@ namespace UFMT
 
             if (replaceCookedBaseHead)
             {
-                foreach (var (fileName, base64String) in cookedBaseHeadBase64Strings)
+                foreach (string fileName in baseHeadFileNames)
                 {
-                    File.WriteAllBytes(Path.Combine(cookedBaseHeadPath, fileName), Convert.FromBase64String(base64String));
+                    File.WriteAllBytes(Path.Combine(cookedBaseHeadPath, fileName), TemplateLoader.GetEmbeddedFile(ueVersionName, "CookedUeAssets.BaseHead", fileName));
+                    File.WriteAllBytes(Path.Combine(cookedBaseHeadPath, Path.ChangeExtension(fileName, ".uexp")), 
+                    TemplateLoader.GetEmbeddedFile(ueVersionName, "CookedUeAssets.BaseHead", Path.ChangeExtension(fileName, ".uexp")));
                 }
             } // Replace the files inside cooked ue folders
 
@@ -59,28 +62,24 @@ namespace UFMT
 
         }
 
-        internal static void CreateMaterials(string contentFolderPath, string codename, ObservableCollection<Material> materials, FnVersion fnVer, EngineVersion uassetApiEngineVersion)
+        internal static void CreateMaterials(string contentFolderPath, string codename, ObservableCollection<Material> materials, FnVersion fnVersion, EngineVersion uassetApiEngineVersion)
         {
             string materialsPath = Path.Combine(contentFolderPath, "Materials");
             foreach (Material material in materials)
             {
                 string uassetMaterialPath = Path.Combine(materialsPath, $"{material.Name}.uasset");
                 string uexpMaterialPath = Path.Combine(materialsPath, $"{material.Name}.uexp");
-                string materialUassetBase64;
-                string materialUexpBase64;
 
-                materialUassetBase64 = fnVer.MiNoSwizzleUassetBase64;
-                materialUexpBase64 = fnVer.MiNoSwizzleUexpBase64;
-                if (!fnVer.ManuallySwizzleMaterials && material.Swizzle)
+                byte[] materialUassetBase64 = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "MiNoSwizzle.uasset");
+                byte[] materialUexpBase64 = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "MiNoSwizzle.uexp");
+                if (!fnVersion.ManuallySwizzleMaterials && material.Swizzle)
                 {
-                    materialUassetBase64 = fnVer.MiSwizzleUassetBase64;
-                    materialUexpBase64 = fnVer.MiSwizzleUexpBase64;
+                    materialUassetBase64 = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "MiSwizzle.uasset");
+                    materialUexpBase64 = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "MiSwizzle.uexp");
                 }
 
-                File.WriteAllBytes(Path.Combine(uassetMaterialPath),
-                Convert.FromBase64String(materialUassetBase64));
-                File.WriteAllBytes(Path.Combine(uexpMaterialPath),
-                Convert.FromBase64String(materialUexpBase64));
+                File.WriteAllBytes(Path.Combine(uassetMaterialPath), materialUassetBase64);
+                File.WriteAllBytes(Path.Combine(uexpMaterialPath), materialUexpBase64);
                 Log.Success($"Created material instance {material.Name}");
                 Console.WriteLine($"Editing {material.Name}");
 
@@ -89,21 +88,21 @@ namespace UFMT
                 var miExportData = currentMi.Exports;
                 var miExport0 = (NormalExport)currentMi.Exports[0];
                 string fnTexturesPath = $"/Game/CustomSkins/{codename}/Textures/";
-                miImportData[fnVer.DiffusePathIndex].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedDiffuse);
+                miImportData[fnVersion.DiffusePathIndex].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedDiffuse);
                 Console.WriteLine($"Changed the diffuse texture path in {material.Name} to {Path.Combine(fnTexturesPath, material.SelectedDiffuse)}");
-                miImportData[fnVer.DiffusePathIndex + 1].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedMask);
+                miImportData[fnVersion.DiffusePathIndex + 1].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedMask);
                 Console.WriteLine($"Changed the mask texture path in {material.Name} to {Path.Combine(fnTexturesPath, material.SelectedMask)}");
-                miImportData[fnVer.DiffusePathIndex + 2].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedNormal);
+                miImportData[fnVersion.DiffusePathIndex + 2].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedNormal);
                 Console.WriteLine($"Changed the normal texture path in {material.Name} to {Path.Combine(fnTexturesPath, material.SelectedNormal)}");
-                miImportData[fnVer.DiffusePathIndex + 3].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedSpecular);
+                miImportData[fnVersion.DiffusePathIndex + 3].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedSpecular);
                 Console.WriteLine($"Changed the specular texture path in {material.Name} to {Path.Combine(fnTexturesPath, material.SelectedSpecular)}");
-                miImportData[fnVer.DiffuseNameIndex].ObjectName.Value.Value = material.SelectedDiffuse;
+                miImportData[fnVersion.DiffuseNameIndex].ObjectName.Value.Value = material.SelectedDiffuse;
                 Console.WriteLine($"Changed the diffuse texture in {material.Name} to {material.SelectedDiffuse}");
-                miImportData[fnVer.DiffuseNameIndex + 1].ObjectName.Value.Value = material.SelectedMask;
+                miImportData[fnVersion.DiffuseNameIndex + 1].ObjectName.Value.Value = material.SelectedMask;
                 Console.WriteLine($"Changed the mask texture in {material.Name} to {material.SelectedMask}");
-                miImportData[fnVer.DiffuseNameIndex + 2].ObjectName.Value.Value = material.SelectedNormal;
+                miImportData[fnVersion.DiffuseNameIndex + 2].ObjectName.Value.Value = material.SelectedNormal;
                 Console.WriteLine($"Changed the normal texture in {material.Name} to {material.SelectedNormal}");
-                miImportData[fnVer.DiffuseNameIndex + 3].ObjectName.Value.Value = material.SelectedSpecular;
+                miImportData[fnVersion.DiffuseNameIndex + 3].ObjectName.Value.Value = material.SelectedSpecular;
                 Console.WriteLine($"Changed the specular texture in {material.Name} to {material.SelectedSpecular}");
                 miExportData[0].ObjectName.Value.Value = material.Name;
 
@@ -124,8 +123,7 @@ namespace UFMT
             }
         }
 
-        internal static void CreateCharacterParts(string contentFolderPath, string gender, string codename, List<CharacterPart> characterParts, string fortniteVersion, 
-        FnVersion fnVer, EngineVersion uassetApiEngineVersion)
+        internal static void CreateCharacterParts(string contentFolderPath, string gender, string codename, List<CharacterPart> characterParts, FnVersion fnVersion, EngineVersion uassetApiEngineVersion)
         {
             string characterPartsPath = Path.Combine(contentFolderPath, "CharacterParts");
             CharacterPart body = characterParts.FirstOrDefault(cp => cp.Type == "body");
@@ -136,26 +134,26 @@ namespace UFMT
 
             if (gender == "Female")
             {
-                body.UassetFileBase64 = fnVer.BodyCpFemaleUassetBase64;
-                body.UexpFileBase64 = fnVer.BodyCpFemaleUexpBase64;
-                head.UassetFileBase64 = fnVer.HeadCpFemaleUassetBase64;
-                head.UexpFileBase64 = fnVer.HeadCpFemaleUexpBase64;
+                body.UassetFile = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "CpBodyFemale.uasset");
+                body.UexpFile = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "CpBodyFemale.uexp");
+                head.UassetFile = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "CpHeadFemale.uasset");
+                head.UexpFile = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "CpHeadFemale.uexp");
                 if (faceacc != null)
                 {
-                    faceacc.UassetFileBase64 = fnVer.FaceAccCpFemaleUassetBase64;
-                    faceacc.UexpFileBase64 = fnVer.FaceAccCpFemaleUexpBase64;
+                    faceacc.UassetFile = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "CpFaceAccFemale.uasset"); ;
+                    faceacc.UexpFile = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "CpFaceAccFemale.uexp"); ;
                 }
             }
             else if (gender == "Male")
             {
-                body.UassetFileBase64 = fnVer.BodyCpMaleUassetBase64;
-                body.UexpFileBase64 = fnVer.BodyCpMaleUexpBase64;
-                head.UassetFileBase64 = fnVer.HeadCpMaleUassetBase64;
-                head.UexpFileBase64 = fnVer.HeadCpMaleUexpBase64;
+                body.UassetFile = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "CpBodyMale.uasset");
+                body.UexpFile = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "CpBodyMale.uexp");
+                head.UassetFile = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "CpHeadMale.uasset");
+                head.UexpFile = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "CpHeadMale.uexp");
                 if (faceacc != null)
                 {
-                    faceacc.UassetFileBase64 = fnVer.FaceAccCpMaleUassetBase64;
-                    faceacc.UexpFileBase64 = fnVer.FaceAccCpMaleUexpBase64;
+                    faceacc.UassetFile = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "CpFaceAccMale.uasset"); ;
+                    faceacc.UexpFile = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "CpFaceAccMale.uexp"); ;
                 }
             }
 
@@ -167,8 +165,8 @@ namespace UFMT
                 string uexpPath = Path.Combine(characterPartsPath,
                 $"CP_{cp.Type}_{codename}.uexp");
 
-                File.WriteAllBytes(uassetPath, Convert.FromBase64String(cp.UassetFileBase64));
-                File.WriteAllBytes(uexpPath, Convert.FromBase64String(cp.UexpFileBase64));
+                File.WriteAllBytes(uassetPath, cp.UassetFile);
+                File.WriteAllBytes(uexpPath, cp.UexpFile);
 
                 var currentCp = new UAsset(uassetPath, uassetApiEngineVersion);
                 var cpExport0 = (NormalExport)currentCp.Exports[0];
@@ -179,7 +177,7 @@ namespace UFMT
                     string animBpPath;
                     if (cp.Type == "head")
                     {
-                        if (fortniteVersion == "9.41") animBpPath = "/Game/Modding/Base_Head/Base_Head_Modding_AnimBP.Base_Head_Modding_AnimBP_C";
+                        if (fnVersion.Name == "9.41") animBpPath = "/Game/Modding/Base_Head/Base_Head_Modding_AnimBP.Base_Head_Modding_AnimBP_C";
                         else animBpPath = "/Game/Base/Head/Skeleton/Base_Head_AnimBP.Base_Head_AnimBP_C";
                     }
                     else animBpPath = $"/Game/CustomSkins/{codename}/Meshes/{codename}_{cp.Type}_AnimBP.{codename}_{cp.Type}_AnimBP_C";
@@ -202,30 +200,30 @@ namespace UFMT
             }
         }
 
-        internal static void CreateHeroSpecialization(string contentFolderPath, string codename, List<CharacterPart> characterParts, FnVersion fnVer, EngineVersion uassetApiEngineVersion)
+        internal static void CreateHeroSpecialization(string contentFolderPath, string codename, List<CharacterPart> characterParts, FnVersion fnVersion, EngineVersion uassetApiEngineVersion)
         {
-            string hsUassetBase64;
-            string hsUexpBase64;
+            byte[] hsUasset;
+            byte[] hsUexp;
 
             IEnumerable<string> characterPartTypes = characterParts.Select(cp => cp.Type);
             if (characterPartTypes.Contains("body") && characterPartTypes.Contains("head") && characterPartTypes.Contains("faceacc"))
             {
-                hsUassetBase64 = fnVer.HsBodyHeadFaceAccUassetBase64;
-                hsUexpBase64 = fnVer.HsBodyHeadFaceAccUexpBase64;
+                hsUasset = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "HsBodyHeadFaceAcc.uasset");
+                hsUexp = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "HsBodyHeadFaceAcc.uexp");
             }
             else if (characterPartTypes.Contains("body") && characterPartTypes.Contains("head") && characterPartTypes.Contains("hat"))
             {
-                hsUassetBase64 = fnVer.HsBodyHeadHatUassetBase64;
-                hsUexpBase64 = fnVer.HsBodyHeadHatUexpBase64;
+                hsUasset = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "HsBodyHeadHat.uasset");
+                hsUexp = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "HsBodyHeadHat.uexp");
             }
             else
             {
-                hsUassetBase64 = fnVer.HsBodyHeadUassetBase64;
-                hsUexpBase64 = fnVer.HsBodyHeadUexpBase64;
+                hsUasset = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "HsBodyHead.uasset");
+                hsUexp = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "HsBodyHead.uexp");
             }
 
-            File.WriteAllBytes(Path.Combine(contentFolderPath, $"HS_{codename}.uasset"), Convert.FromBase64String(hsUassetBase64));
-            File.WriteAllBytes(Path.Combine(contentFolderPath, $"HS_{codename}.uexp"), Convert.FromBase64String(hsUexpBase64));
+            File.WriteAllBytes(Path.Combine(contentFolderPath, $"HS_{codename}.uasset"), hsUasset);
+            File.WriteAllBytes(Path.Combine(contentFolderPath, $"HS_{codename}.uexp"), hsUexp);
 
             Console.WriteLine("Editing the HS");
 
@@ -270,14 +268,14 @@ namespace UFMT
         }
 
         internal static void CreateLobbyAnimationMontage(string contentFolderPath, string codename, string lobbyAnimationPsa, string lobbyAnimationJson, float lobbyAnimationLength, 
-        FnVersion fnVer, EngineVersion uassetApiEngineVersion)
+        FnVersion fnVersion, EngineVersion uassetApiEngineVersion)
         {
             if (string.IsNullOrEmpty(lobbyAnimationPsa)) return;
             string idleAnimationUassetPath = Path.Combine(contentFolderPath, "Animations", $"{codename}_Idle_Montage.uasset");
             string idleAnimationUexpPath = Path.Combine(contentFolderPath, "Animations", $"{codename}_Idle_Montage.uexp");
 
-            File.WriteAllBytes(idleAnimationUassetPath, Convert.FromBase64String(fnVer.IdleMontageUassetBase64));
-            File.WriteAllBytes(idleAnimationUexpPath, Convert.FromBase64String(fnVer.IdleMontageUexpBase64));
+            File.WriteAllBytes(idleAnimationUassetPath, TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "IdleMontage.uasset"));
+            File.WriteAllBytes(idleAnimationUexpPath, TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "IdleMontage.uexp"));
 
             var currentIdleAnimation = new UAsset(idleAnimationUassetPath, uassetApiEngineVersion);
             Console.WriteLine($"Editing {codename}_Idle_Montage.uasset");
@@ -307,15 +305,13 @@ namespace UFMT
             Log.Success($"Successfuly edited {codename}_Idle_Montage.uasset");
         }
 
-        internal static void CreateHero(string contentFolderPath, string codename, string gender, string smallIcon, string largeIcon, FnVersion fnVer, EngineVersion uassetApiEngineVersion)
+        internal static void CreateHero(string contentFolderPath, string codename, string gender, string smallIcon, string largeIcon, FnVersion fnVersion, EngineVersion uassetApiEngineVersion)
         {
             Console.WriteLine("Editing HID...");
             string hidUassetPath = Path.Combine(contentFolderPath, $"HID_{codename}.uasset");
             string hidUexpPath = Path.Combine(contentFolderPath, $"HID_{codename}.uexp");
-            File.WriteAllBytes(hidUassetPath, Convert.FromBase64String
-            (gender == "Male" ? fnVer.HidMaleUassetBase64 : fnVer.HidFemaleUassetBase64));
-            File.WriteAllBytes(hidUexpPath, Convert.FromBase64String
-            (gender == "Male" ? fnVer.HidMaleUexpBase64 : fnVer.HidFemaleUexpBase64));
+            File.WriteAllBytes(hidUassetPath, TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", gender == "Male" ? "HidMale.uasset" : "HidFemale.uasset"));
+            File.WriteAllBytes(hidUexpPath, TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", gender == "Male" ? "HidMale.uexp" : "HidFemale.uexp"));
 
             var currentHid = new UAsset(hidUassetPath, uassetApiEngineVersion);
             var hidExport0 = (NormalExport)currentHid.Exports[0];
@@ -346,7 +342,7 @@ namespace UFMT
         }
 
         internal static void CreateCharacter(string outputFnGamePath, string cid, string codename, string name, string description, 
-        string skinRarity, string series, string fortniteVersion, FnVersion fnVer, EngineVersion uassetApiEngineVersion)
+        string skinRarity, string series, FnVersion fnVersion, EngineVersion uassetApiEngineVersion)
         {
             Console.WriteLine($"Editing {cid}.uasset");
             string cidPath = Path.Combine(outputFnGamePath, "Content", "Athena", "Items",
@@ -354,15 +350,15 @@ namespace UFMT
             if (!Path.Exists(cidPath)) Directory.CreateDirectory(cidPath);
             string cidUassetPath = Path.Combine(cidPath, $"{cid}.uasset");
             string cidUexpPath = Path.Combine(cidPath, $"{cid}.uexp");
-            File.WriteAllBytes(cidUassetPath, Convert.FromBase64String(fnVer.CidUassetBase64));
-            File.WriteAllBytes(cidUexpPath, Convert.FromBase64String(fnVer.CidUexpBase64));
+            File.WriteAllBytes(cidUassetPath, TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "Cid.uasset"));
+            File.WriteAllBytes(cidUexpPath, TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "Cid.uexp"));
 
             var currentCid = new UAsset(cidUassetPath, uassetApiEngineVersion);
             var cidExport0 = (NormalExport)currentCid.Exports[0];
             var cidImport = currentCid.Imports;
-            cidImport[fnVer.HidNameIndex].ObjectName.Value.Value = $"HID_{codename}";
+            cidImport[fnVersion.HidNameIndex].ObjectName.Value.Value = $"HID_{codename}";
             Console.WriteLine($"Changed the Hero Id in {cid} to HID_{codename}");
-            cidImport[fnVer.HidPathIndex].ObjectName.Value.Value = $"/Game/CustomSkins/{codename}/HID_{codename}";
+            cidImport[fnVersion.HidPathIndex].ObjectName.Value.Value = $"/Game/CustomSkins/{codename}/HID_{codename}";
             Console.WriteLine($"Changed the Hero Id path in {cid} to " +
             $"/Game/CustomSkins/{codename}/HID_{codename}");
 
@@ -372,7 +368,7 @@ namespace UFMT
 
             if (skinRarity == "Uncommon") cidExport0.Data.RemoveAt(1); //Removes the rarity property since no rarity is equal to uncommon in fn
             else if (skinRarity == "Unattainable (Impossible T7)") rarity.Value.Value.Value = $"EFortRarity::Unattainable";
-            if ((fortniteVersion == "8.51-9.10" || fortniteVersion == "9.41") && skinRarity != "Uncommon")
+            if ((fnVersion.Name == "8.51-9.10" || fnVersion.Name == "9.41") && skinRarity != "Uncommon")
             {
                 string rarityCodename = "";
                 if (skinRarity == "Common") rarityCodename = "Handmade";

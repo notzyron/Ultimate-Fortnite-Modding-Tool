@@ -17,10 +17,8 @@
 		<AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
 		
 		<!--Comment out these 2 lines if you're debugging-->
-		<!--
 		<DebugSymbols>false</DebugSymbols>
 		<DebugType>none</DebugType>
-		-->
 
 		<EnableMsixTooling>true</EnableMsixTooling>
 	</PropertyGroup>
@@ -65,6 +63,15 @@
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="CookedUeAssets\**\*.uasset" />
+		<EmbeddedResource Include="CookedUeAssets\**\*.uexp" />
+		<EmbeddedResource Include="RawUeAssets\**\*.uasset" />
+		<EmbeddedResource Include="RawUeAssets\**\*.ini" />
+		<EmbeddedResource Include="RawUeAssets\**\*.bin" />
+		<EmbeddedResource Include="RawUeAssets\**\*.json" />
+	</ItemGroup>
 
   <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
     <ProjectCapability Include="Msix" />

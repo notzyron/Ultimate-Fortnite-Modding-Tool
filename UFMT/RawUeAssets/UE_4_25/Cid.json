@@ -1,0 +1,33 @@
+{
+  "ObjectPath": "/Game/Athena/Items/Cosmetics/Characters/CID_Template.CID_Template",
+  "PackagePath": "/Game/Athena/Items/Cosmetics/Characters",
+  "AssetClass": "AthenaCharacterItemDefinition",
+  "PackageName": "/Game/Athena/Items/Cosmetics/Characters/CID_Template",
+  "AssetName": "CID_Template",
+  "TagAndValue": [
+    {
+      "Item1": "DisplayName",
+      "Item2": "NSLOCTEXT(\"[B0AA324A421EB00BB49E7EAB6179BCD4]\", \"6C08DA084FA5394758353F9F7F151B66\", \"Zyron\")"
+    },
+    {
+      "Item1": "PrimaryAssetType",
+      "Item2": "AthenaCharacter"
+    },
+    {
+      "Item1": "PrimaryAssetName",
+      "Item2": "CID_Template"
+    },
+    {
+      "Item1": "ItemType",
+      "Item2": "AthenaCharacter"
+    },
+    {
+      "Item1": "bNeverPersisted",
+      "Item2": "False"
+    }
+  ],
+  "ChunkIDs": [
+    0
+  ],
+  "PackageTags": 262144
+}
