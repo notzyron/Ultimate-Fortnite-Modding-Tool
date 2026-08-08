@@ -99,6 +99,7 @@ Open Unreal Engine, create a new project, then go to Edit → Plugins and enable
 - **[JsonAsAsset](https://github.com/JsonAsAsset/JsonAsAsset)** — Converting .json Physics Assets into Physics Assets and importing .json animation sequences
 - **[U4pak](https://github.com/panzi/u4pak)** — Packing the skin after it's finished
 - **.teksik** — Shape key combiner (Converting newer 3L metahuman Fortnite heads's facial poses to the old Legacy ones)
+- **sspookifyy** — Fix for right food twitching on lobby idle animations
 
 ## License
 
