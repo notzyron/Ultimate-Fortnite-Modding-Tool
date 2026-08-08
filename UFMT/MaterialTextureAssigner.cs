@@ -66,10 +66,10 @@ namespace UFMT
                 if (matFallbackKeyword == textureFallbackKeyword ||
                 (fallBackKeywordPairs.Keys.Contains(textureFallbackKeyword) && matFallbackKeyword == fallBackKeywordPairs.GetValueOrDefault(textureFallbackKeyword)))
                 {
-                    if (texture.EndsWith("_D")) mat.SelectedDiffuse = texture;
-                    else if (texture.EndsWith("_M")) mat.SelectedMask = texture;
-                    else if (texture.EndsWith("_N")) mat.SelectedNormal = texture;
-                    else if (texture.EndsWith("_S")) mat.SelectedSpecular = texture;
+                    if (texture.EndsWith("_D") && mat.SelectedDiffuse == "Default_Diffuse") mat.SelectedDiffuse = texture;
+                    else if (texture.EndsWith("_M") && mat.SelectedMask == "Default_Mask") mat.SelectedMask = texture;
+                    else if (texture.EndsWith("_N") && mat.SelectedNormal == "Default_Normal") mat.SelectedNormal = texture;
+                    else if (texture.EndsWith("_S") && mat.SelectedSpecular == "Default_Specular") mat.SelectedSpecular = texture;
                 }
             }
         }
@@ -103,10 +103,10 @@ namespace UFMT
                 string filteredMatName = mat.Name.Replace(skinCodename, "");
                 if (filteredMatName.EndsWith(textureKeyword))
                 {
-                    if (texture.EndsWith("_D")) mat.SelectedDiffuse = texture;
-                    if (texture.EndsWith("_M")) mat.SelectedMask = texture;
-                    if (texture.EndsWith("_N")) mat.SelectedNormal = texture;
-                    if (texture.EndsWith("_S")) mat.SelectedSpecular = texture;
+                    if (texture.EndsWith("_D") && mat.SelectedDiffuse == "Default_Diffuse") mat.SelectedDiffuse = texture;
+                    else if (texture.EndsWith("_M") && mat.SelectedMask == "Default_Mask") mat.SelectedMask = texture;
+                    else if (texture.EndsWith("_N") && mat.SelectedNormal == "Default_Normal") mat.SelectedNormal = texture;
+                    else if (texture.EndsWith("_S") && mat.SelectedSpecular == "Default_Specular") mat.SelectedSpecular = texture;
                 }
             }
         }

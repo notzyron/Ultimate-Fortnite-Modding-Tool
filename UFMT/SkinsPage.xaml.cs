@@ -1037,7 +1037,7 @@ namespace UFMT
                     }
                 }
 
-                Console.WriteLine($"New sbc Red is {value}");
+                if (UseSkinBoostColor) Console.WriteLine($"Changed Skin Boost Color And Exponent's red to {value} on {Name}");
                 OnPropertyChanged();
             }
         }
@@ -1065,7 +1065,7 @@ namespace UFMT
                     }
                 }
 
-                Console.WriteLine($"New sbc Green is {value}");
+                if (UseSkinBoostColor) Console.WriteLine($"Changed Skin Boost Color And Exponent's green to {value} on {Name}");
                 OnPropertyChanged();
             }
         }
@@ -1093,7 +1093,7 @@ namespace UFMT
                     }
                 }
 
-                Console.WriteLine($"New sbc Blue is {value}");
+                if (UseSkinBoostColor) Console.WriteLine($"Changed Skin Boost Color And Exponent's blue to {value} on {Name}");
                 OnPropertyChanged();
             }
         }
@@ -1121,7 +1121,7 @@ namespace UFMT
                     }
                 }
 
-                Console.WriteLine($"New sbc Alpha is {value}");
+                if (UseSkinBoostColor) Console.WriteLine($"Changed Skin Boost Color And Exponent's alpha to {value} on {Name}");
                 OnPropertyChanged();
             }
         }
