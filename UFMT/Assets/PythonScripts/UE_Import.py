@@ -226,6 +226,7 @@ def import_animation(fbx_path):
     anim_data.set_editor_property("convert_scene", True)
     anim_data.set_editor_property("force_front_x_axis", False)
     anim_data.set_editor_property("convert_scene_unit", False)
+    anim_data.set_editor_property("preserve_local_transform", True)
 
     ui = unreal.FbxImportUI()
 
