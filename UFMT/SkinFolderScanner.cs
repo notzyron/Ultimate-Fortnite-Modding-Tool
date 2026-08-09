@@ -37,10 +37,12 @@ namespace UFMT
             {
                 string pskCpType = Path.GetFileName(Path.GetDirectoryName(pskPath));
                 CharacterPart currentPskCp = allCharacterParts.FirstOrDefault(cp => cp.Type == pskCpType.ToLower());
+                currentPskCp.Psk = Path.GetFileNameWithoutExtension(pskPath);
                 currentPskCp.PskPath = pskPath;
 
 
                 currentPskCp.PhysicsAssetJsonPaths = Directory.GetFiles(Path.Combine(physicsPath, pskCpType), "*.json").ToList();
+                currentPskCp.PhysicsAssets = currentPskCp.PhysicsAssetJsonPaths.Select(phys => Path.GetFileNameWithoutExtension(phys)).ToList();
                 currentPskCp.PhysicsAssetJsonPaths.ForEach(json => Console.WriteLine($"Added {Path.GetFileNameWithoutExtension(json)} to {Path.GetFileNameWithoutExtension(pskPath)}"));
 
                 characterParts.Add(currentPskCp);

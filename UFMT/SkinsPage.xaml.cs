@@ -157,7 +157,13 @@ namespace UFMT
             {
                 CurrentSkin = loadedJson;
                 CurrentSkin.Path = CurrentSkinPathBox.Text;
+                if (!CheckCurrentSkinPathValidation(CurrentSkinPathBox.Text)) return;
                 CurrentSkin.LobbyAnimationFolderPath = Path.Combine(CurrentSkin.SourcePath, "Lobby_Animation");
+                foreach (CharacterPart cp in CurrentSkin.CharacterParts)
+                {
+                    cp.PskPath = Path.Combine(CurrentSkin.MeshesPath, cp.Type, $"{cp.Psk}.psk");
+                    cp.PhysicsAssetJsonPaths = cp.PhysicsAssets.Select(phys => Path.Combine(CurrentSkin.PhysicsPath, cp.Type, $"{phys}.json")).ToList();
+                }
             }
             else
             {
@@ -777,6 +783,43 @@ namespace UFMT
                 jsonString = node.ToJsonString();
             }
 
+            // To prevent legacy .json files crashing the program, I applied these changes:
+            // Capitalize CharacterPart Type
+            // Convert PskPath (full path) to Psk (filename only)
+            // Convert PhysicsAssetJsonPaths to PhysicsAssets (filenames only)
+            if (node.ContainsKey("CharacterParts") && node["CharacterParts"] is System.Text.Json.Nodes.JsonArray parts)
+            {
+                foreach (var part in parts)
+                {
+                    if (part is System.Text.Json.Nodes.JsonObject partObj)
+                    {
+                        if (partObj.ContainsKey("Type"))
+                        {
+                            string typeValue = partObj["Type"]?.ToString();
+                            if (!string.IsNullOrEmpty(typeValue))
+                            {
+                                partObj["Type"] = char.ToUpper(typeValue[0]) + typeValue.Substring(1);
+                            }
+                        }
+
+                        if (partObj.ContainsKey("PskPath"))
+                        {
+                            string pathValue = partObj["PskPath"]?.ToString();
+                            partObj.Remove("PskPath");
+                            partObj["Psk"] = !string.IsNullOrEmpty(pathValue) ? System.IO.Path.GetFileNameWithoutExtension(pathValue) : "";
+                        }
+
+                        if (partObj.ContainsKey("PhysicsAssetJsonPaths"))
+                        {
+                            string[] jsonNames = partObj["PhysicsAssetJsonPaths"]?.AsArray().Select(json => Path.GetFileNameWithoutExtension(json.ToString())).ToArray();
+                            partObj.Remove("PhysicsAssetJsonPaths");
+                            partObj["PhysicsAssets"] = System.Text.Json.JsonSerializer.SerializeToNode(jsonNames);
+                        }
+                    }
+                }
+                jsonString = node.ToJsonString();
+            }
+
             SkinData loadedSkin = System.Text.Json.JsonSerializer.Deserialize<SkinData>(jsonString);
 
             try
@@ -909,10 +952,15 @@ namespace UFMT
         public ObservableCollection<Material> Materials { get; set; } = new();
         [System.Text.Json.Serialization.JsonIgnore]
         public string Path = string.Empty;
+        [System.Text.Json.Serialization.JsonIgnore]
         public string SourcePath { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonIgnore]
         public string MeshesPath { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonIgnore]
         public string TexturesPath { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonIgnore]
         public string PhysicsPath { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonIgnore] 
         public string LobbyAnimationFolderPath { get; set; } = string.Empty;
         public float LobbyAnimationLength { get; set; } = 0;
         public List<CharacterPart> CharacterParts { get; set; } = new();
