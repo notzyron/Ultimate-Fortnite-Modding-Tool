@@ -55,7 +55,7 @@ namespace UFMT
                 RetargetSource = skinGender == "Male" ? "MPR_SK_M_MALE_Base_Skeleton" : "SK_M_Female_Base_Skeleton",
                 LobbyAnimationJsonPath = string.IsNullOrEmpty(lobbyAnimationJson) ? string.Empty :
                 Path.Combine(sourcePath, "Lobby_Animation", $"{lobbyAnimationJson}.json"),
-                HeadMeshName = Path.GetFileNameWithoutExtension(characterParts.FirstOrDefault(cp => cp.Type == "head").FbxPath),
+                HeadMeshName = Path.GetFileNameWithoutExtension(characterParts.FirstOrDefault(cp => cp.Type == "Head").FbxPath),
                 CurrentFnVersion = App.Settings.FnVersion,
             };
 

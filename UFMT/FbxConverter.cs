@@ -20,7 +20,7 @@ namespace UFMT
 
             foreach (CharacterPart cp in characterParts)
             {
-                string fbxFolderPath = Path.Combine(sourcePath, "Fbx", cp.Type[0].ToString().ToUpper() + cp.Type.Substring(1));
+                string fbxFolderPath = Path.Combine(sourcePath, "Fbx", cp.Type);
                 string exportName = $"{codename}_{cp.Type}";
                 string fbxFilePath = Path.Combine(Path.Combine(fbxFolderPath, $"{exportName}.fbx"));
                 if (!Directory.Exists(fbxFolderPath))
@@ -57,7 +57,7 @@ namespace UFMT
                     }
                 }
 
-                if (cp.Type == "head")
+                if (cp.Type == "Head")
                 {
                     await ShapeKeyCombiner.CombineShapeKeys(cp.PskPath, fbxFilePath);
                 }

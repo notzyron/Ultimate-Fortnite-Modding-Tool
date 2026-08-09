@@ -50,7 +50,7 @@ namespace UFMT
                 Swizzle = swizzleMaterials,
                 RenderPath = Path.Combine(skinPath, "Source", $"{codename}.png"),
                 LobbyAnimPath = lobbyAnimPath,
-                HeadPsk = characterParts.FirstOrDefault(cp => cp.Type == "head").PskPath
+                HeadPsk = characterParts.FirstOrDefault(cp => cp.Type == "Head").PskPath
             };
 
             string jsonString = System.Text.Json.JsonSerializer.Serialize(exportData, AppJsonContext.Default.BlenderExportData);

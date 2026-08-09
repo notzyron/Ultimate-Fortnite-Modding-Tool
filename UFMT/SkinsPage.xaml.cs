@@ -1,59 +1,20 @@
 #pragma warning disable
-using ABI.Windows.ApplicationModel.Activation;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
-using Microsoft.UI.Xaml.Media.Imaging;
-using Microsoft.UI.Xaml.Navigation;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using UAssetAPI;
-using UAssetAPI.ExportTypes;
-using UAssetAPI.FieldTypes;
-using UAssetAPI.PropertyTypes.Objects;
-using UAssetAPI.PropertyTypes.Structs;
-using UAssetAPI.UnrealTypes;
-using UAssetAPI.UnrealTypes.EngineEnums;
-using Windows.Devices.Bluetooth.Advertisement;
-using Windows.Devices.Geolocation;
-using Windows.Devices.Perception;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using Windows.Media.AppBroadcasting;
-using Windows.Storage;
-using Windows.Storage.Search;
-using Windows.Storage.Streams;
-using Windows.UI.ViewManagement;
-using static System.Net.Mime.MediaTypeNames;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using UFMT.Helper;
-using Windows.ApplicationModel.Calls;
 
 namespace UFMT
 {
@@ -178,7 +139,8 @@ namespace UFMT
                 CurrentSkin.LobbyAnimationJson = lobbyAnimationJson;
 
                 List<Material> materials = 
-                PskReader.GetMaterialData(CurrentSkin.CharacterParts.Select(cp => cp.PskPath).ToList(), CurrentSkin.CharacterParts, allSwizzleCheckBox.IsChecked.Value, this);
+                PskReader.GetMaterialData(CurrentSkin.CharacterParts.Select(cp => cp.PskPath).ToList(), 
+                CurrentSkin.CharacterParts, allSwizzleCheckBox.IsChecked.Value, this);
 
                 if (materials == null) return;
                 CurrentSkin.Materials = new ObservableCollection<Material>(materials);
@@ -685,19 +647,19 @@ namespace UFMT
             PhysicsImporterPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", $"PhysicsImporter_{CurrentUeVersion.Name}.zip");
             Body = new CharacterPart
             {
-                Type = "body",
+                Type = "Body",
             };
             Head = new CharacterPart
             {
-                Type = "head",
+                Type = "Head",
             };
             FaceAcc = new CharacterPart
             {
-                Type = "faceacc",
+                Type = "Faceacc",
             };
             Hat = new CharacterPart
             {
-                Type = "hat",
+                Type = "Hat",
             };
 
             if (string.IsNullOrEmpty(App.Settings.UeProjectPath)) { Log.Error("Unreal Engine Project path is empty!"); return; }

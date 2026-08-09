@@ -126,10 +126,10 @@ namespace UFMT
         internal static void CreateCharacterParts(string contentFolderPath, string gender, string codename, List<CharacterPart> characterParts, FnVersion fnVersion, EngineVersion uassetApiEngineVersion)
         {
             string characterPartsPath = Path.Combine(contentFolderPath, "CharacterParts");
-            CharacterPart body = characterParts.FirstOrDefault(cp => cp.Type == "body");
-            CharacterPart head = characterParts.FirstOrDefault(cp => cp.Type == "head");
-            CharacterPart faceacc = characterParts.FirstOrDefault(cp => cp.Type == "faceacc");
-            CharacterPart hat = characterParts.FirstOrDefault(cp => cp.Type == "hat");
+            CharacterPart body = characterParts.FirstOrDefault(cp => cp.Type == "Body");
+            CharacterPart head = characterParts.FirstOrDefault(cp => cp.Type == "Head");
+            CharacterPart faceacc = characterParts.FirstOrDefault(cp => cp.Type == "Faceacc");
+            CharacterPart hat = characterParts.FirstOrDefault(cp => cp.Type == "Hat");
             if (!Path.Exists(characterPartsPath)) Directory.CreateDirectory(characterPartsPath);
 
             if (gender == "Female")
@@ -172,10 +172,10 @@ namespace UFMT
                 var cpExport0 = (NormalExport)currentCp.Exports[0];
                 var cpExport1 = (NormalExport)currentCp.Exports[1];
                 cpExport1.ObjectName.Value.Value = $"CP_{cp.Type}_{codename}";
-                if (cp.Type != "hat")
+                if (cp.Type != "Hat")
                 {
                     string animBpPath;
-                    if (cp.Type == "head")
+                    if (cp.Type == "Head")
                     {
                         if (fnVersion.Name == "9.41") animBpPath = "/Game/Modding/Base_Head/Base_Head_Modding_AnimBP.Base_Head_Modding_AnimBP_C";
                         else animBpPath = "/Game/Base/Head/Skeleton/Base_Head_AnimBP.Base_Head_AnimBP_C";
@@ -206,12 +206,12 @@ namespace UFMT
             byte[] hsUexp;
 
             IEnumerable<string> characterPartTypes = characterParts.Select(cp => cp.Type);
-            if (characterPartTypes.Contains("body") && characterPartTypes.Contains("head") && characterPartTypes.Contains("faceacc"))
+            if (characterPartTypes.Contains("Body") && characterPartTypes.Contains("Head") && characterPartTypes.Contains("Faceacc"))
             {
                 hsUasset = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "HsBodyHeadFaceAcc.uasset");
                 hsUexp = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "HsBodyHeadFaceAcc.uexp");
             }
-            else if (characterPartTypes.Contains("body") && characterPartTypes.Contains("head") && characterPartTypes.Contains("hat"))
+            else if (characterPartTypes.Contains("Body") && characterPartTypes.Contains("Head") && characterPartTypes.Contains("Hat"))
             {
                 hsUasset = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "HsBodyHeadHat.uasset");
                 hsUexp = TemplateLoader.GetEmbeddedFile(fnVersion.Name, "CookedUeAssets", "HsBodyHeadHat.uexp");
@@ -233,32 +233,32 @@ namespace UFMT
             var headCp = (SoftObjectPropertyData)characterPartsArray.Value[0];
             var bodyCp = (SoftObjectPropertyData)characterPartsArray.Value[1];
             headCp.Value.AssetPath.AssetName.Value.Value =
-            $"/Game/CustomSkins/{codename}/CharacterParts/CP_head_{codename}.CP_head_{codename}";
+            $"/Game/CustomSkins/{codename}/CharacterParts/CP_Head_{codename}.CP_Head_{codename}";
             Console.WriteLine($"Changed the Head Character Part path in HS_{codename} to " +
-            $"/Game/CustomSkins/{codename}/CharacterParts/CP_head_{codename}.CP_head_{codename}");
+            $"/Game/CustomSkins/{codename}/CharacterParts/CP_Head_{codename}.CP_Head_{codename}");
 
             bodyCp.Value.AssetPath.AssetName.Value.Value =
-            $"/Game/CustomSkins/{codename}/CharacterParts/CP_body_{codename}.CP_body_{codename}";
+            $"/Game/CustomSkins/{codename}/CharacterParts/CP_Body_{codename}.CP_Body_{codename}";
             Console.WriteLine($"Changed the Body Character Part path in HS_{codename} to " +
-            $"/Game/CustomSkins/{codename}/CharacterParts/CP_body_{codename}.CP_body_{codename}");
+            $"/Game/CustomSkins/{codename}/CharacterParts/CP_Body_{codename}.CP_Body_{codename}");
 
 
-            if (characterPartTypes.Contains("faceacc"))
+            if (characterPartTypes.Contains("Faceacc"))
             {
                 var faceAccCp = (SoftObjectPropertyData)characterPartsArray.Value[2];
                 faceAccCp.Value.AssetPath.AssetName.Value.Value =
-                $"/Game/CustomSkins/{codename}/CharacterParts/CP_faceacc_{codename}.CP_faceacc_{codename}";
+                $"/Game/CustomSkins/{codename}/CharacterParts/CP_Faceacc_{codename}.CP_Faceacc_{codename}";
                 Console.WriteLine($"Changed the FaceAcc Character Part path in HS_{codename} to " +
-                $"/Game/CustomSkins/{codename}/CharacterParts/CP_faceacc_{codename}.CP_faceacc_{codename}");
+                $"/Game/CustomSkins/{codename}/CharacterParts/CP_Faceacc_{codename}.CP_Faceacc_{codename}");
 
             }
-            else if (characterPartTypes.Contains("hat"))
+            else if (characterPartTypes.Contains("Hat"))
             {
                 var hatCp = (SoftObjectPropertyData)characterPartsArray.Value[2];
                 hatCp.Value.AssetPath.AssetName.Value.Value =
-                $"/Game/CustomSkins/{codename}/CharacterParts/CP_hat_{codename}.CP_hat_{codename}";
+                $"/Game/CustomSkins/{codename}/CharacterParts/CP_Hat_{codename}.CP_Hat_{codename}";
                 Console.WriteLine($"Changed the Hat Character Part path in HS_{codename} to " +
-                $"/Game/CustomSkins/{codename}/CharacterParts/CP_hat_{codename}.CP_hat_{codename}");
+                $"/Game/CustomSkins/{codename}/CharacterParts/CP_Hat_{codename}.CP_Hat_{codename}");
             }
 
             hsExport0.ObjectName.Value.Value = $"HS_{codename}";

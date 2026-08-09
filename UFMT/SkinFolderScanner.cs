@@ -36,10 +36,9 @@ namespace UFMT
             foreach (string pskPath in pskPaths)
             {
                 string pskCpType = Path.GetFileName(Path.GetDirectoryName(pskPath));
-                CharacterPart currentPskCp = allCharacterParts.FirstOrDefault(cp => cp.Type == pskCpType.ToLower());
+                CharacterPart currentPskCp = allCharacterParts.FirstOrDefault(cp => cp.Type == pskCpType);
                 currentPskCp.Psk = Path.GetFileNameWithoutExtension(pskPath);
                 currentPskCp.PskPath = pskPath;
-
 
                 currentPskCp.PhysicsAssetJsonPaths = Directory.GetFiles(Path.Combine(physicsPath, pskCpType), "*.json").ToList();
                 currentPskCp.PhysicsAssets = currentPskCp.PhysicsAssetJsonPaths.Select(phys => Path.GetFileNameWithoutExtension(phys)).ToList();
@@ -49,12 +48,12 @@ namespace UFMT
                 Log.Success($"{Path.GetFileName(pskPath)} is a {currentPskCp.Type} character part type!");
             }
 
-            if (characterParts.FirstOrDefault(cp => cp.Type == "body") == null)
+            if (characterParts.FirstOrDefault(cp => cp.Type == "Body") == null)
             {
                 Log.Error($"Cannot find a body .psk file in {meshesPath}\nThe character must have at least a body and a head!");
                 return null;
             }
-            if (characterParts.FirstOrDefault(cp => cp.Type == "head") == null)
+            if (characterParts.FirstOrDefault(cp => cp.Type == "Head") == null)
             {
                 Log.Error($"Cannot find a head .psk file in {meshesPath}\nThe character must have at least a body and a head!");
                 return null;
