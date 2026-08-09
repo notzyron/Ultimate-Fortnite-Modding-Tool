@@ -327,6 +327,26 @@ def run_animation_importer(anim_sequence_path, json_path):
 
     return success
 
+
+def apply_lod_settings(asset_name):
+    mesh_path = "{}/{}".format(fbx_destination_path, asset_name)
+    lod_settings_path = "/Game/Characters/Player/Common/LODSettings/Medium_Player_LODSettings"
+
+    mesh = unreal.load_asset(mesh_path)
+    lod_settings_asset = unreal.load_asset(lod_settings_path)
+
+    if mesh and lod_settings_asset:
+        mesh.set_editor_property("lod_settings", lod_settings_asset)
+        unreal.EditorSkeletalMeshLibrary.regenerate_lod(
+            skeletal_mesh=mesh,
+            new_lod_count=4,
+            regenerate_even_if_imported=True,
+            generate_base_lod=False
+        )
+        unreal.log("SUCCESS => Applied LOD Settings & 4 LODs to {}".format(asset_name))
+    else:
+        unreal.log_error("FAILED => Missing mesh ({}) or LODSettings asset ({})".format(mesh_path, lod_settings_path))
+
 for i in range(len(material_names)):
     create_material_instance(material_names[i])
 
@@ -366,6 +386,7 @@ for i in range(len(fbx_paths)):
         )
 
     apply_materials_to_mesh(asset_names[i])
+    apply_lod_settings(asset_names[i])
     unreal.EditorAssetLibrary.save_loaded_asset(mesh)
 
 for i in range(len(diffuse_textures)):

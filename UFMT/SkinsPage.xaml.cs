@@ -306,7 +306,7 @@ namespace UFMT
             CurrentSkin.LobbyAnimationLength = lobbyAnimationLength;
             string cookedCodenamePath = Path.Combine(CookedAssetsPath, "CustomSkins", CurrentSkin.Codename);
 
-            UnrealDependencySetup.CreateMissingFiles(CookedAssetsPath, CurrentSkin.Codename, CurrentUeVersion.BaseHeadPath, cookedCodenamePath, CurrentUeVersion.Name, 
+            UnrealDependencySetup.CreateMissingFiles(App.Settings.UeProjectPath, CurrentSkin.Codename, CurrentUeVersion.BaseHeadPath, cookedCodenamePath, CurrentUeVersion.Name, 
             CurrentUeVersion.BaseHeadFileNames);
 
             UnrealExportData unrealData = UnrealExportDataCollector.CollectData(CurrentSkin.SmallIcon, CurrentSkin.LargeIcon, CurrentSkin.Materials, CurrentSkin.TexturesPath,

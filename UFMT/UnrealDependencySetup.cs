@@ -6,15 +6,18 @@ namespace UFMT
 {
     internal static class UnrealDependencySetup
     {
-        internal static void CreateMissingFiles(string cookedAssetsPath, string codename, string ueBaseHeadPath, string cookedCodenamePath, string UeVersionNumber, string[] baseHeadFileNames)
+        internal static void CreateMissingFiles(string ueProjectPath, string codename, string ueBaseHeadPath, string cookedCodenamePath, string UeVersionNumber, 
+        string[] baseHeadFileNames)
         {
-            string fakeCIDTemplatePath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), "Content",
+            string fakeCIDTemplatePath = Path.Combine(Path.GetDirectoryName(ueProjectPath), "Content",
             "CID_Template.uasset");
-            string BaseMeshSkeletonPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), "Content",
+            string BaseMeshSkeletonPath = Path.Combine(Path.GetDirectoryName(ueProjectPath), "Content",
             "Characters", "Player", "Male", "Male_Avg_Base", "Fortnite_M_Avg_Player_Skeleton.uasset");
-            string BaseMeshPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), "Content",
+            string BaseMeshPath = Path.Combine(Path.GetDirectoryName(ueProjectPath), "Content",
             "Characters", "Player", "Male", "Male_Avg_Base", "Fortnite_M_Avg_Player.uasset");
-            string baseHeadPath = Path.Combine(Path.GetDirectoryName(App.Settings.UeProjectPath), ueBaseHeadPath);
+            string baseHeadPath = Path.Combine(Path.GetDirectoryName(ueProjectPath), ueBaseHeadPath);
+            string mediumLodSettingsFolderPath = Path.Combine(Path.GetDirectoryName(ueProjectPath), "Content", "Characters", "Player", "Common", "LODSettings");
+            string mediumLodSettingsFilePath = Path.Combine(Path.GetDirectoryName(ueProjectPath), "Content", "Characters", "Player", "Common", "LODSettings", "Medium_Player_LODSettings.uasset");
 
             if (!File.Exists(fakeCIDTemplatePath)) File.WriteAllBytes(fakeCIDTemplatePath, TemplateLoader.GetEmbeddedFile(UeVersionNumber, "RawUeAssets", "FakeCID.uasset"));
             if (!File.Exists(BaseMeshSkeletonPath))
@@ -33,6 +36,14 @@ namespace UFMT
             if (!Directory.Exists(baseHeadPath))
             {
                 Directory.CreateDirectory(baseHeadPath);
+            }
+            if (!Directory.Exists(mediumLodSettingsFolderPath))
+            {
+                Directory.CreateDirectory(mediumLodSettingsFolderPath);
+            }
+            if (!File.Exists(mediumLodSettingsFilePath))
+            {
+                File.WriteAllBytes(mediumLodSettingsFilePath, TemplateLoader.GetEmbeddedFile(UeVersionNumber, "RawUeAssets", "Medium_Player_LODSettings.uasset"));
             }
 
             foreach (string fileName in baseHeadFileNames)
