@@ -32,6 +32,9 @@
                                 PlaceholderText="C:\Users\Example\Desktop\CustomSkins\Cyclone"/>
                         <Button Content="Browse" x:Name="CurrentSkinPathBrowse" Click="BrowseButton_Click"
                                 VerticalAlignment="Bottom"/>
+                        <Button Width="31" Height="31" Padding="0" VerticalAlignment="Bottom" Click="Reimport_Click">
+                            <Image Source="ms-appx:///Assets/ReimportButton.png" Width="25" Stretch="Uniform" ToolTipService.ToolTip="Reimport"/>
+                        </Button>
                     </StackPanel>
                 </StackPanel>
 

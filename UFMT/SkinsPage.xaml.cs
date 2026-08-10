@@ -237,6 +237,13 @@ namespace UFMT
             }
         }
 
+        private void Reimport_Click(object sender, RoutedEventArgs e)
+        {
+            string jsonPath = Path.Combine(CurrentSkin.Path, $"{CurrentSkin.Codename}_Settings.json");
+            if (Path.Exists(jsonPath)) File.Delete(jsonPath);
+            CurrentSkinPathBox_TextChanged(null, null);
+        }
+
         private async void RenderButton_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(App.Settings.UeVersion))
