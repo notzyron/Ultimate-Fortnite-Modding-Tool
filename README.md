@@ -24,7 +24,7 @@ Before using this tool, you need to install and configure:
 - **Blender 5.0** — [Download here](https://www.blender.org/download/)
   - Install these plugins via: Edit → Preferences → Add-ons → Install from File, select the plugin, and enable it
   - **PSA\PSK Importer Plugin** — [Download here](https://extensions.blender.org/download/sha256:a134bfa33f54804b9434149dea11472fc6ea43bb851a72d07df3511c843a4a4d/add-on-io-scene-psk-psa-v9.1.2.zip?repository=%2Fapi%2Fv1%2Fextensions%2F&blender_version_min=5.0.0)
-  - **Better FBX Exporter** — [Download here](https://github.com/notzyron/Ultimate-Fortnite-Modding-Tool/releases/download/v1.2.0/better_fbx_blender4.5.zip)
+  - **Better FBX Exporter** — [Download here](https://github.com/notzyron/Ultimate-Fortnite-Modding-Tool/releases/download/v1.5.3/better_fbx-6.3.5.zip)
 - **Unreal Engine (Check the app settings to see which UE version your Fortnite build requires)** — [Download from Epic Games Launcher](https://www.epicgames.com/store/en-US/download)
 Open Unreal Engine, create a new project, then go to Edit → Plugins and enable:
   - `Python Editor Script Plugin` (built-in)
