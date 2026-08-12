@@ -21,9 +21,9 @@ Before using this tool, you need to install and configure:
 
 - **Windows OS** (tested on Windows 10\11)
 - **.NET Framework** (version required by your system)
-- **Blender 4.5** — [Download here](https://www.blender.org/download/)
+- **Blender 5.0** — [Download here](https://www.blender.org/download/)
   - Install these plugins via: Edit → Preferences → Add-ons → Install from File, select the plugin, and enable it
-  - **PSA\PSK Importer Plugin** — [Download here](https://extensions.blender.org/download/sha256:9301a57466e3d41907b4b3175a7cc0e5df80aaefcc594676e5b898fdf13e7ad2/add-on-io-scene-psk-psa-v8.2.4.zip?repository=%2Fapi%2Fv1%2Fextensions%2F&blender_version_min=4.4.0&blender_version_max=5.0.0)
+  - **PSA\PSK Importer Plugin** — [Download here](https://extensions.blender.org/download/sha256:a134bfa33f54804b9434149dea11472fc6ea43bb851a72d07df3511c843a4a4d/add-on-io-scene-psk-psa-v9.1.2.zip?repository=%2Fapi%2Fv1%2Fextensions%2F&blender_version_min=5.0.0)
   - **Better FBX Exporter** — [Download here](https://github.com/notzyron/Ultimate-Fortnite-Modding-Tool/releases/download/v1.2.0/better_fbx_blender4.5.zip)
 - **Unreal Engine (Check the app settings to see which UE version your Fortnite build requires)** — [Download from Epic Games Launcher](https://www.epicgames.com/store/en-US/download)
 Open Unreal Engine, create a new project, then go to Edit → Plugins and enable:
@@ -36,7 +36,7 @@ Open Unreal Engine, create a new project, then go to Edit → Plugins and enable
 2. Run the `.exe`
 3. **Configure settings** (first launch):
    - Go to Settings page
-   - Set **Blender executable path** (e.g., `C:\Program Files\Blender Foundation\Blender 4.5\blender.exe`)
+   - Set **Blender executable path** (e.g., `C:\Program Files\Blender Foundation\Blender 5.0\blender.exe`)
    - Set **UE executable path** (e.g., `C:\Program Files\Epic Games\UE_4.26\Engine\Binaries\Win64\UE4Editor.exe`)
    - Set **UE project path** (path to your Unreal Engine project for UFMT)
    - Select **UE version** (Official UE build or a modded FnGameProj build)
@@ -88,7 +88,7 @@ Open Unreal Engine, create a new project, then go to Edit → Plugins and enable
 
 - **Unreal Engine:** 4.22, 4.23 Modded (FnGameProj8.51, FnGameProj9.10, FnGameProj9.41), 4.25, 4.25 Modded (FnGameProj12.41), 4.26, 4.26 Modded (FnGameProj14.30)
 - **Fortnite Versions:** v8.51, v9.10, v9.41, v12.41, v13.40, v14.30
-- **Blender:** 4.5
+- **Blender:** 5.0
 
 ## Credits
 - **[UAssetAPI](https://github.com/atenfyr/UAssetAPI)** — Asset handling and parsing library
