@@ -222,7 +222,7 @@
                                 <Image x:Name="iconPreview" Stretch="Uniform" Width="210"
                                     Canvas.Left="72" Canvas.Top="322"/>
                                 <TextBlock x:Name="characterNameTextCh1" Canvas.Left="1048" Canvas.Top="1200" Width="1000"
-                                    TextAlignment="Right" Text="ABCDEFGHIJKLMNOPQRSTUVXYWZ" Foreground="White" FontSize="57"
+                                    TextAlignment="Right" Text="NAME" Foreground="White" FontSize="57"
                                     FontFamily="ms-appx:///Assets/Fonts/BurbankBigRegular-Black.otf#BurbankBigRegular-Black" UseLayoutRounding="False">
                                     <TextBlock.RenderTransform>
                                         <SkewTransform AngleX="-10"/>

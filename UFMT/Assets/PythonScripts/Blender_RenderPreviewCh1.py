@@ -119,7 +119,7 @@ for material_name in material_names:
                     else:
                         links.new(separateColor.outputs['Blue'], bsdf.inputs['Roughness'])
                         links.new(separateColor.outputs['Green'], bsdf.inputs['Metallic'])
-                    links.new(separateColor.outputs['Red'], bsdf.inputs[13])  # IOR Level
+                    links.new(separateColor.outputs['Red'], bsdf.inputs['Specular IOR Level'])  # IOR Level
 
                     # Map textures using calculated index
                     base_idx = matIndex * 4
@@ -195,7 +195,7 @@ diffuse_bsdf = sc_mat_nodes.new('ShaderNodeBsdfDiffuse')
 
 principled_bsdf = sc_mat_nodes.get('Principled BSDF')
 principled_bsdf.inputs['Roughness'].default_value = 1.0
-principled_bsdf.inputs[12].default_value = 0.0 #Specular IOR Level
+principled_bsdf.inputs['Specular IOR Level'].default_value = 0.0 #Specular IOR Level
 principled_bsdf.inputs['Base Color'].default_value = (0,0,0,0)
 
 sc_mat_links.new(diffuse_bsdf.outputs['BSDF'], shader_to_rgb.inputs['Shader'])
@@ -204,7 +204,7 @@ sc_mat_links.new(shader_to_rgb.outputs['Color'], color_ramp.inputs['Fac'])
 sc_mat_links.new(color_ramp.outputs['Color'], principled_bsdf.inputs['Alpha'])
 
 
-sc_mat.blend_method = 'BLEND'
+sc_mat.surface_render_method = 'BLENDED'
 shadow_catcher.data.materials.append(sc_mat)
 
 world_data = bpy.context.scene.world
