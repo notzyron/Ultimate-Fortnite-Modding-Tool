@@ -217,19 +217,18 @@ bpy.context.scene.render.film_transparent = True
 
 bpy.context.scene.view_settings.look = "AgX - High Contrast"
 
-bpy.context.scene.use_nodes = True
-tree = bpy.context.scene.node_tree
+tree = bpy.data.node_groups.new("Compositing Nodetree", "CompositorNodeTree")
+bpy.context.scene.compositing_node_group = tree
 
-tree.nodes.clear()
 render_layers = tree.nodes.new(type="CompositorNodeRLayers")
 hue_sat = tree.nodes.new(type="CompositorNodeHueSat")
-composite = tree.nodes.new(type="CompositorNodeComposite")
-
+group_output = tree.nodes.new(type="NodeGroupOutput")
+tree.interface.new_socket(name="Image", in_out="OUTPUT", socket_type="NodeSocketColor")
 
 hue_sat.inputs["Saturation"].default_value = 1.1
 
 tree.links.new(render_layers.outputs["Image"], hue_sat.inputs["Image"])
-tree.links.new(hue_sat.outputs["Image"], composite.inputs["Image"])
+tree.links.new(hue_sat.outputs["Image"], group_output.inputs["Image"])
 
 render = bpy.context.scene.render
 render.filepath = render_path
