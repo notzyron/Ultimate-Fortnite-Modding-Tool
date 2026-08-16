@@ -252,6 +252,11 @@ namespace UFMT
                 return;
             }
 
+            if (CurrentSkin == null)
+            {
+                return;
+            }
+
             if (string.IsNullOrEmpty(CurrentSkin.Gender))
             {
                 Log.Error($"The skin's gender is unspecified");
