@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Windows.ApplicationModel.Activation;
 using Windows.Devices.Bluetooth.Advertisement;
 using Windows.Storage;
-using Microsoft.Windows.ApplicationModel.Resources;
 
 namespace UFMT
 {
@@ -20,9 +19,6 @@ namespace UFMT
 
         public App()
         {
-            var manager = new Microsoft.Windows.ApplicationModel.Resources.ResourceManager();
-            var customContext = manager.CreateResourceContext();
-            customContext.QualifierValues["ResourcePackageName"] = "UFMT";
             InitializeComponent();
 
             this.UnhandledException += (sender, e) =>
