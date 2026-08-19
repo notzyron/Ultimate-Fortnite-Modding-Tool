@@ -358,7 +358,6 @@ namespace UFMT
         (ContentDialog sender, ContentDialogButtonClickEventArgs args)
         {
             args.Cancel = true;
-            bool invalidCodename = false;
             if (SkinsPathBox.Text == null || SkinsPathBox.Text == "")
             {
                 Log.Error("The skins path cannot be empty!");
@@ -376,13 +375,18 @@ namespace UFMT
                 return;
             }
 
+            if (CodenameFolderCreateTextBox.Text.ToString() == string.Empty)
+            {
+                Log.Error("The codename cannot be empty!");
+                return;
+            }
+
             foreach (char c in CodenameFolderCreateTextBox.Text)
             {
                 if (!ValidCodenameCharacters.Contains(c.ToString().ToLower()))
                 {
                     Log.Error("The codename can only contain alphabetical characters, " +
                     "numbers and _");
-                    invalidCodename = true;
                     return;
                 }
             }
@@ -418,6 +422,25 @@ namespace UFMT
             Directory.CreateDirectory(Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Fbx", "Body"));
             Directory.CreateDirectory(Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Fbx", "Head"));
 
+            args.Cancel = false;
+        }
+
+        private async void CreateSeriesDialog_SecondaryButtonClick
+        (ContentDialog sender, ContentDialogButtonClickEventArgs args)
+        {
+            args.Cancel = true;
+            if (SeriesCreateTextBox.Text.ToString() == string.Empty)
+            {
+                Log.Error("The series' codename cannot be empty!");
+                return;
+            }
+            if (SeriesCreateTextBox.Text.Length > 100)
+            {
+                Log.Error("The codename cannot be longer than 100 characters!");
+                return;
+            }
+
+            seriesComboBox.Items.Add(SeriesCreateTextBox.Text);
             args.Cancel = false;
         }
 
@@ -473,6 +496,13 @@ namespace UFMT
                 if (c.Tag.ToString() == "series" && c.SelectedItem.ToString() == "+Add")
                 {
                     CreateSeriesDialog.XamlRoot = this.Content.XamlRoot;
+                    SeriesCreateTextBox.Text = "";
+                    var result = await CreateSeriesDialog.ShowAsync();
+
+                    if (result == ContentDialogResult.Primary)
+                    {
+                        Log.Test("Created new series!");
+                    }
                     Log.Test("Adding a new series!");
                 }
                 else

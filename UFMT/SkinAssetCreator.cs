@@ -395,8 +395,9 @@ namespace UFMT
             if (series == "None") cidExport0.Data.RemoveAt(skinRarity == "Uncommon" ? 5 : 6);
             else
             {
-                cidImport[3].ObjectName.Value.Value = SeriesCodenames.GetValueOrDefault(series);
-                cidImport[5].ObjectName.Value.Value = $"/Game/Athena/Items/Cosmetics/Series/{SeriesCodenames.GetValueOrDefault(series)}";
+                string seriesCodename = SeriesCodenames.GetValueOrDefault(series) ?? series;
+                cidImport[3].ObjectName.Value.Value = seriesCodename;
+                cidImport[5].ObjectName.Value.Value = $"/Game/Athena/Items/Cosmetics/Series/{seriesCodename}";
                 Console.WriteLine($"Changed the Series in {cid} to {series}");
             }
 

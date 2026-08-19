@@ -302,10 +302,10 @@
         </ContentDialog>
         <ContentDialog x:Name="CreateSeriesDialog"
                        Title="New Series"
-                       SecondaryButtonClick="CreateFolderDialog_SecondaryButtonClick"
+                       SecondaryButtonClick="CreateSeriesDialog_SecondaryButtonClick"
                        SecondaryButtonText="Create" PrimaryButtonText="Cancel" DefaultButton="Secondary">
             <StackPanel Spacing="10" Margin="0,10,0,0">
-                <TextBlock Text="Enter the codename of your series (make to add your series to the pak later)"
+                <TextBlock Text="Enter the codename of your series (make sure to add your series to the pak later)"
                 TextWrapping="Wrap"/>
                 <TextBox x:Name="SeriesCreateTextBox" 
                          PlaceholderText="ZyronSeries"
