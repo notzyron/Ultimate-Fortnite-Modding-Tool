@@ -202,6 +202,7 @@
                             <x:String>Slurp Series</x:String>
                             <x:String>Test Series</x:String>
                             <x:String>Anual Pass Series</x:String>
+                            <x:String>+Add</x:String>
                         </ComboBox>
                     </StackPanel>
                 </StackPanel>
@@ -296,6 +297,18 @@
                 TextWrapping="Wrap"/>
                 <TextBox x:Name="CodenameFolderCreateTextBox" 
                          PlaceholderText="Cyclone"
+                         HorizontalAlignment="Stretch" MaxLength="30"/>
+            </StackPanel>
+        </ContentDialog>
+        <ContentDialog x:Name="CreateSeriesDialog"
+                       Title="New Series"
+                       SecondaryButtonClick="CreateFolderDialog_SecondaryButtonClick"
+                       SecondaryButtonText="Create" PrimaryButtonText="Cancel" DefaultButton="Secondary">
+            <StackPanel Spacing="10" Margin="0,10,0,0">
+                <TextBlock Text="Enter the codename of your series (make to add your series to the pak later)"
+                TextWrapping="Wrap"/>
+                <TextBox x:Name="SeriesCreateTextBox" 
+                         PlaceholderText="ZyronSeries"
                          HorizontalAlignment="Stretch" MaxLength="30"/>
             </StackPanel>
         </ContentDialog>

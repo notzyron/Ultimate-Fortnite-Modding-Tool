@@ -470,10 +470,21 @@ namespace UFMT
                     CurrentSkin.Gender = c.SelectedItem.ToString();
                 }
 
+                if (c.Tag.ToString() == "series" && c.SelectedItem.ToString() == "+Add")
+                {
+                    CreateSeriesDialog.XamlRoot = this.Content.XamlRoot;
+                    Log.Test("Adding a new series!");
+                }
+                else
+                {
+                    Log.Test($"Tag is {c.Tag}, selected item is {c.SelectedItem}");
+                }
+
                 if (App.Settings.FnVersion == "8.51-9.10" || App.Settings.FnVersion == "9.41")
                 {
                     if (c.Tag.ToString() == "series")
                     {
+
                         string fullPath = $"ms-appx:///Assets/{CurrentSkin.Series}_Icon_Background.png";
 
                         if (c.SelectedItem.ToString() == "None")
