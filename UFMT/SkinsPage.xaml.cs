@@ -538,7 +538,10 @@ namespace UFMT
 
                     if (result == ContentDialogResult.Primary)
                     {
-                        seriesComboBox.SelectedItem = "None";
+                        if (e.RemovedItems.Count > 0)
+                        {
+                            seriesComboBox.SelectedItem = e.RemovedItems[0];
+                        }
                     }
                 }
 
