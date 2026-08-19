@@ -189,7 +189,8 @@
                                 FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <ComboBox
                                 PlaceholderText="Select The series..."
-                                Tag="series" SelectionChanged="ComboBoxChanged" x:Name="seriesComboBox" SelectedItem="{x:Bind CurrentSkin.Series, Mode=TwoWay}">
+                                Tag="series" SelectionChanged="ComboBoxChanged" x:Name="seriesComboBox" 
+                                SelectedItem="{x:Bind CurrentSkin.Series, Mode=TwoWay}">
                             <x:String>None</x:String>
                             <x:String>Dark Series</x:String>
                             <x:String>Star Wars Series</x:String>

@@ -15,6 +15,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using UAssetAPI;
+using Windows.Foundation.Collections;
 
 namespace UFMT
 {
@@ -71,12 +72,32 @@ namespace UFMT
         public SkinsPage()
         {
             InitializeComponent();
+            seriesComboBox.Items.Clear();
+            var seriesOptions = AppSettings.GetValue<ObservableCollection<string>>("AvailableSeries", null);
+            if (seriesOptions != null)
+            {
+                foreach (string series in seriesOptions)
+                {
+                    seriesComboBox.Items.Add(series);
+                }
+            }
+            else
+            {
+                seriesComboBox.Items.Add("None");
+                foreach (string series in SkinAssetCreator.SeriesCodenames.Keys)
+                {
+                    seriesComboBox.Items.Add(series);
+                }
+                seriesComboBox.Items.Add("+Add");
+            }
+            seriesComboBox.SelectedIndex = 0;
             SkinsPathBox.Text = AppSettings.GetValue("SkinsPath", "");
             CurrentSkinPathBox.Text = AppSettings.GetValue("CurrentSkinPath", "");
             ((FrameworkElement)this.Content).Loaded += (s, e) =>
             {
                 LoadContent();
             };
+            seriesComboBox.Items.VectorChanged += SaveSeries;
         }
 
         private void SkinsPathBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -439,8 +460,24 @@ namespace UFMT
                 Log.Error("The codename cannot be longer than 100 characters!");
                 return;
             }
+            if (seriesComboBox.Items.Contains(SeriesCreateTextBox.Text.ToString()))
+            {
+                Log.Error($"{SeriesCreateTextBox.Text} already exists!");
+                return;
+            }
 
-            seriesComboBox.Items.Add(SeriesCreateTextBox.Text);
+            int addIndex = seriesComboBox.Items.IndexOf("+Add");
+            if (addIndex != -1)
+            {
+                seriesComboBox.Items.Insert(addIndex, SeriesCreateTextBox.Text);
+            }
+            else
+            {
+                seriesComboBox.Items.Add(SeriesCreateTextBox.Text);
+            }
+            Console.WriteLine($"Created {SeriesCreateTextBox.Text}");
+            seriesComboBox.SelectedItem = SeriesCreateTextBox.Text;
+            Console.WriteLine($"Selected {SeriesCreateTextBox.Text}");
             args.Cancel = false;
         }
 
@@ -501,13 +538,8 @@ namespace UFMT
 
                     if (result == ContentDialogResult.Primary)
                     {
-                        Log.Test("Created new series!");
+                        seriesComboBox.SelectedItem = "None";
                     }
-                    Log.Test("Adding a new series!");
-                }
-                else
-                {
-                    Log.Test($"Tag is {c.Tag}, selected item is {c.SelectedItem}");
                 }
 
                 if (App.Settings.FnVersion == "8.51-9.10" || App.Settings.FnVersion == "9.41")
@@ -798,6 +830,9 @@ namespace UFMT
                 jsonString = node.ToJsonString();
             }
 
+            // Just in case the user closed the program when +Add was selected
+            if (node != null && node.ContainsKey("Series") && node["Series"].ToString() == "+Add") node["Series"] = "None";
+
             // To prevent legacy .json files crashing the program, I applied these changes:
             // Capitalize CharacterPart Type
             // Convert PskPath (full path) to Psk (filename only)
@@ -867,6 +902,11 @@ namespace UFMT
 
             File.WriteAllText(jsonPath, jsonString);
         } 
+
+        public void SaveSeries(IObservableVector<object> sender, IVectorChangedEventArgs e)
+        {
+            AppSettings.SetValue("AvailableSeries", seriesComboBox.Items);
+        }
     }
 
     public class SkinData : INotifyPropertyChanged
