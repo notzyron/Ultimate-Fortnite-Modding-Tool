@@ -448,39 +448,39 @@ namespace UFMT
             args.Cancel = false;
         }
 
-        private async void CreateSeriesDialog_SecondaryButtonClick
+        private async void AddSeriesDialog_SecondaryButtonClick
         (ContentDialog sender, ContentDialogButtonClickEventArgs args)
         {
             args.Cancel = true;
-            if (SeriesCreateTextBox.Text.ToString() == string.Empty)
+            if (AddSeriesTextBox.Text.ToString() == string.Empty)
             {
                 Log.Error("The series' codename cannot be empty!");
                 return;
             }
-            if (SeriesCreateTextBox.Text.Length > 100)
+            if (AddSeriesTextBox.Text.Length > 100)
             {
                 Log.Error("The codename cannot be longer than 100 characters!");
                 return;
             }
-            if (seriesComboBox.Items.Contains(SeriesCreateTextBox.Text.ToString()))
+            if (seriesComboBox.Items.Contains(AddSeriesTextBox.Text.ToString()))
             {
-                Log.Error($"{SeriesCreateTextBox.Text} already exists!");
+                Log.Error($"{AddSeriesTextBox.Text} already exists!");
                 return;
             }
 
             int addIndex = seriesComboBox.Items.IndexOf("+Add");
             if (addIndex != -1)
             {
-                seriesComboBox.Items.Insert(addIndex, SeriesCreateTextBox.Text);
+                seriesComboBox.Items.Insert(addIndex, AddSeriesTextBox.Text);
             }
             else
             {
-                seriesComboBox.Items.Add(SeriesCreateTextBox.Text);
+                seriesComboBox.Items.Add(AddSeriesTextBox.Text);
             }
-            Console.WriteLine($"Created {SeriesCreateTextBox.Text}");
-            seriesComboBox.SelectedItem = SeriesCreateTextBox.Text;
-            Console.WriteLine($"Selected {SeriesCreateTextBox.Text}");
-            PreviouslySelectedSeries = SeriesCreateTextBox.Text;
+            Console.WriteLine($"Added {AddSeriesTextBox.Text}");
+            seriesComboBox.SelectedItem = AddSeriesTextBox.Text;
+            Console.WriteLine($"Selected {AddSeriesTextBox.Text}");
+            PreviouslySelectedSeries = AddSeriesTextBox.Text;
             args.Cancel = false;
         }
 
@@ -525,6 +525,20 @@ namespace UFMT
         {
             ComboBox c = sender as ComboBox;
             if (IsUpdatingFromCode || IsLoadingDropdowns) return;
+
+            if (c.Tag.ToString() == "series")
+            {
+                string selectedSeries = seriesComboBox.SelectedItem.ToString();
+                if (selectedSeries != "None" && !SkinAssetCreator.SeriesCodenames.Keys.Contains(selectedSeries))
+                {
+                    RemoveSeriesButton.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    RemoveSeriesButton.Visibility = Visibility.Collapsed;
+                }
+            }
+
             if (CurrentSkin == null) return;
             if (c.Tag != null)
             {
@@ -540,14 +554,9 @@ namespace UFMT
                     {
                         PreviouslySelectedSeries = e.RemovedItems[0].ToString();
                     }
-                    CreateSeriesDialog.XamlRoot = this.Content.XamlRoot;
-                    SeriesCreateTextBox.Text = "";
-                    var result = await CreateSeriesDialog.ShowAsync();
-
-                    if (result == ContentDialogResult.Primary)
-                    {
-                        seriesComboBox.SelectedItem = PreviouslySelectedSeries;
-                    }
+                    AddSeriesDialog.XamlRoot = this.Content.XamlRoot;
+                    AddSeriesTextBox.Text = "";
+                    var result = await AddSeriesDialog.ShowAsync();
                 }
 
 
@@ -555,15 +564,6 @@ namespace UFMT
                 {
                     if (c.Tag.ToString() == "series")
                     {
-                        string selectedSeries = seriesComboBox.SelectedItem.ToString();
-                        if (selectedSeries != "None" && !SkinAssetCreator.SeriesCodenames.Keys.Contains(selectedSeries))
-                        {
-                            DeleteSeriesButton.Visibility = Visibility.Visible;
-                        }
-                        else
-                        {
-                            DeleteSeriesButton.Visibility = Visibility.Collapsed;
-                        }
                         string fullPath = $"ms-appx:///Assets/{CurrentSkin.Series}_Icon_Background.png";
 
                         if (c.SelectedItem.ToString() == "None")
@@ -608,15 +608,6 @@ namespace UFMT
                     Ch2PreviewViewBox.Visibility = Visibility.Visible;
                     if (c.Tag.ToString() == "series")
                     {
-                        string selectedSeries = seriesComboBox.SelectedItem.ToString();
-                        if (selectedSeries != "None" && !SkinAssetCreator.SeriesCodenames.Keys.Contains(selectedSeries))
-                        {
-                            DeleteSeriesButton.Visibility = Visibility.Visible;
-                        }
-                        else
-                        {
-                            DeleteSeriesButton.Visibility = Visibility.Collapsed;
-                        }
                         string fullPath = $"ms-appx:///Assets/Chapter2/{CurrentSkin.Series}_Icon_Background.png";
                         iconBackgroundOverlay.Source = new BitmapImage(new Uri(fullPath));
 
@@ -652,11 +643,11 @@ namespace UFMT
             }
         }
 
-        private void CreateSeriesDialogCancelled(object sender, ContentDialogClosedEventArgs e)
+        private void AddSeriesDialogClosed(object sender, ContentDialogClosedEventArgs e)
         {
             seriesComboBox.SelectedItem = PreviouslySelectedSeries;
         }
-        private async void DeleteSeriesButton_Click(object sender, RoutedEventArgs e)
+        private async void RemoveSeriesButton_Click(object sender, RoutedEventArgs e)
         {
             string itemToDelete = seriesComboBox.SelectedItem.ToString();
             seriesComboBox.SelectedItem = "None";
@@ -869,7 +860,16 @@ namespace UFMT
             }
 
             // Just in case the user closed the program when +Add was selected
-            if (node != null && node.ContainsKey("Series") && node["Series"].ToString() == "+Add") node["Series"] = "None";
+            if (node != null && node.ContainsKey("Series") && node["Series"].ToString() != "None")
+            {
+                string currentSeries = node["Series"].ToString();
+                if (currentSeries == "+Add") node["Series"] = "None";
+                else if (!seriesComboBox.Items.Contains(currentSeries)) 
+                {
+                    seriesComboBox.Items.Insert(seriesComboBox.Items.Count-1, currentSeries);
+                    Console.WriteLine($"Detected new series on the loaded skin, added \"{currentSeries}\"");
+                }
+            }  
 
             // To prevent legacy .json files crashing the program, I applied these changes:
             // Capitalize CharacterPart Type
