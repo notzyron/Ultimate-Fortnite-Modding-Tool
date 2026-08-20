@@ -261,6 +261,7 @@ namespace UFMT
 
         private void Reimport_Click(object sender, RoutedEventArgs e)
         {
+            if (CurrentSkin == null) return;
             string jsonPath = Path.Combine(CurrentSkin.Path, $"{CurrentSkin.Codename}_Settings.json");
             if (Path.Exists(jsonPath)) File.Delete(jsonPath);
             CurrentSkinPathBox_TextChanged(null, null);
@@ -524,6 +525,7 @@ namespace UFMT
         {
             ComboBox c = sender as ComboBox;
             if (IsUpdatingFromCode || IsLoadingDropdowns) return;
+            if (CurrentSkin == null) return;
             if (c.Tag != null)
             {
                 if (c.Tag.ToString() == "gender")
@@ -557,12 +559,10 @@ namespace UFMT
                         if (selectedSeries != "None" && !SkinAssetCreator.SeriesCodenames.Keys.Contains(selectedSeries))
                         {
                             DeleteSeriesButton.Visibility = Visibility.Visible;
-                            Log.Test($"Remove button SHOULD be visible!");
                         }
                         else
                         {
                             DeleteSeriesButton.Visibility = Visibility.Collapsed;
-                            Log.Test($"Remove button shouldn't be visible anymore!");
                         }
                         string fullPath = $"ms-appx:///Assets/{CurrentSkin.Series}_Icon_Background.png";
 
@@ -612,12 +612,10 @@ namespace UFMT
                         if (selectedSeries != "None" && !SkinAssetCreator.SeriesCodenames.Keys.Contains(selectedSeries))
                         {
                             DeleteSeriesButton.Visibility = Visibility.Visible;
-                            Log.Test($"Remove button SHOULD be visible!");
                         }
                         else
                         {
                             DeleteSeriesButton.Visibility = Visibility.Collapsed;
-                            Log.Test($"Remove button shouldn't be visible anymore!");
                         }
                         string fullPath = $"ms-appx:///Assets/Chapter2/{CurrentSkin.Series}_Icon_Background.png";
                         iconBackgroundOverlay.Source = new BitmapImage(new Uri(fullPath));
@@ -657,7 +655,6 @@ namespace UFMT
         private void CreateSeriesDialogCancelled(object sender, ContentDialogClosedEventArgs e)
         {
             seriesComboBox.SelectedItem = PreviouslySelectedSeries;
-            Log.Test("Cancelled!");
         }
         private async void DeleteSeriesButton_Click(object sender, RoutedEventArgs e)
         {
