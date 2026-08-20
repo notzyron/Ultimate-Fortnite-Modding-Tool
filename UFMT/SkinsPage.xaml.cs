@@ -26,6 +26,7 @@ namespace UFMT
         private static string PhysicsImporterPath;
         private string CookedAssetsPath;
         private static string ValidCodenameCharacters = "abcdefghijklmnopqrstuvwxyz1234567890_";
+        public string PreviouslySelectedSeries = "None";
         private CancellationTokenSource _currentSkinPathDebounce;
         private string OutputFnGamePath = string.Empty;
         private bool IsUpdatingFromCode = false;
@@ -478,6 +479,7 @@ namespace UFMT
             Console.WriteLine($"Created {SeriesCreateTextBox.Text}");
             seriesComboBox.SelectedItem = SeriesCreateTextBox.Text;
             Console.WriteLine($"Selected {SeriesCreateTextBox.Text}");
+            PreviouslySelectedSeries = SeriesCreateTextBox.Text;
             args.Cancel = false;
         }
 
@@ -532,24 +534,36 @@ namespace UFMT
 
                 if (c.Tag.ToString() == "series" && c.SelectedItem.ToString() == "+Add")
                 {
+                    if (e.RemovedItems.Count > 0)
+                    {
+                        PreviouslySelectedSeries = e.RemovedItems[0].ToString();
+                    }
                     CreateSeriesDialog.XamlRoot = this.Content.XamlRoot;
                     SeriesCreateTextBox.Text = "";
                     var result = await CreateSeriesDialog.ShowAsync();
 
                     if (result == ContentDialogResult.Primary)
                     {
-                        if (e.RemovedItems.Count > 0)
-                        {
-                            seriesComboBox.SelectedItem = e.RemovedItems[0];
-                        }
+                        seriesComboBox.SelectedItem = PreviouslySelectedSeries;
                     }
                 }
+
 
                 if (App.Settings.FnVersion == "8.51-9.10" || App.Settings.FnVersion == "9.41")
                 {
                     if (c.Tag.ToString() == "series")
                     {
-
+                        string selectedSeries = seriesComboBox.SelectedItem.ToString();
+                        if (selectedSeries != "None" && !SkinAssetCreator.SeriesCodenames.Keys.Contains(selectedSeries))
+                        {
+                            DeleteSeriesButton.Visibility = Visibility.Visible;
+                            Log.Test($"Remove button SHOULD be visible!");
+                        }
+                        else
+                        {
+                            DeleteSeriesButton.Visibility = Visibility.Collapsed;
+                            Log.Test($"Remove button shouldn't be visible anymore!");
+                        }
                         string fullPath = $"ms-appx:///Assets/{CurrentSkin.Series}_Icon_Background.png";
 
                         if (c.SelectedItem.ToString() == "None")
@@ -594,6 +608,17 @@ namespace UFMT
                     Ch2PreviewViewBox.Visibility = Visibility.Visible;
                     if (c.Tag.ToString() == "series")
                     {
+                        string selectedSeries = seriesComboBox.SelectedItem.ToString();
+                        if (selectedSeries != "None" && !SkinAssetCreator.SeriesCodenames.Keys.Contains(selectedSeries))
+                        {
+                            DeleteSeriesButton.Visibility = Visibility.Visible;
+                            Log.Test($"Remove button SHOULD be visible!");
+                        }
+                        else
+                        {
+                            DeleteSeriesButton.Visibility = Visibility.Collapsed;
+                            Log.Test($"Remove button shouldn't be visible anymore!");
+                        }
                         string fullPath = $"ms-appx:///Assets/Chapter2/{CurrentSkin.Series}_Icon_Background.png";
                         iconBackgroundOverlay.Source = new BitmapImage(new Uri(fullPath));
 
@@ -627,6 +652,19 @@ namespace UFMT
                     }
                 }
             }
+        }
+
+        private void CreateSeriesDialogCancelled(object sender, ContentDialogClosedEventArgs e)
+        {
+            seriesComboBox.SelectedItem = PreviouslySelectedSeries;
+            Log.Test("Cancelled!");
+        }
+        private async void DeleteSeriesButton_Click(object sender, RoutedEventArgs e)
+        {
+            string itemToDelete = seriesComboBox.SelectedItem.ToString();
+            seriesComboBox.SelectedItem = "None";
+            seriesComboBox.Items.Remove(itemToDelete);
+            Console.WriteLine($"Deleted \"{itemToDelete}\"");
         }
 
         private async void CharacterTextBoxChanged(object sender, RoutedEventArgs e)
