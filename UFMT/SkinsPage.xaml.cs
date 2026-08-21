@@ -25,7 +25,7 @@ namespace UFMT
         public static UeVersion CurrentUeVersion = UeVersionsData.UeVersions.GetValueOrDefault(App.Settings.UeVersion);
         private static string PhysicsImporterPath;
         private string CookedAssetsPath;
-        private static string ValidCodenameCharacters = "abcdefghijklmnopqrstuvwxyz1234567890_";
+        private static readonly string ValidCodenameCharacters = "abcdefghijklmnopqrstuvwxyz1234567890_";
         public string PreviouslySelectedSeries = "None";
         private CancellationTokenSource _currentSkinPathDebounce;
         private string OutputFnGamePath = string.Empty;
@@ -65,7 +65,7 @@ namespace UFMT
             }
         }
 
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        public void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
@@ -389,7 +389,7 @@ namespace UFMT
             }
         }
 
-        private async void CreateFolderDialog_SecondaryButtonClick
+        private void CreateFolderDialog_SecondaryButtonClick
         (ContentDialog sender, ContentDialogButtonClickEventArgs args)
         {
             args.Cancel = true;
@@ -460,7 +460,7 @@ namespace UFMT
             args.Cancel = false;
         }
 
-        private async void AddSeriesDialog_SecondaryButtonClick
+        private void AddSeriesDialog_SecondaryButtonClick
         (ContentDialog sender, ContentDialogButtonClickEventArgs args)
         {
             args.Cancel = true;
@@ -659,7 +659,7 @@ namespace UFMT
         {
             seriesComboBox.SelectedItem = PreviouslySelectedSeries;
         }
-        private async void RemoveSeriesButton_Click(object sender, RoutedEventArgs e)
+        private void RemoveSeriesButton_Click(object sender, RoutedEventArgs e)
         {
             string itemToDelete = seriesComboBox.SelectedItem.ToString();
             seriesComboBox.SelectedItem = "None";
@@ -667,7 +667,7 @@ namespace UFMT
             Console.WriteLine($"Deleted \"{itemToDelete}\"");
         }
 
-        private async void CharacterTextBoxChanged(object sender, RoutedEventArgs e)
+        private void CharacterTextBoxChanged(object sender, RoutedEventArgs e)
         {
             var c = sender as TextBox;
             if (c.Tag.ToString() == "characterName")
