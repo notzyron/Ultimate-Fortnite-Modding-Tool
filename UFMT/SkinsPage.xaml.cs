@@ -350,6 +350,17 @@ namespace UFMT
             Log.Success("\nYour custom skin is ready! Check the output folder");
         }
 
+        private void SmallIcon_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            CurrentSkin.SmallIcon = (sender as ComboBox).SelectedItem.ToString();
+            Console.WriteLine($"Changed the small icon to {CurrentSkin.SmallIcon}");
+        }
+
+        private void LargeIcon_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            CurrentSkin.LargeIcon = (sender as ComboBox).SelectedItem.ToString();
+            Console.WriteLine($"Changed the large icon to {CurrentSkin.LargeIcon}");
+        }
         private async void CreateSkinFolder_Click
         (object sender, RoutedEventArgs e)
         {
@@ -679,6 +690,16 @@ namespace UFMT
             try
             {
                 IsLoadingDropdowns = true;
+
+                SmallIconComboBox.Items.Clear();
+                LargeIconComboBox.Items.Clear();
+                foreach (string texture in CurrentSkin.Textures)
+                {
+                    SmallIconComboBox.Items.Add(texture);
+                    LargeIconComboBox.Items.Add(texture);
+                }
+                SmallIconComboBox.SelectedItem = CurrentSkin.SmallIcon;
+                LargeIconComboBox.SelectedItem = CurrentSkin.LargeIcon;
 
                 foreach (Material mat in CurrentSkin.Materials)
                 {
@@ -1020,8 +1041,32 @@ namespace UFMT
             }
 
         }
-        public string SmallIcon { get; set; } = string.Empty;
-        public string LargeIcon { get; set; } = string.Empty;
+        private string _smallIcon = string.Empty;
+        public string SmallIcon 
+        {
+            get => _smallIcon;
+            set
+            {
+                if (_smallIcon != value)
+                {
+                    _smallIcon = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+        private string _largeIcon = string.Empty;
+        public string LargeIcon
+        {
+            get => _largeIcon;
+            set
+            {
+                if (_largeIcon != value)
+                {
+                    _largeIcon = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
         private string _cid = string.Empty;
         public string CID
         {
