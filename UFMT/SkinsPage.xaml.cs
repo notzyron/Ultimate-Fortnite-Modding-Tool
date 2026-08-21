@@ -352,12 +352,13 @@ namespace UFMT
 
         private void SmallIcon_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (CurrentSkin.SmallIcon == null || (sender as ComboBox)?.ItemsSource == null) return;
             CurrentSkin.SmallIcon = (sender as ComboBox).SelectedItem.ToString();
             Console.WriteLine($"Changed the small icon to {CurrentSkin.SmallIcon}");
         }
-
         private void LargeIcon_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (CurrentSkin.LargeIcon == null || (sender as ComboBox)?.ItemsSource == null) return;
             CurrentSkin.LargeIcon = (sender as ComboBox).SelectedItem.ToString();
             Console.WriteLine($"Changed the large icon to {CurrentSkin.LargeIcon}");
         }
@@ -691,16 +692,6 @@ namespace UFMT
             {
                 IsLoadingDropdowns = true;
 
-                SmallIconComboBox.Items.Clear();
-                LargeIconComboBox.Items.Clear();
-                foreach (string texture in CurrentSkin.Textures)
-                {
-                    SmallIconComboBox.Items.Add(texture);
-                    LargeIconComboBox.Items.Add(texture);
-                }
-                SmallIconComboBox.SelectedItem = CurrentSkin.SmallIcon;
-                LargeIconComboBox.SelectedItem = CurrentSkin.LargeIcon;
-
                 foreach (Material mat in CurrentSkin.Materials)
                 {
                     mat.TextureOptions = CurrentSkin.Textures;
@@ -763,6 +754,15 @@ namespace UFMT
             {
                 Log.Error(ex.Message);
             }
+            SmallIconComboBox.Items.Clear();
+            LargeIconComboBox.Items.Clear();
+            foreach (string texture in CurrentSkin.Textures)
+            {
+                SmallIconComboBox.Items.Add(texture);
+                LargeIconComboBox.Items.Add(texture);
+            }
+            SmallIconComboBox.SelectedItem = CurrentSkin.SmallIcon;
+            LargeIconComboBox.SelectedItem = CurrentSkin.LargeIcon;
         }
 
         public void LoadContent()

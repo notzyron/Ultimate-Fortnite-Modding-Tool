@@ -18,8 +18,10 @@
 		<_LastSelectedProfileId>C:\UFMT\Ultimate-Fortnite-Modding-Tool\UFMT\Properties\PublishProfiles\FolderProfile.pubxml</_LastSelectedProfileId>
 		
 		<!--Comment out these 2 lines if you're debugging-->
+		<!--
 		<DebugSymbols>false</DebugSymbols>
 		<DebugType>none</DebugType>
+		-->
 
 		<EnableMsixTooling>true</EnableMsixTooling>
 	

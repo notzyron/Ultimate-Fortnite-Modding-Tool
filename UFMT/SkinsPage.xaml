@@ -138,7 +138,7 @@
                                 Unchecked="AllSwizzleUnchecked" Tag="AllSwizzleTag" IsChecked="{x:Bind AllSwizzleCheckBoxValue, Mode=TwoWay}"/>
 
                     </StackPanel>
-                    <Border Height="10"/>
+                    <Border Height="15"/>
                     <StackPanel Orientation="Horizontal" Spacing="7">
                         <TextBlock Text="Small Icon" 
                                 FontSize="16" HorizontalAlignment="Left" VerticalAlignment="Center"/>
