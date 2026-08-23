@@ -299,54 +299,62 @@ namespace UFMT
 
         private async void ExportButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!SkinValidator.ValidateBeforeExport(App.Settings.UeVersion, CurrentSkin.Gender, CurrentSkin.Name, CurrentSkin.Description, CurrentSkin.CID)) return;
-            if (!await FbxConverter.ConvertPskToFbx(CurrentSkin.CharacterParts, CurrentSkin.SourcePath, CurrentSkin.Codename)) return;
+            SkinData exportSkin = CurrentSkin.Clone();
+            UeVersion exportUeVer = CurrentUeVersion;
+            FnVersion exportFnVer = CurrentFnVersion;
+            string exportOutputFnGamePath = OutputFnGamePath;
+            string exportCookedAssetsPath = CookedAssetsPath;
+            string exportUeProjectPath = App.Settings.UeProjectPath;
+            string exportUeExecutablePath = App.Settings.UeExecutablePath;
 
-            var (isAnimValid, lobbyAnimationFbx, lobbyAnimationLength) = 
-            await FbxConverter.ConvertPsaToFbx(CurrentSkin.SourcePath, CurrentSkin.Codename, CurrentSkin.LobbyAnimationFolderPath, CurrentSkin.LobbyAnimationPsa);
+            if (!SkinValidator.ValidateBeforeExport(exportUeVer.Name, exportSkin.Gender, exportSkin.Name, exportSkin.Description, exportSkin.CID)) return;
+            if (!await FbxConverter.ConvertPskToFbx(exportSkin.CharacterParts, exportSkin.SourcePath, exportSkin.Codename)) return;
+
+            var (isAnimValid, lobbyAnimationFbx, lobbyAnimationLength) =
+            await FbxConverter.ConvertPsaToFbx(exportSkin.SourcePath, exportSkin.Codename, exportSkin.LobbyAnimationFolderPath, exportSkin.LobbyAnimationPsa);
             if (!isAnimValid) return;
-            CurrentSkin.LobbyAnimationFbx = lobbyAnimationFbx;
-            CurrentSkin.LobbyAnimationLength = lobbyAnimationLength;
-            string cookedCodenamePath = Path.Combine(CookedAssetsPath, "CustomSkins", CurrentSkin.Codename);
+            exportSkin.LobbyAnimationFbx = lobbyAnimationFbx;
+            exportSkin.LobbyAnimationLength = lobbyAnimationLength;
+            string cookedCodenamePath = Path.Combine(exportCookedAssetsPath, "CustomSkins", exportSkin.Codename);
 
-            UnrealDependencySetup.CreateMissingFiles(App.Settings.UeProjectPath, CurrentSkin.Codename, CurrentUeVersion.BaseHeadPath, cookedCodenamePath, CurrentUeVersion.Name, 
-            CurrentUeVersion.BaseHeadFileNames);
+            UnrealDependencySetup.CreateMissingFiles(exportUeProjectPath, exportSkin.Codename, exportUeVer.BaseHeadPath, cookedCodenamePath, exportUeVer.Name,
+            exportUeVer.BaseHeadFileNames);
 
-            UnrealExportData unrealData = UnrealExportDataCollector.CollectData(CurrentSkin.SmallIcon, CurrentSkin.LargeIcon, CurrentSkin.Materials, CurrentSkin.TexturesPath,
-            CurrentFnVersion.ManuallySwizzleMaterials, CurrentSkin.SourcePath, CurrentSkin.LobbyAnimationFbx, CurrentSkin.LobbyAnimationJson, CurrentSkin.CharacterParts,
-            CurrentSkin.Gender, CurrentSkin.Codename, CurrentSkin.CID);
+            UnrealExportData unrealData = UnrealExportDataCollector.CollectData(exportSkin.SmallIcon, exportSkin.LargeIcon, exportSkin.Materials, exportSkin.TexturesPath,
+            exportFnVer.ManuallySwizzleMaterials, exportSkin.SourcePath, exportSkin.LobbyAnimationFbx, exportSkin.LobbyAnimationJson, exportSkin.CharacterParts,
+            exportSkin.Gender, exportSkin.Codename, exportSkin.CID);
 
 
-            await UnrealProcessRunner.LaunchUnreal(unrealData);
-            await UnrealProcessRunner.CookFiles();
+            await UnrealProcessRunner.LaunchUnreal(unrealData, exportUeProjectPath, exportUeExecutablePath);
+            await UnrealProcessRunner.CookFiles(exportUeProjectPath, exportUeExecutablePath);
 
-            CurrentUeVersion.FixRequiredFiles(Path.Combine
-            (cookedCodenamePath, "Animations", $"{CurrentSkin.Codename}_Lobby_Animation.uasset"), CurrentSkin.CharacterParts.Select
+            exportUeVer.FixRequiredFiles(Path.Combine
+            (cookedCodenamePath, "Animations", $"{exportSkin.Codename}_Lobby_Animation.uasset"), exportSkin.CharacterParts.Select
             (cp => Path.Combine(cookedCodenamePath, "Meshes", $"{Path.GetFileNameWithoutExtension(cp.FbxPath)}.uasset")).ToArray());
 
-            AssetRegistryBuilder.CreateAssetRegistry(CookedAssetsPath, CurrentUeVersion.Name, CurrentSkin.Path, OutputFnGamePath);
-           
-            DirectoryInfo cookedCharacterDirectory = new DirectoryInfo(Path.Combine(CookedAssetsPath, "CustomSkins", CurrentSkin.Codename));
-            string contentFolderPath = Path.Combine(OutputFnGamePath, "Content", "CustomSkins", CurrentSkin.Codename);
+            AssetRegistryBuilder.CreateAssetRegistry(exportCookedAssetsPath, exportUeVer.Name, exportSkin.Path, exportOutputFnGamePath);
 
-            SkinAssetCreator.CopyFilesFromUe(contentFolderPath, cookedCharacterDirectory, CookedAssetsPath, OutputFnGamePath, CurrentUeVersion.BaseHeadPath, CurrentUeVersion.ReplaceCookedBaseHead, 
-            App.Settings.FnVersion, CurrentUeVersion.Name, CurrentUeVersion.BaseHeadFileNames);
+            DirectoryInfo cookedCharacterDirectory = new DirectoryInfo(Path.Combine(exportCookedAssetsPath, "CustomSkins", exportSkin.Codename));
+            string contentFolderPath = Path.Combine(exportOutputFnGamePath, "Content", "CustomSkins", exportSkin.Codename);
 
-            SkinAssetCreator.CreateCharacterParts(contentFolderPath, CurrentSkin.Gender, CurrentSkin.Codename, CurrentSkin.CharacterParts, CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+            SkinAssetCreator.CopyFilesFromUe(contentFolderPath, cookedCharacterDirectory, exportCookedAssetsPath, exportOutputFnGamePath, exportUeVer.BaseHeadPath, exportUeVer.ReplaceCookedBaseHead,
+            exportFnVer.Name, exportUeVer.Name, exportUeVer.BaseHeadFileNames);
 
-            SkinAssetCreator.CreateMaterials(contentFolderPath, CurrentSkin.Codename, CurrentSkin.Materials, CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+            SkinAssetCreator.CreateCharacterParts(contentFolderPath, exportSkin.Gender, exportSkin.Codename, exportSkin.CharacterParts, exportFnVer, exportUeVer.UassetApiEngineVer);
 
-            SkinAssetCreator.CreateHeroSpecialization(contentFolderPath, CurrentSkin.Codename, CurrentSkin.CharacterParts, CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+            SkinAssetCreator.CreateMaterials(contentFolderPath, exportSkin.Codename, exportSkin.Materials, exportFnVer, exportUeVer.UassetApiEngineVer);
 
-            SkinAssetCreator.CreateLobbyAnimationMontage(contentFolderPath, CurrentSkin.Codename, CurrentSkin.LobbyAnimationPsa, CurrentSkin.LobbyAnimationJson,
-            CurrentSkin.LobbyAnimationLength, CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+            SkinAssetCreator.CreateHeroSpecialization(contentFolderPath, exportSkin.Codename, exportSkin.CharacterParts, exportFnVer, exportUeVer.UassetApiEngineVer);
 
-            SkinAssetCreator.CreateHero(contentFolderPath, CurrentSkin.Codename, CurrentSkin.Gender, CurrentSkin.SmallIcon, CurrentSkin.LargeIcon, CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+            SkinAssetCreator.CreateLobbyAnimationMontage(contentFolderPath, exportSkin.Codename, exportSkin.LobbyAnimationPsa, exportSkin.LobbyAnimationJson,
+            exportSkin.LobbyAnimationLength, exportFnVer, exportUeVer.UassetApiEngineVer);
 
-            SkinAssetCreator.CreateCharacter(OutputFnGamePath, CurrentSkin.CID, CurrentSkin.Codename, CurrentSkin.Name, CurrentSkin.Description, CurrentSkin.Rarity,
-            CurrentSkin.Series, CurrentFnVersion, CurrentUeVersion.UassetApiEngineVer);
+            SkinAssetCreator.CreateHero(contentFolderPath, exportSkin.Codename, exportSkin.Gender, exportSkin.SmallIcon, exportSkin.LargeIcon, exportFnVer, exportUeVer.UassetApiEngineVer);
 
-            U4Pak.Pack(OutputFnGamePath, Path.Combine(Path.GetDirectoryName(OutputFnGamePath), $"z_{CurrentSkin.Codename}.pak"));
+            SkinAssetCreator.CreateCharacter(exportOutputFnGamePath, exportSkin.CID, exportSkin.Codename, exportSkin.Name, exportSkin.Description, exportSkin.Rarity,
+            exportSkin.Series, exportFnVer, exportUeVer.UassetApiEngineVer);
+
+            U4Pak.Pack(exportOutputFnGamePath, Path.Combine(Path.GetDirectoryName(exportOutputFnGamePath), $"z_{exportSkin.Codename}.pak"));
             Log.Success("\nYour custom skin is ready! Check the output folder");
         }
 
@@ -1108,6 +1116,13 @@ namespace UFMT
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+        public SkinData Clone()
+        {
+            SkinData clone = (SkinData)this.MemberwiseClone();
+            clone.Materials = new ObservableCollection<Material>(Materials.Select(m => m.Clone()));
+            clone.CharacterParts = CharacterParts.Select(cp => cp.Clone()).ToList();
+            return clone;
+        }
     }
 
     public class Material : INotifyPropertyChanged
@@ -1337,6 +1352,11 @@ namespace UFMT
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             ParentPage?.SaveSkinConfig();
+        }
+
+        public Material Clone()
+        {
+            return (Material)this.MemberwiseClone();
         }
     }
 

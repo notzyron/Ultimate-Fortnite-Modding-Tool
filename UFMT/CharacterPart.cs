@@ -19,5 +19,9 @@ namespace UFMT
         public byte[] UassetFile { get; set; } = { };
         [JsonIgnore]
         public byte[] UexpFile { get; set; } = { };
+        public CharacterPart Clone()
+        {
+            return (CharacterPart)this.MemberwiseClone();
+        }
     }
 }
