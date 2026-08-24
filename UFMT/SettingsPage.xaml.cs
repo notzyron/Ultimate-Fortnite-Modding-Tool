@@ -35,6 +35,20 @@ public sealed partial class SettingsPage : Page
             box.Text = box.Text.Replace("\"", "");
         }
     }
+
+    private void ConvertToUePackagePath(object sender, RoutedEventArgs e)
+    {
+        string path;
+        if (sender is not TextBox) return;
+        path = (sender as TextBox).Text.ToString();
+
+        if (path.Contains("\"")) path = path.Replace("\"", "");
+        if (path.Contains("\\")) path = path.Replace("\\", "/");
+        if (path.EndsWith("/")) path = path.Substring(0, path.Length-1);
+
+        (sender as TextBox).Text = path;
+    }
+
 }
 
 public class SettingsData : INotifyPropertyChanged
@@ -48,9 +62,11 @@ public class SettingsData : INotifyPropertyChanged
     public SettingsData()
     {
         AvailableFnVersions = UeFnVersions.GetValueOrDefault(UeVersion);
+        _blenderPath = AppSettings.GetValue($"BlenderPath", "");
         _fnVersion = AppSettings.GetValue($"{UeVersion}_FnVersion", "8.51-9.10");
         _ueExecutablePath = AppSettings.GetValue($"{UeVersion}_ExecutablePath", "");
         _ueProjectPath = AppSettings.GetValue($"{UeVersion}_ProjectPath", "");
+        _ueSkinsPackagePath = AppSettings.GetValue($"UeSkinsPackagePath", "/Game/CustomSkins");
     }
 
     private Dictionary<string, string[]> UeFnVersions = new()
@@ -107,7 +123,7 @@ public class SettingsData : INotifyPropertyChanged
             }
         }
     }
-    private string _blenderPath = AppSettings.GetValue("BlenderPath", "");
+    private string _blenderPath;
     public string BlenderPath
     {
         get => _blenderPath;
@@ -146,6 +162,21 @@ public class SettingsData : INotifyPropertyChanged
             {
                 _ueProjectPath = value;
                 AppSettings.SetValue($"{UeVersion}_ProjectPath", value);
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    private string _ueSkinsPackagePath;
+    public string UeSkinsPackagePath
+    {
+        get => _ueSkinsPackagePath;
+        set
+        {
+            if (_ueSkinsPackagePath != value)
+            {
+                _ueSkinsPackagePath = value;
+                AppSettings.SetValue($"UeSkinsPackagePath", value);
                 OnPropertyChanged();
             }
         }

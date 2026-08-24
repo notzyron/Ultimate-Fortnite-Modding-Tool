@@ -10,12 +10,14 @@ namespace UFMT
 {
     internal static class AssetRegistryBuilder
     {
-        internal static void CreateAssetRegistry(string cookedAssetsPath, string ueVersionNumber, string skinPath, string outputFnGamePath)
+        internal static void CreateAssetRegistry(string cookedAssetsPath, string ueVersionNumber, string skinPath, string outputFnGamePath, 
+        string ueSkinsPackagePath)
         {
             Console.WriteLine("Creating AssetRegistry.bin!");
-            //Just in case the user has the project folder named differently than the .uproject
+            // Just in case the user has the project folder named differently than the .uproject
+            string cookedSkinsPath = Path.Combine(cookedAssetsPath, ueSkinsPackagePath.Substring(6, ueSkinsPackagePath.Length - 6).Replace("/", "\\"));
 
-            string[] customSkinFolders = Directory.GetDirectories(Path.Combine(cookedAssetsPath, "CustomSkins"));
+            string[] customSkinFolders = Directory.GetDirectories(Path.Combine(cookedSkinsPath));
             List<string> jsonCids = new();
 
             Console.WriteLine($"Searching for CIDs inside {cookedAssetsPath}...");
@@ -29,10 +31,10 @@ namespace UFMT
                     string json = System.Text.Encoding.UTF8.GetString(TemplateLoader.GetEmbeddedFile(ueVersionNumber, "RawUeAssets", "Cid.json"));
                     var root = JObject.Parse(json);
                     root["ObjectPath"] = root["ObjectPath"]!.Value<string>()!.Replace(
-                        "/Game/Athena/Items/Cosmetics/Characters/CID_Template.CID_Template",
+                        $"/Game/Athena/Items/Cosmetics/Characters/CID_Template.CID_Template",
                         $"/Game/Athena/Items/Cosmetics/Characters/{currentFoundCid}.{currentFoundCid}");
                     root["PackageName"] = root["PackageName"]!.Value<string>()!.Replace(
-                        "/Game/Athena/Items/Cosmetics/Characters/CID_Template",
+                        $"/Game/Athena/Items/Cosmetics/Characters/CID_Template",
                         $"/Game/Athena/Items/Cosmetics/Characters/{currentFoundCid}");
                     root["AssetName"] = root["PackageName"]!.Value<string>()!.Replace(
                         "CID_Template", currentFoundCid);

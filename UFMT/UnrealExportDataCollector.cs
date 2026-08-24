@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using System.Collections.ObjectModel;
+using Microsoft.UI.Xaml;
 
 namespace UFMT
 {
     internal static class UnrealExportDataCollector
     {
         internal static UnrealExportData CollectData(string smallIcon, string largeIcon, ObservableCollection<Material> materials, string texturesPath, bool manuallySwizzleMaterials, string sourcePath, 
-        string lobbyAnimationFbx, string lobbyAnimationJson, List<CharacterPart> characterParts, string skinGender, string codename, string CID)
+        string lobbyAnimationFbx, string lobbyAnimationJson, List<CharacterPart> characterParts, string skinGender, string codename, string CID, string ueSkinsPackagePath)
         {
             List<string> meshNames = new();
             List<string> diffuseTexturePaths = new();
@@ -57,6 +58,7 @@ namespace UFMT
                 Path.Combine(sourcePath, "Lobby_Animation", $"{lobbyAnimationJson}.json"),
                 HeadMeshName = Path.GetFileNameWithoutExtension(characterParts.FirstOrDefault(cp => cp.Type == "Head").FbxPath),
                 CurrentFnVersion = App.Settings.FnVersion,
+                UeSkinsPackagePath = ueSkinsPackagePath
             };
 
             return unrealData;

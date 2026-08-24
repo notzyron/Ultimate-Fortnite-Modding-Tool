@@ -62,7 +62,8 @@ namespace UFMT
 
         }
 
-        internal static void CreateMaterials(string contentFolderPath, string codename, ObservableCollection<Material> materials, FnVersion fnVersion, EngineVersion uassetApiEngineVersion)
+        internal static void CreateMaterials(string contentFolderPath, string codename, ObservableCollection<Material> materials, 
+        FnVersion fnVersion, EngineVersion uassetApiEngineVersion, string ueSkinsPackagePath)
         {
             string materialsPath = Path.Combine(contentFolderPath, "Materials");
             foreach (Material material in materials)
@@ -87,7 +88,7 @@ namespace UFMT
                 var miImportData = currentMi.Imports;
                 var miExportData = currentMi.Exports;
                 var miExport0 = (NormalExport)currentMi.Exports[0];
-                string fnTexturesPath = $"/Game/CustomSkins/{codename}/Textures/";
+                string fnTexturesPath = $"{ueSkinsPackagePath}/{codename}/Textures/";
                 miImportData[fnVersion.DiffusePathIndex].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedDiffuse);
                 Console.WriteLine($"Changed the diffuse texture path in {material.Name} to {Path.Combine(fnTexturesPath, material.SelectedDiffuse)}");
                 miImportData[fnVersion.DiffusePathIndex + 1].ObjectName.Value.Value = Path.Combine(fnTexturesPath, material.SelectedMask);
@@ -123,7 +124,8 @@ namespace UFMT
             }
         }
 
-        internal static void CreateCharacterParts(string contentFolderPath, string gender, string codename, List<CharacterPart> characterParts, FnVersion fnVersion, EngineVersion uassetApiEngineVersion)
+        internal static void CreateCharacterParts(string contentFolderPath, string gender, string codename, List<CharacterPart> characterParts, 
+        FnVersion fnVersion, EngineVersion uassetApiEngineVersion, string ueSkinsPackagePath)
         {
             string characterPartsPath = Path.Combine(contentFolderPath, "CharacterParts");
             CharacterPart body = characterParts.FirstOrDefault(cp => cp.Type == "Body");
@@ -177,10 +179,10 @@ namespace UFMT
                     string animBpPath;
                     if (cp.Type == "Head")
                     {
-                        if (fnVersion.Name == "9.41") animBpPath = "/Game/Modding/Base_Head/Base_Head_Modding_AnimBP.Base_Head_Modding_AnimBP_C";
-                        else animBpPath = "/Game/Base/Head/Skeleton/Base_Head_AnimBP.Base_Head_AnimBP_C";
+                        if (fnVersion.Name == "9.41") animBpPath = $"/Game/Modding/Base_Head/Base_Head_Modding_AnimBP.Base_Head_Modding_AnimBP_C";
+                        else animBpPath = $"/Game/Base/Head/Skeleton/Base_Head_AnimBP.Base_Head_AnimBP_C";
                     }
-                    else animBpPath = $"/Game/CustomSkins/{codename}/Meshes/{codename}_{cp.Type}_AnimBP.{codename}_{cp.Type}_AnimBP_C";
+                    else animBpPath = $"{ueSkinsPackagePath}/{codename}/Meshes/{codename}_{cp.Type}_AnimBP.{codename}_{cp.Type}_AnimBP_C";
 
                     var animBpData = (SoftObjectPropertyData)cpExport0["AnimClass"];
                     animBpData.Value.AssetPath.AssetName.Value.Value = animBpPath;
@@ -188,9 +190,9 @@ namespace UFMT
                     Console.WriteLine($"Changed the Animation Blueprint in CP_{cp.Type}_{codename} to {animBpPath}");
                 }
                 var mesh = (SoftObjectPropertyData)cpExport1["SkeletalMesh"];
-                mesh.Value.AssetPath.AssetName.Value.Value = $"/Game/CustomSkins/{codename}/Meshes/" +
+                mesh.Value.AssetPath.AssetName.Value.Value = $"{ueSkinsPackagePath}/{codename}/Meshes/" +
                 $"{codename}_{cp.Type}.{codename}_{cp.Type}";
-                Console.WriteLine($"Changed the Mesh in CP_{cp.Type}_{codename} to /Game/CustomSkins/{codename}/Meshes/" +
+                Console.WriteLine($"Changed the Mesh in CP_{cp.Type}_{codename} to {ueSkinsPackagePath}/{codename}/Meshes/" +
                 $"{codename}_{cp.Type}.{codename}_{cp.Type}");
 
                 Console.WriteLine(uassetPath);
@@ -200,7 +202,8 @@ namespace UFMT
             }
         }
 
-        internal static void CreateHeroSpecialization(string contentFolderPath, string codename, List<CharacterPart> characterParts, FnVersion fnVersion, EngineVersion uassetApiEngineVersion)
+        internal static void CreateHeroSpecialization(string contentFolderPath, string codename, List<CharacterPart> characterParts, FnVersion fnVersion, 
+        EngineVersion uassetApiEngineVersion, string ueSkinsPackagePath)
         {
             byte[] hsUasset;
             byte[] hsUexp;
@@ -233,32 +236,32 @@ namespace UFMT
             var headCp = (SoftObjectPropertyData)characterPartsArray.Value[0];
             var bodyCp = (SoftObjectPropertyData)characterPartsArray.Value[1];
             headCp.Value.AssetPath.AssetName.Value.Value =
-            $"/Game/CustomSkins/{codename}/CharacterParts/CP_Head_{codename}.CP_Head_{codename}";
+            $"{ueSkinsPackagePath}/{codename}/CharacterParts/CP_Head_{codename}.CP_Head_{codename}";
             Console.WriteLine($"Changed the Head Character Part path in HS_{codename} to " +
-            $"/Game/CustomSkins/{codename}/CharacterParts/CP_Head_{codename}.CP_Head_{codename}");
+            $"{ueSkinsPackagePath}/{codename}/CharacterParts/CP_Head_{codename}.CP_Head_{codename}");
 
             bodyCp.Value.AssetPath.AssetName.Value.Value =
-            $"/Game/CustomSkins/{codename}/CharacterParts/CP_Body_{codename}.CP_Body_{codename}";
+            $"{ueSkinsPackagePath}/{codename}/CharacterParts/CP_Body_{codename}.CP_Body_{codename}";
             Console.WriteLine($"Changed the Body Character Part path in HS_{codename} to " +
-            $"/Game/CustomSkins/{codename}/CharacterParts/CP_Body_{codename}.CP_Body_{codename}");
+            $"{ueSkinsPackagePath}/{codename}/CharacterParts/CP_Body_{codename}.CP_Body_{codename}");
 
 
             if (characterPartTypes.Contains("Faceacc"))
             {
                 var faceAccCp = (SoftObjectPropertyData)characterPartsArray.Value[2];
                 faceAccCp.Value.AssetPath.AssetName.Value.Value =
-                $"/Game/CustomSkins/{codename}/CharacterParts/CP_Faceacc_{codename}.CP_Faceacc_{codename}";
+                $"{ueSkinsPackagePath}/{codename}/CharacterParts/CP_Faceacc_{codename}.CP_Faceacc_{codename}";
                 Console.WriteLine($"Changed the FaceAcc Character Part path in HS_{codename} to " +
-                $"/Game/CustomSkins/{codename}/CharacterParts/CP_Faceacc_{codename}.CP_Faceacc_{codename}");
+                $"{ueSkinsPackagePath}/{codename}/CharacterParts/CP_Faceacc_{codename}.CP_Faceacc_{codename}");
 
             }
             else if (characterPartTypes.Contains("Hat"))
             {
                 var hatCp = (SoftObjectPropertyData)characterPartsArray.Value[2];
                 hatCp.Value.AssetPath.AssetName.Value.Value =
-                $"/Game/CustomSkins/{codename}/CharacterParts/CP_Hat_{codename}.CP_Hat_{codename}";
+                $"{ueSkinsPackagePath}/{codename}/CharacterParts/CP_Hat_{codename}.CP_Hat_{codename}";
                 Console.WriteLine($"Changed the Hat Character Part path in HS_{codename} to " +
-                $"/Game/CustomSkins/{codename}/CharacterParts/CP_Hat_{codename}.CP_Hat_{codename}");
+                $"{ueSkinsPackagePath}/{codename}/CharacterParts/CP_Hat_{codename}.CP_Hat_{codename}");
             }
 
             hsExport0.ObjectName.Value.Value = $"HS_{codename}";
@@ -268,7 +271,7 @@ namespace UFMT
         }
 
         internal static void CreateLobbyAnimationMontage(string contentFolderPath, string codename, string lobbyAnimationPsa, string lobbyAnimationJson, float lobbyAnimationLength, 
-        FnVersion fnVersion, EngineVersion uassetApiEngineVersion)
+        FnVersion fnVersion, EngineVersion uassetApiEngineVersion, string ueSkinsPackagePath)
         {
             if (string.IsNullOrEmpty(lobbyAnimationPsa)) return;
             string idleAnimationUassetPath = Path.Combine(contentFolderPath, "Animations", $"{codename}_Idle_Montage.uasset");
@@ -287,9 +290,9 @@ namespace UFMT
             idleAnimationImport[1].ObjectName.Value.Value = $"{codename}_Lobby_Animation";
             idleAnimationImport[1].ObjectName.Number = 0;
             Console.WriteLine($"Changed the animation name in {codename}_Idle_Montage to {codename}_Lobby_Animation");
-            idleAnimationImport[3].ObjectName.Value.Value = $"/Game/CustomSkins/{codename}/Animations/{codename}_Lobby_Animation";
+            idleAnimationImport[3].ObjectName.Value.Value = $"{ueSkinsPackagePath}/{codename}/Animations/{codename}_Lobby_Animation";
             idleAnimationImport[3].ObjectName.Number = 0;
-            Console.WriteLine($"Changed the animation path in {codename}_Idle_Montage to /Game/CustomSkins/{codename}/Animations/{codename}_Lobby_Animation");
+            Console.WriteLine($"Changed the animation path in {codename}_Idle_Montage to {ueSkinsPackagePath}/{codename}/Animations/{codename}_Lobby_Animation");
 
             var slotAnimTracks = (ArrayPropertyData)idleAnimationExport0["SlotAnimTracks"];
             var slotAnimTracks2 = (StructPropertyData)slotAnimTracks.Value[0];
@@ -305,7 +308,8 @@ namespace UFMT
             Log.Success($"Successfuly edited {codename}_Idle_Montage.uasset");
         }
 
-        internal static void CreateHero(string contentFolderPath, string codename, string gender, string smallIcon, string largeIcon, FnVersion fnVersion, EngineVersion uassetApiEngineVersion)
+        internal static void CreateHero(string contentFolderPath, string codename, string gender, string smallIcon, string largeIcon, FnVersion fnVersion, 
+        EngineVersion uassetApiEngineVersion, string ueSkinsPackagePath)
         {
             Console.WriteLine("Editing HID...");
             string hidUassetPath = Path.Combine(contentFolderPath, $"HID_{codename}.uasset");
@@ -319,22 +323,22 @@ namespace UFMT
             var hidSmallIcon = (SoftObjectPropertyData)hidExport0["SmallPreviewImage"];
             var hidLargeIcon = (SoftObjectPropertyData)hidExport0["LargePreviewImage"];
             hidSmallIcon.Value.AssetPath.AssetName.Value.Value =
-            $"/Game/CustomSkins/{codename}/Textures/{smallIcon}.{smallIcon}";
+            $"{ueSkinsPackagePath}/{codename}/Textures/{smallIcon}.{smallIcon}";
             Console.WriteLine($"Changed the Small Icon path in HID_{codename} to " +
-            $"/Game/CustomSkins/{codename}/Textures/{smallIcon}.{smallIcon}");
+            $"{ueSkinsPackagePath}/{codename}/Textures/{smallIcon}.{smallIcon}");
             hidLargeIcon.Value.AssetPath.AssetName.Value.Value =
-            $"/Game/CustomSkins/{codename}/Textures/{largeIcon}.{largeIcon}";
+            $"{ueSkinsPackagePath}/{codename}/Textures/{largeIcon}.{largeIcon}";
             Console.WriteLine($"Changed the Large Icon path in HID_{codename} to " +
-            $"/Game/CustomSkins/{codename}/Textures/{largeIcon}.{largeIcon}");
+            $"{ueSkinsPackagePath}/{codename}/Textures/{largeIcon}.{largeIcon}");
             var hidSpecializationsArray = (ArrayPropertyData)hidExport0["Specializations"];
             var hidSpecialization = (SoftObjectPropertyData)hidSpecializationsArray.Value[0];
             hidSpecialization.Value.AssetPath.AssetName.Value.Value =
-            $"/Game/CustomSkins/{codename}/HS_{codename}.HS_{codename}";
+            $"{ueSkinsPackagePath}/{codename}/HS_{codename}.HS_{codename}";
             Console.WriteLine($"Changed the Hero Specialization path in HID_{codename} to " +
-            $"/Game/CustomSkins/{codename}/HS_{codename}.HS_{codename}");
+            $"{ueSkinsPackagePath}/{codename}/HS_{codename}.HS_{codename}");
             var idleMontage = (SoftObjectPropertyData)hidExport0["FrontendAnimMontageIdleOverride"];
             idleMontage.Value.AssetPath.AssetName.Value.Value =
-            $"/Game/CustomSkins/{codename}/Animations/{codename}_Idle_Montage.{codename}_Idle_Montage";
+            $"{ueSkinsPackagePath}/{codename}/Animations/{codename}_Idle_Montage.{codename}_Idle_Montage";
 
             currentHid.Write(hidUassetPath);
             Log.Success($"Successfuly edited HID_{codename}.uasset and HID_{codename}.uexp");
@@ -342,7 +346,7 @@ namespace UFMT
         }
 
         internal static void CreateCharacter(string outputFnGamePath, string cid, string codename, string name, string description, 
-        string skinRarity, string series, FnVersion fnVersion, EngineVersion uassetApiEngineVersion)
+        string skinRarity, string series, FnVersion fnVersion, EngineVersion uassetApiEngineVersion, string ueSkinsPackagePath)
         {
             Console.WriteLine($"Editing {cid}.uasset");
             string cidPath = Path.Combine(outputFnGamePath, "Content", "Athena", "Items",
@@ -358,9 +362,9 @@ namespace UFMT
             var cidImport = currentCid.Imports;
             cidImport[fnVersion.HidNameIndex].ObjectName.Value.Value = $"HID_{codename}";
             Console.WriteLine($"Changed the Hero Id in {cid} to HID_{codename}");
-            cidImport[fnVersion.HidPathIndex].ObjectName.Value.Value = $"/Game/CustomSkins/{codename}/HID_{codename}";
+            cidImport[fnVersion.HidPathIndex].ObjectName.Value.Value = $"{ueSkinsPackagePath}/{codename}/HID_{codename}";
             Console.WriteLine($"Changed the Hero Id path in {cid} to " +
-            $"/Game/CustomSkins/{codename}/HID_{codename}");
+            $"{ueSkinsPackagePath}/{codename}/HID_{codename}");
 
             cidExport0.ObjectName.Value.Value = cid;
             var rarity = (EnumPropertyData)cidExport0["Rarity"];

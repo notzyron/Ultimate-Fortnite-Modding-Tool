@@ -30,10 +30,11 @@ lobby_animation_json_path = data.get("LobbyAnimationJsonPath")
 retarget_source = data.get("RetargetSource")
 head_mesh_name = data.get("HeadMeshName")
 fn_version = data.get("CurrentFnVersion")
+ue_skins_package_path = data.get("UeSkinsPackagePath")
 
-fbx_destination_path = "/Game/CustomSkins/{}/Meshes".format(code_name)
-tex_destination_path = "/Game/CustomSkins/{}/Textures".format(code_name)
-mi_destination_path  = "/Game/CustomSkins/{}/Materials".format(code_name)
+fbx_destination_path = "{}/{}/Meshes".format(ue_skins_package_path, code_name)
+tex_destination_path = "{}/{}/Textures".format(ue_skins_package_path, code_name)
+mi_destination_path  = "{}/{}/Materials".format(ue_skins_package_path, code_name)
 EXISTING_SKELETON_PATH = None
 unreal.EditorAssetLibrary.load_asset("/Game/CID_Template")
 
@@ -197,7 +198,7 @@ def import_texture(texture_path, texture_type):
 
 def create_fake_cid():
     template_path = "/Game/CID_Template"
-    new_path      = "/Game/CustomSkins/{}/{}".format(code_name, cid)
+    new_path      = "{}/{}/{}".format(ue_skins_package_path, code_name, cid)
 
     if unreal.EditorAssetLibrary.does_asset_exist(new_path):
         unreal.EditorAssetLibrary.delete_asset(new_path)
@@ -250,7 +251,7 @@ def import_animation(fbx_path):
 
     task = unreal.AssetImportTask()
     task.filename = fbx_path
-    task.destination_path = "/Game/CustomSkins/{}/Animations".format(code_name)
+    task.destination_path = "{}/{}/Animations".format(ue_skins_package_path, code_name)
     task.destination_name = "{}_Lobby_Animation".format(code_name)
     task.replace_existing = True
     task.automated = True
@@ -276,7 +277,7 @@ def import_animation(fbx_path):
 
 
 def run_physics_importer(mesh_asset_name, json_path):
-    physics_dest_path = "/Game/CustomSkins/{}/Meshes".format(code_name)
+    physics_dest_path = "{}/{}/Meshes".format(ue_skins_package_path, code_name)
     physics_asset_name = "{}".format(os.path.splitext(os.path.basename(json_path))[0])
     skeletal_mesh_path = "{}/{}".format(physics_dest_path, mesh_asset_name)
 
@@ -353,7 +354,7 @@ for i in range(len(material_names)):
 if lobby_animation_fbx_path != "":
     import_animation(lobby_animation_fbx_path)
     if lobby_animation_json_path != "":
-        anim_sequence_path = "{}/{}_Lobby_Animation".format("/Game/CustomSkins/{}/Animations".format(code_name), code_name)
+        anim_sequence_path = "{}/{}_Lobby_Animation".format("{}/{}/Animations".format(ue_skins_package_path, code_name), code_name)
         run_animation_importer(anim_sequence_path, lobby_animation_json_path)
 
 for i in range(len(fbx_paths)):

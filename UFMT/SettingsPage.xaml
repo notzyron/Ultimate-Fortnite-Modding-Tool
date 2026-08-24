@@ -29,19 +29,23 @@
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="10">
                 <TextBlock Text="Blender 5.0 Path" FontSize="18" VerticalAlignment="Center" HorizontalAlignment="Left" Width="130"/>
-                <TextBox Tag="BlenderPath" PlaceholderText="C:\Program Files\Blender Foundation\Blender 5.0\blender-launcher.exe" MaxWidth="800"
+                <TextBox PlaceholderText="C:\Program Files\Blender Foundation\Blender 5.0\blender-launcher.exe" MaxWidth="800"
                  VerticalAlignment="Center" HorizontalAlignment="Left" Text="{x:Bind Settings.BlenderPath, Mode=TwoWay}" TextChanged="Remove_Quotes"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="10">
                 <TextBlock Text="UE Executable" FontSize="18" VerticalAlignment="Center" HorizontalAlignment="Left" Width="130"/>
-                <TextBox Tag="BlenderPath" PlaceholderText="C:\Program Files\Epic Games\UE_4.26\Engine\Binaries\Win64\UE4Editor.exe" MaxWidth="800"
+                <TextBox PlaceholderText="C:\Program Files\Epic Games\UE_4.26\Engine\Binaries\Win64\UE4Editor.exe" MaxWidth="800"
                  VerticalAlignment="Center" HorizontalAlignment="Left" Text="{x:Bind Settings.UeExecutablePath, Mode=TwoWay}" TextChanged="Remove_Quotes"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="10">
                 <TextBlock Text="UE Project Path" FontSize="18" VerticalAlignment="Center" HorizontalAlignment="Left" Width="130"/>
-                <TextBox Tag="BlenderPath" PlaceholderText="C:\Users\example\Unreal Projects\UFMT\UFMT.uproject" MaxWidth="800"
+                <TextBox PlaceholderText="C:\Users\example\Unreal Projects\UFMT\UFMT.uproject" MaxWidth="800"
                  VerticalAlignment="Center" HorizontalAlignment="Left" Text="{x:Bind Settings.UeProjectPath, Mode=TwoWay}"
                  TextChanged="Remove_Quotes"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="Unreal Engine Skins Import Path" FontSize="16" VerticalAlignment="Center" HorizontalAlignment="Left" Width="230"/>
+                <TextBox Text="{x:Bind Settings.UeSkinsPackagePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxWidth="700" LostFocus="ConvertToUePackagePath"/>
             </StackPanel>
         </StackPanel>
     </Grid>

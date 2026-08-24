@@ -1,6 +1,7 @@
 #pragma warning disable
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using System;
 using System.Drawing;
 using System.IO;
@@ -72,6 +73,10 @@ namespace UFMT
         }
         private void NavView_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {
+            // Forces focus away from any focused TextBox before navigating, so LostFocus
+            // fires and the x:Bind value commits before the new page reads settings
+            var options = new FindNextElementOptions { SearchRoot = this.Content };
+            FocusManager.TryMoveFocus(FocusNavigationDirection.Next, options);
             if (args.IsSettingsInvoked)
             {
                 ContentFrame.Navigate(typeof(SettingsPage));

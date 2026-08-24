@@ -25,6 +25,7 @@ namespace UFMT
         public string RetargetSource { get; set; }
         public string HeadMeshName { get; set; }
         public string CurrentFnVersion { get; set; }
+        public string UeSkinsPackagePath { get; set; }
     }
 
 }
