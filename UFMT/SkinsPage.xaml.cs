@@ -269,7 +269,6 @@ namespace UFMT
 
         private async void RenderButton_Click(object sender, RoutedEventArgs e)
         {
-            Log.Test(App.Settings.UeSkinsPackagePath);
             if (string.IsNullOrEmpty(App.Settings.UeVersion))
             {
                 Log.Error($"No unreal engine selected! Make sure you selected the correct ue version in setting!");
@@ -826,7 +825,6 @@ namespace UFMT
                 if (defaultEngineIniInBytes != null) File.WriteAllBytes(defaultEngineIniPath, defaultEngineIniInBytes);
             }
 
-            Log.Test($"Skins import path: \"{App.Settings.UeSkinsPackagePath}\"");
             if (!App.Settings.UeSkinsPackagePath.StartsWith("/Game/"))
             {
                 Log.Error($"\"{App.Settings.UeSkinsPackagePath}\" is not a valid Unreal package path, it must start with /Game/");

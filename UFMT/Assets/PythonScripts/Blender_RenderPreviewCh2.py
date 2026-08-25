@@ -59,11 +59,15 @@ for psk_path in psk_files:
                 if head_bone:
                     head_family = [b.name for b in head_bone.children_recursive]
 
-                    for fc in reversed(action.fcurves):
-                        if 'pose.bones["' in fc.data_path:
-                            bone_name = fc.data_path.split('"')[1]
-                            if bone_name in head_family:
-                                action.fcurves.remove(fc)
+                    for layer in action.layers:
+                        for strip in layer.strips:
+                            if strip.type == 'KEYFRAME':
+                                for channelbag in strip.channelbags:
+                                    for fc in reversed(channelbag.fcurves):
+                                        if 'pose.bones["' in fc.data_path:
+                                            bone_name = fc.data_path.split('"')[1]
+                                            if bone_name in head_family:
+                                                channelbag.fcurves.remove(fc)
 
                     for name in head_family:
                         if name in obj.pose.bones:
