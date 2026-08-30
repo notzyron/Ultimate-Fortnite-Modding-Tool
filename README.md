@@ -29,6 +29,11 @@ Before using this tool, you need to install and configure:
 Open Unreal Engine, create a new project, then go to Edit → Plugins and enable:
   - `Python Editor Script Plugin` (built-in)
   - `Editor Scripting Utilities` (built-in)
+
+## Youtube Tutorials
+- **[Installation & Setup Guide](https://www.youtube.com/watch?v=6Q10xLEo6HM)** — full walkthrough on how to install & set up UFMT
+- **[How To Import Custom Skins](https://www.youtube.com/watch?v=TRdgbyHvc3Y)** — step-by-step tutorial on backporting your first skin with UFMT
+
 ## Installation
 
 ### Option 1: Use the Compiled .EXE (Recommended)
