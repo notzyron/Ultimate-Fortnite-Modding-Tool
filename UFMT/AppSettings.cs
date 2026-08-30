@@ -4,6 +4,7 @@ using System.IO;
 using System.Text.Json;
 using System.Collections.Generic;
 using System.Diagnostics;
+using UFMT;
 
 public static class AppSettings
 {
@@ -34,11 +35,33 @@ public static class AppSettings
     {
         if (_settingsCache.TryGetValue(key, out var value))
         {
+            if (value is T typedValue)
+            {
+                return typedValue;
+            }
+
             if (value is JsonElement element)
             {
                 return JsonSerializer.Deserialize<T>(element.GetRawText());
             }
-            return (T)Convert.ChangeType(value, typeof(T));
+
+            try
+            {
+                string json = JsonSerializer.Serialize(value);
+                return JsonSerializer.Deserialize<T>(json);
+            }
+            catch
+            {
+                try
+                {
+                    return (T)Convert.ChangeType(value, typeof(T));
+                }
+                catch
+                {
+                    Log.Error("Failed to convert a value from a .json!");
+                    return defaultValue;
+                }
+            }
         }
         return defaultValue;
     }
