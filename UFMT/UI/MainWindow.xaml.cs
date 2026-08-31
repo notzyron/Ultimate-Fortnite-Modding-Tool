@@ -7,6 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using UFMT.UI;
 namespace UFMT
 {
     public sealed partial class MainWindow : Window
@@ -85,6 +86,7 @@ namespace UFMT
             {
                 string tag = args.InvokedItemContainer.Tag.ToString();
                 if (tag == "SkinsPage") ContentFrame.Navigate(typeof(SkinsPage));
+                if (tag == "EmotesPage") ContentFrame.Navigate(typeof(EmotesPage));
             }
         }
     }

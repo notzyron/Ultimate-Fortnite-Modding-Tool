@@ -29,6 +29,7 @@
 	</PropertyGroup>
 	<ItemGroup>
 	  <None Remove="SettingsPage.xaml" />
+	  <None Remove="UI\EmotesPage.xaml" />
 		<None Update="Assets\**\*">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
@@ -359,8 +360,12 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="UI\" />
     <Folder Include="Properties\PublishProfiles\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="UI\EmotesPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
 
   <PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">

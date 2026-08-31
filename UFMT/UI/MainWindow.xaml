@@ -21,6 +21,12 @@
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Skins" Icon="Contact" Tag="SkinsPage"
                                     Height="100" FontSize="20" SelectsOnInvoked="True"/>
+                <NavigationViewItem Tag="EmotesPage" Height="100" SelectsOnInvoked="True">
+                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <Image Source="ms-appx:///Assets/EmotesIcon.png" Width="32" Height="32"/>
+                        <TextBlock Text="Emotes" FontSize="20" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </NavigationViewItem>
             </NavigationView.MenuItems>
 
             <NavigationView.Content>
