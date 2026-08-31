@@ -7,8 +7,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UFMT;
+using UFMT.Blender;
+using UFMT.FnAssets;
 
-namespace UFMT
+namespace UFMT.Blender
 {
     internal static class PskReader
     {

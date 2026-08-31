@@ -7,8 +7,10 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UFMT;
+using UFMT.MaterialTextureAssignment;
 
-namespace UFMT
+namespace UFMT.MaterialTextureAssignment
 {
     internal static class DefaultTextureSetup
     {

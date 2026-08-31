@@ -4,9 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UFMT.Core;
 using UFMT.Helper;
 
-namespace UFMT
+namespace UFMT.AssetRegistry
 {
     internal static class AssetRegistryBuilder
     {

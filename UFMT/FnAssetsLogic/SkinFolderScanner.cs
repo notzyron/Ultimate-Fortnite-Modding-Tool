@@ -4,9 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UFMT.Core;
+using UFMT.FnAssets;
 using Windows.ApplicationModel.Store;
 
-namespace UFMT
+namespace UFMT.FnAssetsLogic
 {
     internal class SkinFolderScanner
     {

@@ -5,8 +5,9 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Threading.Tasks;
+using UFMT.Core;
 
-namespace UFMT
+namespace UFMT.Blender
 {
     internal static class ShapeKeyCombiner
     {

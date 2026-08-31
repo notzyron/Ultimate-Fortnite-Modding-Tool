@@ -15,6 +15,14 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using UAssetAPI;
+using UFMT.AssetRegistry;
+using UFMT.Blender;
+using UFMT.Core;
+using UFMT.FnAssets;
+using UFMT.FnAssetsLogic;
+using UFMT.MaterialTextureAssignment;
+using UFMT.u4Pak;
+using UFMT.UnrealEngine;
 using Windows.Foundation.Collections;
 
 namespace UFMT

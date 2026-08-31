@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 // Based on panzi's u4pak: https://github.com/panzi/u4pak
 
-namespace UFMT
+namespace UFMT.u4Pak
 {
     using System;
     using System.Collections.Generic;
@@ -18,7 +18,8 @@ namespace UFMT
     using System.Linq;
     using System.Security.Cryptography;
     using System.Text;
-
+    using UFMT;
+    using UFMT.u4Pak;
 
     internal sealed record IndexEntry(string RelativePath, byte[] RecordBytes);
 
@@ -125,7 +126,7 @@ namespace UFMT
             long compressedSize;
             byte[] sha1;
             int blockCount = 0;
-            long[]? blocks = null;
+            long[] blocks = null;
 
             using (var fh = new FileStream(diskPath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {

@@ -8,8 +8,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UAssetAPI;
+using UFMT.Core;
+using UFMT.FnAssets;
 
-namespace UFMT
+namespace UFMT.Blender
 {
     internal static class BlenderPreviewRenderer
     {

@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace UFMT
+namespace UFMT.UnrealEngine
 {
     internal static class UnrealProcessRunner
     {

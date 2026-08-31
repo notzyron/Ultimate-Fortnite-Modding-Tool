@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Collections.Generic;
 using System.Diagnostics;
 using UFMT;
+using UFMT.Core;
 
 public static class AppSettings
 {

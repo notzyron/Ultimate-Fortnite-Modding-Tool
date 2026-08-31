@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace UFMT
+namespace UFMT.FnAssets
 {
     public class CharacterPart
     {
@@ -21,7 +21,7 @@ namespace UFMT
         public byte[] UexpFile { get; set; } = { };
         public CharacterPart Clone()
         {
-            return (CharacterPart)this.MemberwiseClone();
+            return (CharacterPart)MemberwiseClone();
         }
     }
 }

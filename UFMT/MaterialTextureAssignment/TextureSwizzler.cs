@@ -6,8 +6,10 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UFMT;
+using UFMT.MaterialTextureAssignment;
 
-namespace UFMT
+namespace UFMT.MaterialTextureAssignment
 {
     internal static class TextureSwizzler
     {
@@ -20,7 +22,7 @@ namespace UFMT
                 List<string> texturePaths = textures.Select(tex => Path.Combine(texturesPath, $"{tex}.png")).ToList();
                 texturePaths.Add(Path.Combine(texturesPath, "Default_Specular.png"));
                 var swizzledFolder = Directory.CreateDirectory(swizzledTexturesPath);
-                swizzledFolder.Attributes |= System.IO.FileAttributes.Hidden;
+                swizzledFolder.Attributes |= FileAttributes.Hidden;
                 Parallel.ForEach(texturePaths, texPath =>
                 {
                     using Bitmap bmp = new Bitmap(texPath);

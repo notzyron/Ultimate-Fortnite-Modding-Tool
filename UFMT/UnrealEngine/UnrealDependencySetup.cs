@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using UFMT.Core;
 
-namespace UFMT
+namespace UFMT.UnrealEngine
 {
     internal static class UnrealDependencySetup
     {

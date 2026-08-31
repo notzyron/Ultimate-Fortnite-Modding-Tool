@@ -7,8 +7,10 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using UFMT;
+using UFMT.MaterialTextureAssignment;
 
-namespace UFMT
+namespace UFMT.MaterialTextureAssignment
 {
     internal static class MaterialTextureAssigner
     {
@@ -20,21 +22,21 @@ namespace UFMT
             List<string> validMaterialTextures = TextureCategorizer.GetTexturesByMultipleSuffix(texturesPath, ["_D", "_M", "_N", "_S"]);
             foreach (string texture in validMaterialTextures)
             {
-                string textureKeyword = MaterialTextureAssigner.GetTextureKeyword(texture, skinCodename);
-                MaterialTextureAssigner.ApplyTextureToMatchingMaterials(texture, textureKeyword, materials, skinCodename);
+                string textureKeyword = GetTextureKeyword(texture, skinCodename);
+                ApplyTextureToMatchingMaterials(texture, textureKeyword, materials, skinCodename);
             }
 
-            List<Material> materialsWithMissingTextures = MaterialTextureAssigner.GetMaterialsWithMissingTextures(materials);
+            List<Material> materialsWithMissingTextures = GetMaterialsWithMissingTextures(materials);
             if (materialsWithMissingTextures.Count == 0) return;
             foreach (string texture in validMaterialTextures)
             {
-                string textureFallbackKeyword = MaterialTextureAssigner.GetFallbackKeyword(texture);
-                MaterialTextureAssigner.ApplyTextureToMaterialByFallback(texture, textureFallbackKeyword, materialsWithMissingTextures);
+                string textureFallbackKeyword = GetFallbackKeyword(texture);
+                ApplyTextureToMaterialByFallback(texture, textureFallbackKeyword, materialsWithMissingTextures);
             }
 
-            materialsWithMissingTextures = MaterialTextureAssigner.GetMaterialsWithMissingTextures(materials);
+            materialsWithMissingTextures = GetMaterialsWithMissingTextures(materials);
             if (materialsWithMissingTextures.Count == 0) return;
-            MaterialTextureAssigner.GuessMaterialsTextures(materialsWithMissingTextures, materials);
+            GuessMaterialsTextures(materialsWithMissingTextures, materials);
         }
 
         private static string GetTextureKeyword(string textureName, string skinCodename)
@@ -64,7 +66,7 @@ namespace UFMT
             {
                 string matFallbackKeyword = GetFallbackKeyword(mat.Name);
                 if (matFallbackKeyword == textureFallbackKeyword ||
-                (fallBackKeywordPairs.Keys.Contains(textureFallbackKeyword) && matFallbackKeyword == fallBackKeywordPairs.GetValueOrDefault(textureFallbackKeyword)))
+                fallBackKeywordPairs.Keys.Contains(textureFallbackKeyword) && matFallbackKeyword == fallBackKeywordPairs.GetValueOrDefault(textureFallbackKeyword))
                 {
                     if (texture.EndsWith("_D") && mat.SelectedDiffuse == "Default_Diffuse") mat.SelectedDiffuse = texture;
                     else if (texture.EndsWith("_M") && mat.SelectedMask == "Default_Mask") mat.SelectedMask = texture;

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace UFMT
+namespace UFMT.UnrealEngine
 {
     internal class UnrealExportData
     {

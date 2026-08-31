@@ -4,8 +4,9 @@ using System.Linq;
 using System.IO;
 using System.Collections.ObjectModel;
 using Microsoft.UI.Xaml;
+using UFMT.FnAssets;
 
-namespace UFMT
+namespace UFMT.UnrealEngine
 {
     internal static class UnrealExportDataCollector
     {

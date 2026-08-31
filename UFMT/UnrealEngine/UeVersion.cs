@@ -11,8 +11,11 @@ using UAssetAPI;
 using UAssetAPI.ExportTypes;
 using UAssetAPI.PropertyTypes.Objects;
 using UAssetAPI.UnrealTypes;
+using UFMT;
+using UFMT.Core;
+using UFMT.UnrealEngine;
 
-namespace UFMT
+namespace UFMT.UnrealEngine
 {
     public record class UeVersion
     {
@@ -29,7 +32,7 @@ namespace UFMT
     {
         public static UeVersion Ue4_26 = new UeVersion()
         {
-            FixRequiredFiles = (string animationPath, string[] meshesPaths) =>
+            FixRequiredFiles = (animationPath, meshesPaths) =>
             {
                 foreach (string meshPath in meshesPaths)
                 {
@@ -184,7 +187,7 @@ namespace UFMT
                 {
                     int n = ReadInt32(data, off); off += 4;
                     if (n > 0) off += n;
-                    else if (n < 0) off += (-n) * 2;
+                    else if (n < 0) off += -n * 2;
                     return off;
                 }
 
@@ -202,7 +205,7 @@ namespace UFMT
         };
         public static UeVersion Ue4_25 = new UeVersion()
         {
-            FixRequiredFiles = (string animationPath, string[] meshesPaths) =>
+            FixRequiredFiles = (animationPath, meshesPaths) =>
             {
                 if (!File.Exists(animationPath)) return;
 
@@ -245,7 +248,7 @@ namespace UFMT
         };
         public static UeVersion Ue4_26_Modded_14_30 = Ue4_25 with
         {
-            FixRequiredFiles = (string animationPath, string[] meshesPaths) => { }, //Nothing to fix 
+            FixRequiredFiles = (animationPath, meshesPaths) => { }, //Nothing to fix 
             UassetApiEngineVer = EngineVersion.VER_UE4_26,
             Name = "UE_4.26_FnGameProj14.30",
             ReplaceCookedBaseHead = false,
@@ -253,7 +256,7 @@ namespace UFMT
     };
         public static UeVersion Ue4_22 = new()
         {
-            FixRequiredFiles = (string animationPath, string[] meshesPaths) =>
+            FixRequiredFiles = (animationPath, meshesPaths) =>
             {
                 List<(int PrefixOffset, int Length, string FollowingString)> FindByteStreamCandidates(byte[] data)
                 {
@@ -269,7 +272,7 @@ namespace UFMT
                         if (end + 4 > n) continue;
 
                         int endI = (int)end;
-                        string? s = TryReadFString(data, endI);
+                        string s = TryReadFString(data, endI);
                         if (s != null)
                         {
                             results.Add((p, v, s));
@@ -279,7 +282,7 @@ namespace UFMT
                     return results;
                 }
 
-                string? TryReadFString(byte[] data, int pos)
+                string TryReadFString(byte[] data, int pos)
                 {
                     if (pos + 4 > data.Length) return null;
 
@@ -301,7 +304,7 @@ namespace UFMT
 
                     if (end - 1 == start) return null; // empty string, not useful as a signal
 
-                    return System.Text.Encoding.ASCII.GetString(data, start, length - 1);
+                    return Encoding.ASCII.GetString(data, start, length - 1);
                 }
 
                 List<int> FindInt64Matches(byte[] data, long target)
@@ -392,7 +395,7 @@ namespace UFMT
         };
         public static UeVersion Ue4_23_Modded_8_51 = Ue4_22 with
         {
-            FixRequiredFiles = (string animationPath, string[] meshesPaths) => { },
+            FixRequiredFiles = (animationPath, meshesPaths) => { },
             UassetApiEngineVer = EngineVersion.VER_UE4_23,
             ReplaceCookedBaseHead = false,
             Name = "UE_4.23_FnGameProj8.51",
@@ -400,7 +403,7 @@ namespace UFMT
         };
         public static UeVersion Ue4_23_Modded_9_10 = Ue4_22 with
         {
-            FixRequiredFiles = (string animationPath, string[] meshesPaths) => { },
+            FixRequiredFiles = (animationPath, meshesPaths) => { },
             UassetApiEngineVer = EngineVersion.VER_UE4_23,
             ReplaceCookedBaseHead = false,
             Name = "UE_4.23_FnGameProj9.10",
@@ -416,14 +419,14 @@ namespace UFMT
         };
         public static UeVersion Ue4_25_Modded_12_41 = new UeVersion
         {
-            FixRequiredFiles = (string animationPath, string[] meshes) => {},
+            FixRequiredFiles = (animationPath, meshes) => {},
             UassetApiEngineVer = EngineVersion.VER_UE4_24,
             Name = "UE_4.25_FnGameProj12.41",
             ReplaceDefaultEngineIni = false
         };
         public static UeVersion Ue4_24 = Ue4_25_Modded_12_41 with
         {
-            FixRequiredFiles = (string animationPath, string[] meshes) => { },
+            FixRequiredFiles = (animationPath, meshes) => { },
             BaseHeadPath = @"Content\Base\Head\Skeleton",
             UassetApiEngineVer = EngineVersion.VER_UE4_24,
             ReplaceCookedBaseHead = false,

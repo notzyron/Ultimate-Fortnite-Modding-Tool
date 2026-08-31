@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UFMT.Core;
 
-namespace UFMT
+namespace UFMT.FnAssetsLogic
 {
     internal static class SkinValidator
     {

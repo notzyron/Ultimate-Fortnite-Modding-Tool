@@ -11,14 +11,5 @@
     <None Update="App.xaml">
       <SubType>Designer</SubType>
     </None>
-    <None Update="MainWindow.xaml">
-      <SubType>Designer</SubType>
-    </None>
-    <Page Update="SettingsPage.xaml">
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Update="SkinsPage.xaml">
-      <SubType>Designer</SubType>
-    </Page>
   </ItemGroup>
 </Project>

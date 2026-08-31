@@ -2,7 +2,7 @@
 using System.IO;
 using System.Reflection;
 
-namespace UFMT
+namespace UFMT.Core
 {
     internal static class TemplateLoader
     {

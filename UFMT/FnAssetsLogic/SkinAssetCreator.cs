@@ -11,8 +11,9 @@ using UAssetAPI.ExportTypes;
 using UAssetAPI.PropertyTypes.Objects;
 using UAssetAPI.PropertyTypes.Structs;
 using UAssetAPI.UnrealTypes;
+using UFMT.Core;
 
-namespace UFMT
+namespace UFMT.FnAssets
 {
     internal static class SkinAssetCreator
     {

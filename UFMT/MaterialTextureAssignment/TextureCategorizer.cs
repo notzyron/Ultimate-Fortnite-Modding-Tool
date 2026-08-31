@@ -5,8 +5,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UFMT;
+using UFMT.Core;
+using UFMT.MaterialTextureAssignment;
 
-namespace UFMT
+namespace UFMT.MaterialTextureAssignment
 {
     internal static class TextureCategorizer
     {
@@ -34,7 +37,7 @@ namespace UFMT
             largeIcon = textures.FirstOrDefault(tex => (tex.ToLower().StartsWith("t-soldier") || tex.ToLower().StartsWith("t_soldier")) && 
             (tex.ToLower().EndsWith("-l") || tex.ToLower().EndsWith("_l")));
             smallIcon = textures.FirstOrDefault(tex => (tex.ToLower().StartsWith("t-soldier") || tex.ToLower().StartsWith("t_soldier")) && 
-            (!tex.ToLower().EndsWith("-l") && !tex.ToLower().EndsWith("_l")));
+            !tex.ToLower().EndsWith("-l") && !tex.ToLower().EndsWith("_l"));
 
             if (largeIcon == null && smallIcon != null)
             {
