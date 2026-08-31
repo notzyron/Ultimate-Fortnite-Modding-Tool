@@ -100,8 +100,8 @@ namespace UFMT
                 seriesComboBox.Items.Add("+Add");
             }
             seriesComboBox.SelectedIndex = 0;
-            SkinsPathBox.Text = AppSettings.GetValue("SkinsPath", "");
-            CurrentSkinPathBox.Text = AppSettings.GetValue("CurrentSkinPath", "");
+            SkinsPathTextBox.Text = AppSettings.GetValue("SkinsPath", "");
+            CurrentSkinPathTextBox.Text = AppSettings.GetValue("CurrentSkinPath", "");
             ((FrameworkElement)this.Content).Loaded += (s, e) =>
             {
                 LoadContent();
@@ -109,14 +109,14 @@ namespace UFMT
             seriesComboBox.Items.VectorChanged += SaveSeries;
         }
 
-        private void SkinsPathBox_TextChanged(object sender, TextChangedEventArgs e)
+        private void SkinsPathTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            AppSettings.SetValue("SkinsPath", SkinsPathBox.Text);
+            AppSettings.SetValue("SkinsPath", SkinsPathTextBox.Text);
         }
 
-        private async void CurrentSkinPathBox_TextChanged(object sender, TextChangedEventArgs e)
+        private async void CurrentSkinPathTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            AppSettings.SetValue("CurrentSkinPath", CurrentSkinPathBox.Text);
+            AppSettings.SetValue("CurrentSkinPath", CurrentSkinPathTextBox.Text);
 
             _currentSkinPathDebounce?.Cancel();
             _currentSkinPathDebounce = new CancellationTokenSource();
@@ -135,7 +135,7 @@ namespace UFMT
                 }
             }
             ResetCpData();
-            if (!CheckCurrentSkinPathValidation(CurrentSkinPathBox.Text)) return;
+            if (!CheckCurrentSkinPathValidation(CurrentSkinPathTextBox.Text)) return;
 
             OutputFnGamePath = Path.Combine(CurrentSkin.Path, "Output", App.Settings.FnVersion, "FortniteGame");
             CurrentSkin.Codename = new DirectoryInfo(CurrentSkin.Path).Name;
@@ -147,8 +147,8 @@ namespace UFMT
             if (loadedJson != null)
             {
                 CurrentSkin = loadedJson;
-                CurrentSkin.Path = CurrentSkinPathBox.Text;
-                if (!CheckCurrentSkinPathValidation(CurrentSkinPathBox.Text)) return;
+                CurrentSkin.Path = CurrentSkinPathTextBox.Text;
+                if (!CheckCurrentSkinPathValidation(CurrentSkinPathTextBox.Text)) return;
                 CurrentSkin.LobbyAnimationFolderPath = Path.Combine(CurrentSkin.SourcePath, "Lobby_Animation");
                 foreach (CharacterPart cp in CurrentSkin.CharacterParts)
                 {
@@ -253,11 +253,11 @@ namespace UFMT
                 {
                     if (button.Name == "SkinsPathBrowse")
                     {
-                        SkinsPathBox.Text = folder.Path;
+                        SkinsPathTextBox.Text = folder.Path;
                     }
                     else if (button.Name == "CurrentSkinPathBrowse")
                     {
-                        CurrentSkinPathBox.Text = folder.Path;
+                        CurrentSkinPathTextBox.Text = folder.Path;
                     }
                 }
             }
@@ -272,7 +272,7 @@ namespace UFMT
             if (CurrentSkin == null) return;
             string jsonPath = Path.Combine(CurrentSkin.Path, $"{CurrentSkin.Codename}_Settings.json");
             if (Path.Exists(jsonPath)) File.Delete(jsonPath);
-            CurrentSkinPathBox_TextChanged(null, null);
+            CurrentSkinPathTextBox_TextChanged(null, null);
         }
 
         private async void RenderButton_Click(object sender, RoutedEventArgs e)
@@ -386,14 +386,14 @@ namespace UFMT
         {
             CreateFolderDialog.XamlRoot = this.Content.XamlRoot;
 
-            if (SkinsPathBox.Text == null || SkinsPathBox.Text == "")
+            if (SkinsPathTextBox.Text == null || SkinsPathTextBox.Text == "")
             {
                 Log.Error("The skins path cannot be empty!");
                 return;
             }
-            else if (!Directory.Exists(SkinsPathBox.Text))
+            else if (!Directory.Exists(SkinsPathTextBox.Text))
             {
-                Log.Error($"\"{SkinsPathBox.Text}\" doesn't exist!");
+                Log.Error($"\"{SkinsPathTextBox.Text}\" doesn't exist!");
                 return;
             }
 
@@ -403,7 +403,7 @@ namespace UFMT
             if (result == ContentDialogResult.Primary)
             {
                 string newName = CodenameFolderCreateTextBox.Text;
-                string rootPath = SkinsPathBox.Text;
+                string rootPath = SkinsPathTextBox.Text;
 
             }
         }
@@ -412,14 +412,14 @@ namespace UFMT
         (ContentDialog sender, ContentDialogButtonClickEventArgs args)
         {
             args.Cancel = true;
-            if (SkinsPathBox.Text == null || SkinsPathBox.Text == "")
+            if (SkinsPathTextBox.Text == null || SkinsPathTextBox.Text == "")
             {
                 Log.Error("The skins path cannot be empty!");
                 return;
             }
-            else if (!Directory.Exists(SkinsPathBox.Text))
+            else if (!Directory.Exists(SkinsPathTextBox.Text))
             {
-                Log.Error($"\"{SkinsPathBox.Text}\" doesn't exist!");
+                Log.Error($"\"{SkinsPathTextBox.Text}\" doesn't exist!");
                 return;
             }
 
@@ -445,9 +445,9 @@ namespace UFMT
                 }
             }
 
-            Directory.CreateDirectory(Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text));
+            Directory.CreateDirectory(Path.Combine(SkinsPathTextBox.Text, CodenameFolderCreateTextBox.Text));
             Log.Success($"Successfully created {CodenameFolderCreateTextBox.Text} folder at " +
-            $"{SkinsPathBox.Text}");
+            $"{SkinsPathTextBox.Text}");
             
             string[] cpTypes = {"Body", "Head", "Faceacc", "Hat" };
             string[] cpTypeFolders = {"Meshes", "Physics" };
@@ -456,25 +456,25 @@ namespace UFMT
                 foreach (string cpTypeFolder in cpTypeFolders)
                 {
                     Directory.CreateDirectory(Path.Combine
-                    (SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", cpTypeFolder, cpType));
+                    (SkinsPathTextBox.Text, CodenameFolderCreateTextBox.Text, "Source", cpTypeFolder, cpType));
                     Log.Success($"Successfully created {cpType} folder at " +
-                    $"{Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", cpTypeFolder)}");
+                    $"{Path.Combine(SkinsPathTextBox.Text, CodenameFolderCreateTextBox.Text, "Source", cpTypeFolder)}");
                 }
             }
 
             Directory.CreateDirectory(Path.Combine
-            (SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Textures"));
+            (SkinsPathTextBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Textures"));
             Log.Success($"Successfully created Textures folder at " +
-            $"{Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source")}");
+            $"{Path.Combine(SkinsPathTextBox.Text, CodenameFolderCreateTextBox.Text, "Source")}");
 
             Directory.CreateDirectory(Path.Combine
-            (SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Lobby_Animation"));
+            (SkinsPathTextBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Lobby_Animation"));
             Log.Success($"Successfully created Lobby_Animation folder at " +
-            $"{Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source")}");
+            $"{Path.Combine(SkinsPathTextBox.Text, CodenameFolderCreateTextBox.Text, "Source")}");
 
-            Directory.CreateDirectory(Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Fbx"));
-            Directory.CreateDirectory(Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Fbx", "Body"));
-            Directory.CreateDirectory(Path.Combine(SkinsPathBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Fbx", "Head"));
+            Directory.CreateDirectory(Path.Combine(SkinsPathTextBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Fbx"));
+            Directory.CreateDirectory(Path.Combine(SkinsPathTextBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Fbx", "Body"));
+            Directory.CreateDirectory(Path.Combine(SkinsPathTextBox.Text, CodenameFolderCreateTextBox.Text, "Source", "Fbx", "Head"));
 
             args.Cancel = false;
         }
@@ -839,7 +839,7 @@ namespace UFMT
                 return;
             }
 
-            CurrentSkinPathBox_TextChanged("NoDelay", null);
+            CurrentSkinPathTextBox_TextChanged("NoDelay", null);
         }
 
         private async Task UpdateSkinPreviewImage(string sourcePath, string codename, string largeIcon)
