@@ -200,21 +200,7 @@
                         <ComboBox
                                 PlaceholderText="Select The series..."
                                 Tag="series" SelectionChanged="ComboBoxChanged" x:Name="seriesComboBox" 
-                                SelectedItem="{x:Bind CurrentSkin.Series, Mode=TwoWay}">
-                            <x:String>None</x:String>
-                            <x:String>Dark Series</x:String>
-                            <x:String>Star Wars Series</x:String>
-                            <x:String>Icon Series</x:String>
-                            <x:String>DC Series</x:String>
-                            <x:String>Frozen Series</x:String>
-                            <x:String>Lava Series</x:String>
-                            <x:String>Marvel Series</x:String>
-                            <x:String>Shadow Series</x:String>
-                            <x:String>Slurp Series</x:String>
-                            <x:String>Test Series</x:String>
-                            <x:String>Anual Pass Series</x:String>
-                            <x:String>+Add</x:String>
-                        </ComboBox>
+                                SelectedItem="{x:Bind CurrentSkin.Series, Mode=TwoWay}"/>
                         <Button Width="31.5" Height="31.5" Padding="0" VerticalAlignment="Center" Click="RemoveSeriesButton_Click" x:Name="RemoveSeriesButton">
                             <Image Source="ms-appx:///Assets/Trash_Icon.png" Width="15" Stretch="Uniform" ToolTipService.ToolTip="Remove selected series"/>
                         </Button>
