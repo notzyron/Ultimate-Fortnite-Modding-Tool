@@ -19,8 +19,12 @@
                         ItemInvoked="NavView_ItemInvoked"
                         Loaded="NavView_Loaded">
             <NavigationView.MenuItems>
-                <NavigationViewItem Content="Skins" Icon="Contact" Tag="SkinsPage"
-                                    Height="100" FontSize="20" SelectsOnInvoked="True"/>
+                <NavigationViewItem Tag="SkinsPage" Height="100" SelectsOnInvoked="True">
+                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <Image Source="ms-appx:///Assets/SkinsIcon.png" Width="28" Height="28"/>
+                        <TextBlock Text="Skins" FontSize="20" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </NavigationViewItem>
                 <NavigationViewItem Tag="EmotesPage" Height="100" SelectsOnInvoked="True">
                     <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                         <Image Source="ms-appx:///Assets/EmotesIcon.png" Width="32" Height="32"/>
