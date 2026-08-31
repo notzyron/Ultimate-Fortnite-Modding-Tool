@@ -152,19 +152,19 @@
                 <StackPanel Spacing="20">
                     <TextBlock Text="Skin Settings" FontSize="20" FontWeight="SemiBold"/>
                     <StackPanel Orientation="Horizontal" Spacing="8" Margin="6, 0, 0, 0">
-                        <TextBlock Text="Skin name" 
+                        <TextBlock Text="Name" 
                                 FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBox Width="300" HorizontalAlignment="Center" VerticalAlignment="Center"
                                 PlaceholderText="Name" MaxLength="50" x:Name="characterNameTextBox"
                                 TextChanged="CharacterTextBoxChanged" Tag="characterName" Text="{x:Bind CurrentSkin.Name, Mode=TwoWay}"/>
                         <Border Width="5"/>
-                        <TextBlock Text="Skin description" 
+                        <TextBlock Text="Description" 
                                 FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBox Width="300" HorizontalAlignment="Center" VerticalAlignment="Center"
                                 PlaceholderText="Description" MaxLength="150" x:Name="characterDescriptionTextBox"
                                 TextChanged="CharacterTextBoxChanged" Tag="characterDescription" Text="{x:Bind CurrentSkin.Description, Mode=TwoWay}"/>
                         <Border Width="5"/>
-                        <TextBlock Text="Skin CID" 
+                        <TextBlock Text="CID" 
                                 FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBox Width="300" HorizontalAlignment="Center" VerticalAlignment="Center"
                                 PlaceholderText="CID_Example" MaxLength="50" x:Name="characterCIDTextBox"
