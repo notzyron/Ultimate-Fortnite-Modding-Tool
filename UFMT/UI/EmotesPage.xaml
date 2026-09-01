@@ -10,6 +10,79 @@
 
     <Grid>
         <ScrollViewer>
+            <StackPanel Margin="32" Spacing="32">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Emotes Folder Path" FontSize="20" FontWeight="SemiBold"/>
+                    <TextBlock Text="The directory where your emote folders are saved." 
+                                       Margin="0,0,0,8" Foreground="LightGray" FontSize="15"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBox x:Name="EmotesPathTextBox" Width="500" TextChanged="EmotesPathTextBox_TextChanged"
+                                PlaceholderText="C:\Users\Example\Desktop\CustomEmotes"/>
+                        <Button Content="Browse" x:Name="EmotesPathBrowse" Click="BrowseButton_Click"
+                                 VerticalAlignment="Bottom"/>
+                        <Button Content="Create an emote folder" Style="{StaticResource AccentButtonStyle}"
+                                 Click="CreateEmoteFolder_Click" VerticalAlignment="Bottom"/>
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Current Emote Folder Path" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Text="The directory where your emote's assets are saved."
+                                       Foreground="LightGray" FontSize="15" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBox x:Name="CurrentEmotePathTextBox" Width="500" TextChanged="CurrentEmotePathTextBox_TextChanged"
+                                PlaceholderText="C:\Users\Example\Desktop\CustomEmotes\VoidRedemption"/>
+                        <Button Content="Browse" x:Name="CurrentEmotePathBrowse" Click="BrowseButton_Click"
+                                VerticalAlignment="Bottom"/>
+                        <Button Width="31" Height="31" Padding="0" VerticalAlignment="Bottom" Click="Reimport_Click">
+                            <Image Source="ms-appx:///Assets/ReimportButton.png" Width="25" Stretch="Uniform" ToolTipService.ToolTip="Reimport"/>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Spacing="20">
+                    <TextBlock Text="Emote Settings" FontSize="20" FontWeight="SemiBold"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="6, 0, 0, 0">
+                        <TextBlock Text="Name" 
+                                FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBox Width="300" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                PlaceholderText="Enter emote name" MaxLength="50" x:Name="characterNameTextBox"/>
+                        <Border Width="5"/>
+                        <TextBlock Text="Description" 
+                                FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBox Width="300" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                PlaceholderText="Enter emote description" MaxLength="150" x:Name="characterDescriptionTextBox"/>
+                        <Border Width="5"/>
+                        <TextBlock Text="EID" 
+                                FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBox Width="300" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                PlaceholderText="Enter emote EID" MaxLength="50" x:Name="characterCIDTextBox"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="6, 0, 0, 0">
+                        <TextBlock Text="Rarity" 
+                                FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ComboBox
+                                PlaceholderText="Select The rarity..."
+                                Tag="rarity" x:Name="rarityComboBox" >
+                            <x:String>Common</x:String>
+                            <x:String>Uncommon</x:String>
+                            <x:String>Rare</x:String>
+                            <x:String>Epic</x:String>
+                            <x:String>Legendary</x:String>
+                            <x:String>Mythic</x:String>
+                            <x:String>Transcendent</x:String>
+                            <x:String>Unattainable (Impossible T7)</x:String>
+                        </ComboBox>
+                        <Border Width="25"/>
+                        <TextBlock Text="Series" 
+                                FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ComboBox
+                                PlaceholderText="Select The series..."
+                                Tag="series" x:Name="seriesComboBox"/>
+                        <Button Width="31.5" Height="31.5" Padding="0" VerticalAlignment="Center" x:Name="RemoveSeriesButton">
+                            <Image Source="ms-appx:///Assets/Trash_Icon.png" Width="15" Stretch="Uniform" ToolTipService.ToolTip="Remove selected series"/>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
         </ScrollViewer>
     </Grid>
 </Page>

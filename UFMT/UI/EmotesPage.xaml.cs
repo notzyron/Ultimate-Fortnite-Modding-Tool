@@ -21,5 +21,11 @@ namespace UFMT.UI
         {
             InitializeComponent();
         }
+
+        private void EmotesPathTextBox_TextChanged(object sender, TextChangedEventArgs e) { }
+        private void BrowseButton_Click(object sender, RoutedEventArgs e) { }
+        private void CreateEmoteFolder_Click(object sender, RoutedEventArgs e) { }
+        private void CurrentEmotePathTextBox_TextChanged(object sender, TextChangedEventArgs e) { }
+        private void Reimport_Click(object sender, RoutedEventArgs e) { }
     }
 }
