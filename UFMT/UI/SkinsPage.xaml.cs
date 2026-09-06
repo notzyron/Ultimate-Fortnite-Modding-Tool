@@ -135,7 +135,7 @@ namespace UFMT
                 }
             }
             ResetCpData();
-            if (!CheckCurrentSkinPathValidation(CurrentSkinPathTextBox.Text)) return;
+            if (!SkinValidator.ValidateAfterPathChange(CurrentSkinPathTextBox.Text, CurrentSkin)) return;
 
             OutputFnGamePath = Path.Combine(CurrentSkin.Path, "Output", App.Settings.FnVersion, "FortniteGame");
             CurrentSkin.Codename = new DirectoryInfo(CurrentSkin.Path).Name;
@@ -148,7 +148,7 @@ namespace UFMT
             {
                 CurrentSkin = loadedJson;
                 CurrentSkin.Path = CurrentSkinPathTextBox.Text;
-                if (!CheckCurrentSkinPathValidation(CurrentSkinPathTextBox.Text)) return;
+                if (!SkinValidator.ValidateAfterPathChange(CurrentSkinPathTextBox.Text, CurrentSkin)) return;
                 CurrentSkin.LobbyAnimationFolderPath = Path.Combine(CurrentSkin.SourcePath, "Lobby_Animation");
                 foreach (CharacterPart cp in CurrentSkin.CharacterParts)
                 {
@@ -185,58 +185,6 @@ namespace UFMT
             characterCIDTextBox.Text = CurrentSkin.CID;
             CurrentSkin.PropertyChanged += (s, e) => SaveSkinConfig();
             UpdateDropdowns();
-        }
-
-        private bool CheckCurrentSkinPathValidation(string currentSkinFolderPath)
-        {
-            if (currentSkinFolderPath == string.Empty)
-            {
-                Log.Error("The Current skin path is empty!");
-                return false;
-            }
-            if (!Directory.Exists(currentSkinFolderPath))
-            {
-                Log.Error($"\"{currentSkinFolderPath}\" doesn't exist!");
-                return false;
-            }
-            string sourcePath = Path.Combine(currentSkinFolderPath, "Source");
-            if (!Directory.Exists(sourcePath))
-            {
-                Log.Error($"Cannot find the Source folder inside \"{currentSkinFolderPath}\"");
-                return false;
-            }
-            string meshesPath = Path.Combine(sourcePath, "Meshes");
-            if (!Directory.Exists(meshesPath))
-            {
-                Log.Error($"Cannot find the Meshes folder inside \"{sourcePath}\"");
-                return false;
-            }
-            string texturesPath = Path.Combine(sourcePath, "Textures");
-            if (!Directory.Exists(texturesPath))
-            {
-                Log.Error($"Cannot find the Textures folder inside \"{sourcePath}\"");
-                return false;
-            }
-            string lobbyAnimationFolderPath = Path.Combine(sourcePath, "Lobby_Animation");
-            if (!Directory.Exists(lobbyAnimationFolderPath))
-            {
-                Log.Error($"Cannot find the Lobby_Animation folder inside \"{sourcePath}\"");
-                return false;
-            }
-            string physicsPath = Path.Combine(sourcePath, "Physics");
-            if (!Directory.Exists(physicsPath))
-            {
-                Log.Error($"Cannot find the Physics folder inside \"{sourcePath}\"");
-                return false;
-            }
-
-            CurrentSkin.Path = currentSkinFolderPath;
-            CurrentSkin.SourcePath = sourcePath;
-            CurrentSkin.MeshesPath = meshesPath;
-            CurrentSkin.TexturesPath = texturesPath;
-            CurrentSkin.LobbyAnimationFolderPath = lobbyAnimationFolderPath;
-            CurrentSkin.PhysicsPath = physicsPath;
-            return true;
         }
 
         private async void BrowseButton_Click(object sender, RoutedEventArgs e)
