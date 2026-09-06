@@ -12,6 +12,7 @@ using UAssetAPI.PropertyTypes.Objects;
 using UAssetAPI.PropertyTypes.Structs;
 using UAssetAPI.UnrealTypes;
 using UFMT.Core;
+using UFMT.UI;
 
 namespace UFMT.FnAssets
 {

@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UFMT;
 using UFMT.MaterialTextureAssignment;
+using UFMT.UI;
 
 namespace UFMT.MaterialTextureAssignment
 {

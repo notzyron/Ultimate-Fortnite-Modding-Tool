@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UFMT.Core;
+using UFMT.UI;
 
 namespace UFMT.FnAssetsLogic
 {
@@ -56,31 +57,31 @@ namespace UFMT.FnAssetsLogic
             string sourcePath = Path.Combine(currentSkinFolderPath, "Source");
             if (!Directory.Exists(sourcePath))
             {
-                Log.Error($"Cannot find the Source folder inside \"{currentSkinFolderPath}\"");
+                Log.Error($"Cannot find Source folder inside \"{currentSkinFolderPath}\"");
                 return false;
             }
             string meshesPath = Path.Combine(sourcePath, "Meshes");
             if (!Directory.Exists(meshesPath))
             {
-                Log.Error($"Cannot find the Meshes folder inside \"{sourcePath}\"");
+                Log.Error($"Cannot find Meshes folder inside \"{sourcePath}\"");
                 return false;
             }
             string texturesPath = Path.Combine(sourcePath, "Textures");
             if (!Directory.Exists(texturesPath))
             {
-                Log.Error($"Cannot find the Textures folder inside \"{sourcePath}\"");
+                Log.Error($"Cannot find Textures folder inside \"{sourcePath}\"");
                 return false;
             }
             string lobbyAnimationFolderPath = Path.Combine(sourcePath, "Lobby_Animation");
             if (!Directory.Exists(lobbyAnimationFolderPath))
             {
-                Log.Error($"Cannot find the Lobby_Animation folder inside \"{sourcePath}\"");
+                Log.Error($"Cannot find Lobby_Animation folder inside \"{sourcePath}\"");
                 return false;
             }
             string physicsPath = Path.Combine(sourcePath, "Physics");
             if (!Directory.Exists(physicsPath))
             {
-                Log.Error($"Cannot find the Physics folder inside \"{sourcePath}\"");
+                Log.Error($"Cannot find Physics folder inside \"{sourcePath}\"");
                 return false;
             }
 

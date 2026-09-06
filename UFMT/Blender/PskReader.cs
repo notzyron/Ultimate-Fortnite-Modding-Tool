@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using UFMT;
 using UFMT.Blender;
 using UFMT.FnAssets;
+using UFMT.UI;
 
 namespace UFMT.Blender
 {

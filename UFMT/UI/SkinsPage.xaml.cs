@@ -25,7 +25,7 @@ using UFMT.u4Pak;
 using UFMT.UnrealEngine;
 using Windows.Foundation.Collections;
 
-namespace UFMT
+namespace UFMT.UI
 {
     public sealed partial class SkinsPage : Page, INotifyPropertyChanged
     {

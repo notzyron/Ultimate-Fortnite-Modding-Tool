@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using UAssetAPI;
 using UFMT.Core;
 using UFMT.FnAssets;
+using UFMT.UI;
 
 namespace UFMT.Blender
 {
