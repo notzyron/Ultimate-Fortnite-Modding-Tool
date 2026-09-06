@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace UFMT.UnrealEngine
 {
-    internal class UnrealExportData
+    internal class UnrealExportSkinData
     {
         public List<string> FbxPaths { get; set; }
         public List<string> PhysicsMeshNames { get; set; }

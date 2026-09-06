@@ -8,9 +8,9 @@ using UFMT.FnAssets;
 
 namespace UFMT.UnrealEngine
 {
-    internal static class UnrealExportDataCollector
+    internal static class UnrealExportSkinDataCollector
     {
-        internal static UnrealExportData CollectData(string smallIcon, string largeIcon, ObservableCollection<Material> materials, string texturesPath, bool manuallySwizzleMaterials, string sourcePath, 
+        internal static UnrealExportSkinData CollectData(string smallIcon, string largeIcon, ObservableCollection<Material> materials, string texturesPath, bool manuallySwizzleMaterials, string sourcePath, 
         string lobbyAnimationFbx, string lobbyAnimationJson, List<CharacterPart> characterParts, string skinGender, string codename, string CID, string ueSkinsPackagePath)
         {
             List<string> meshNames = new();
@@ -39,7 +39,7 @@ namespace UFMT.UnrealEngine
             Path.Combine(sourcePath, "Fbx", $"{lobbyAnimationFbx}.fbx");
 
             string lobbyAnimationFbxFilePath = Path.Combine(sourcePath, "Fbx", "Lobby_Animation", $"{lobbyAnimationFbx}.fbx");
-            var unrealData = new UnrealExportData()
+            var unrealData = new UnrealExportSkinData()
             {
                 FbxPaths = characterParts.Select(cp => $"{cp.FbxPath}.fbx").ToList(),
                 PhysicsMeshNames = characterParts.Where(cp => cp.PhysicsAssetJsonPaths.Count > 0).ToList().Select(cp => Path.GetFileNameWithoutExtension(cp.FbxPath)).ToList(),

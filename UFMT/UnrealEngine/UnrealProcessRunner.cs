@@ -4,19 +4,21 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using UFMT.Core;
 
 namespace UFMT.UnrealEngine
 {
     internal static class UnrealProcessRunner
     {
-        private static string PythonScriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "UE_Import.py").Replace("\\", "/");
-        internal static async Task LaunchUnreal(UnrealExportData unrealData, string ueProjectPath, string ueExecutablePath)
+        private static string SkinPythonScriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "PythonScripts", "UE_Import_Skin.py").Replace("\\", "/");
+        internal static async Task LaunchUnreal(UnrealExportSkinData unrealData, string ueProjectPath, string ueExecutablePath)
         {
-            string jsonString = System.Text.Json.JsonSerializer.Serialize(unrealData, AppJsonContext.Default.UnrealExportData);
+            string jsonString = System.Text.Json.JsonSerializer.Serialize(unrealData, AppJsonContext.Default.UnrealExportSkinData);
             string tempJsonPath = Path.Combine(Path.GetTempPath(), "ue_import_data.json");
             File.WriteAllText(tempJsonPath, jsonString, new System.Text.UTF8Encoding(false));
+            Log.Test($"tempJsonPath is {tempJsonPath}");
 
-            string arguments = $"\"{ueProjectPath}\" -run=PythonScriptCommandlet -script=\"{PythonScriptPath}\" -NullRHI -NoWindow -Silent";
+            string arguments = $"\"{ueProjectPath}\" -run=PythonScriptCommandlet -script=\"{SkinPythonScriptPath}\" -NullRHI -NoWindow -Silent";
 
             Console.WriteLine($"Launching UE with args: {arguments}");
 
@@ -44,7 +46,7 @@ namespace UFMT.UnrealEngine
         }
         internal static async Task CookFiles(string ueProjectPath, string ueExecutablePath)
         {
-            Console.WriteLine("Cooking the newly created assets...");
+            Console.WriteLine("Cooking newly created assets...");
             string arguments = $"\"{ueProjectPath}\" -run=Cook -TargetPlatform=WindowsNoEditor -unversioned -iterate -NullRHI -NoWindow -Silent";
 
             ProcessStartInfo startInfo = new ProcessStartInfo

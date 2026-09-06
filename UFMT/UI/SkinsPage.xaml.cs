@@ -330,7 +330,7 @@ namespace UFMT
             UnrealDependencySetup.CreateMissingFiles(exportUeProjectPath, exportSkin.Codename, exportUeVer.BaseHeadPath, cookedCodenamePath, exportUeVer.Name,
             exportUeVer.BaseHeadFileNames);
 
-            UnrealExportData unrealData = UnrealExportDataCollector.CollectData(exportSkin.SmallIcon, exportSkin.LargeIcon, exportSkin.Materials, exportSkin.TexturesPath,
+            UnrealExportSkinData unrealData = UnrealExportSkinDataCollector.CollectData(exportSkin.SmallIcon, exportSkin.LargeIcon, exportSkin.Materials, exportSkin.TexturesPath,
             exportFnVer.ManuallySwizzleMaterials, exportSkin.SourcePath, exportSkin.LobbyAnimationFbx, exportSkin.LobbyAnimationJson, exportSkin.CharacterParts,
             exportSkin.Gender, exportSkin.Codename, exportSkin.CID, ueSkinsPackagePath);
 
@@ -1378,6 +1378,6 @@ namespace UFMT
     }
 
     [JsonSerializable(typeof(BlenderExportData))]
-    [JsonSerializable(typeof(UnrealExportData))]
+    [JsonSerializable(typeof(UnrealExportSkinData))]
     internal partial class AppJsonContext : JsonSerializerContext { }
 }
